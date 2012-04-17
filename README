@@ -1,13 +1,13 @@
-# codegroup
+# cwo
 
-FIXME: write description
+Shared REPL session
 
 ## Usage
 
-FIXME: write
+Open browser, start coding and share.
 
 ## License
 
-Copyright (C) 2012 FIXME
+Copyright (C) 2012 Paul Bostrom
 
 Distributed under the Eclipse Public License, the same as Clojure.
