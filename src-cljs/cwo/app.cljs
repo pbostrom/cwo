@@ -1,5 +1,6 @@
 (ns cwo.app
-  (:use [cwo.utils :only (make-js-map clj->js)])
+  (:use [cwo.utils :only (make-js-map clj->js)]
+        [cwo.ajax :only (eval-clojure)])
   (:require [crate.core :as crate]
             [domina :as dm]
             [domina.css :as dmc]
@@ -95,7 +96,7 @@
 
 (defn handler [sexp]
   (if sexp
-    (.Write jqconsole (str "==>" sexp "\n")))
+    (.Write jqconsole (str "==>" (eval-clojure sexp) "\n")))
   (.Prompt jqconsole true handler (fn [sexp]
                                     (if (paren-match? sexp)
                                       false

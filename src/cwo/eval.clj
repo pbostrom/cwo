@@ -1,8 +1,7 @@
-(ns tryclj.eval
+(ns cwo.eval
   (:use [clojail.testers :only [secure-tester-without-def]]
         [clojail.core :only [sandbox]]
         [clojure.stacktrace :only [root-cause]])
-  (:require [noir.session :as session])
   (:import java.io.StringWriter
 	   java.util.concurrent.TimeoutException))
 
@@ -32,9 +31,11 @@
     old
     (assoc old "sb" (make-sandbox))))
 
+(def session {})
+
 (defn eval-request [expr]
   (try
-    (eval-string expr (get (session/swap! find-sb) "sb"))
+    (eval-string expr (get session "sb"))
     (catch TimeoutException _
       {:error true :message "Execution Timed Out!"})
     (catch Exception e

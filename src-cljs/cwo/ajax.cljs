@@ -5,7 +5,7 @@
 
 (defn eval-clojure [code]
   (let [data (atom "")]
-    (.ajax jq (make-js-map {:url "eval.clj"
+    (.ajax jq (make-js-map {:url "/eval-clj"
                             :type "POST"
                             :data (make-js-map {:expr code})
                             :async false

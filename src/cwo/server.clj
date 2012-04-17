@@ -1,7 +1,12 @@
 (ns cwo.server
-  (:use compojure.core, aleph.core, aleph.http, lamina.core, ring.middleware.reload)
-  (:require [cwo.views :as views]
-            [tryclj.views :as tcviews])
+  (:use compojure.core
+        aleph.core
+        aleph.http
+        lamina.core
+        [ring.middleware reload params session])
+  (:require [compojure.route :as route]
+            [cwo.views :as views]
+            [cwo.rpc :as rpc])
   (:gen-class))
 
 (def broadcast-channel (permanent-channel))
@@ -14,18 +19,23 @@
              (siphon broadcast-channel ch))))
 ;             (siphon ch broadcast-channel))))
 
-
-
-
-(defroutes my-app 
+; Define route table
+(defroutes handler
   (GET "/" [] (views/layout views/main-view))
   (GET "/socket" [] (wrap-aleph-handler chat-handler))
-  (POST "/eval.clj" [expr] (tcviews/eval-view))
+  (POST "/eval-clj" [expr :as {session :session}] (rpc/eval-clj expr session))
   (route/resources "/")
   (route/not-found (views/layout [:p "aww... this doesn't exist"])))
 
+; Add ring middlewarez
+(def app
+  (-> handler
+    (wrap-params)
+    (wrap-session)
+    (wrap-reload '(cwo.server cwo.views cwo.rpc))))
+
+; Add aleph handler and start server
 (defn -main []
   (start-http-server 
-    (wrap-ring-handler 
-      (wrap-reload my-app '(cwo.server cwo.views))) {:port 8080 :websocket true})
+    (wrap-ring-handler app) {:port 8080 :websocket true})
   (println "server started"))
