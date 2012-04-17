@@ -1,7 +1,7 @@
 (ns cwo.server
   (:use compojure.core, aleph.core, aleph.http, lamina.core, ring.middleware.reload)
-  (:require [compojure.route :as route])
-  (:require [cwo.views :as views])
+  (:require [cwo.views :as views]
+            [tryclj.views :as tcviews])
   (:gen-class))
 
 (def broadcast-channel (permanent-channel))
@@ -20,6 +20,7 @@
 (defroutes my-app 
   (GET "/" [] (views/layout views/main-view))
   (GET "/socket" [] (wrap-aleph-handler chat-handler))
+  (POST "/eval.clj" [expr] (tcviews/eval-view))
   (route/resources "/")
   (route/not-found (views/layout [:p "aww... this doesn't exist"])))
 

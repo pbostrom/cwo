@@ -6,7 +6,8 @@
             [goog.dom :as gdom]
             [clojure.browser.dom :as dom]
             [clojure.string :as string]
-            [clojure.browser.event :as event]))
+            [clojure.browser.event :as event]
+            [cwo.ajax :as ajax]))
 
 
 (def jq js/jQuery)
@@ -63,7 +64,7 @@
 
 (defn startPrompt []
   (.Prompt jqconsole true (fn [input]
-                            (.Write jqconsole (str input "\n", "jqconsole-output"))
+                            (.Write jqconsole (str (ajax/eval-clojure input) "\n", "jqconsole-output"))
                             (startPrompt))))
 
 ;(init-repl clj-repl)
