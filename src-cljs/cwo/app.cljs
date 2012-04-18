@@ -63,6 +63,10 @@
   (-> (jq "#console")
     (.jqconsole "hi\n" "=> " " ")))
 
+(def jqconsole-ro
+  (-> (jq "#console2")
+    (.jqconsole "Read-only\n" "=> " " ")))
+
 (defn startPrompt []
   (.Prompt jqconsole true (fn [input]
                             (.Write jqconsole (str (ajax/eval-clojure input) "\n", "jqconsole-output"))
@@ -115,3 +119,10 @@
               (fn [e]
                 (if (= (.-keyCode e) 13)
                   (send-it))))
+
+; Get console text as raw html
+; (def cons-text (-> (jq "#console .jqconsole-header ~ span")
+; (.clone)))
+; (-> (jq "<div>") (.append cons-text) (.remove) (.html))
+; When raw html is returned from websocket, insert into console2
+; (-> (jq cons-text) (.insertAfter (jq "#console2 .jqconsole-header"))))

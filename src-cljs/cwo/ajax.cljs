@@ -1,4 +1,5 @@
 (ns cwo.ajax
+  (:require [cljs.reader :as reader])
   (:use [cwo.utils :only (make-js-map)]))
 
 (def jq js/jQuery)
@@ -10,4 +11,4 @@
                             :data (make-js-map {:expr code})
                             :async false
                             :success (fn [res] (reset! data res))}))
-    @data))
+    (:result (reader/read-string @data))))

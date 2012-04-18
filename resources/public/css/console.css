@@ -5,13 +5,25 @@ html, body {
     margin: 0;
     padding: 0;
 }
+
+#console-panel {
+    display: -webkit-box
+}
 /* The console container element */
 #console {
-    position: absolute;
+    position: relative;
     width: 400px;
     height: 500px;
     background-color:black;
 }
+
+#console2 {
+    position: relative;
+    width: 400px;
+    height: 500px;
+    background-color: #2F4F4F;
+}
+
 /* The inner console element. */
 .jqconsole {
     padding: 10px;

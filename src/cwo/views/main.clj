@@ -24,11 +24,13 @@
 (defpage "/" []
   (session/swap! inc-idx)
   (layout 
-    [:div#wrapper [:div#container 
-                   [:div#chatLog]
-                   [:input#text {:type "text"}]
-                   [:button#disconnect "Disconnect"]
-                   [:div#console.console]]]))
+    [:div#wrapper 
+      [:div#chatLog]
+      [:input#text {:type "text"}]
+      [:button#disconnect "Disconnect"]
+     [:div#console-panel
+      [:div#console.console]
+      [:div#console2.console]]]))
 
 
 (defpage [:post "/test-inc"] {:keys [expr]}
@@ -41,6 +43,7 @@
                (let [[out res] result]
                  {:expr (pr-str expr)
                   :result (str out (pr-str res))}))]
+    (println res)
     (println data)
-    data))
+    (pr-str data)))
 
