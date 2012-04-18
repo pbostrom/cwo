@@ -7,6 +7,7 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [aleph "0.2.1-beta1"]
+                 [noir "1.3.0-beta2"]
                  [compojure "1.0.1"]
                  [hiccup "1.0.0-beta1"]
                  [crate "0.1.0-alpha2"]
@@ -21,4 +22,5 @@
                          :output-to "resources/public/js/bootstrap.js"
                          :optimizations :whitespace
                          :pretty-print true}}]}
+  :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)

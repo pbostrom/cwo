@@ -11,6 +11,7 @@
     data))
 
 (defn eval-clj [expr session]
-  (println (str expr " " (:userid session)))
-  {:body expr
-   :session {:userid "pb"}})
+  (let [idx (inc (:idx session))]
+    (println (str expr " " idx))
+    {:body expr
+     :session {:idx idx}}))
