@@ -1,7 +1,6 @@
 (ns cwo.app
-  (:use [cwo.utils :only (make-js-map clj->js)]
-        [cwo.ajax :only (eval-clojure)]
-        [cwo.share :only (share-console-loop socket)])
+  (:use [cwo.utils :only (socket jq make-js-map clj->js)]
+        [cwo.ajax :only (eval-clojure)])
   (:require [crate.core :as crate]
             [domina :as dm]
             [domina.css :as dmc]
@@ -10,22 +9,17 @@
             [clojure.string :as string]
             [clojure.browser.event :as event]))
 
-
-(def jq js/jQuery)
-;(def ws-url "ws://localhost:8080/socket")
-;(def socket (js/WebSocket. ws-url))
-
 (defn add-msg [msg-el]
   (gdom/append (dm/single-node (dmc/sel "#chatLog")) msg-el))
 
-(defn send-it []
-  (let [text (.-value (goog.dom/getElement "text"))]
-    (.send socket text)
-    (set! (.-innerHTML (dom/get-element :out)) text)))
+(defn send-console []
+  (let [console-nodes (-> (jq "#console .jqconsole-header ~ span") (.clone))
+        console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))]
+    (.send socket (str console-html))))
 
-(defn console-loop []
-  (send-it)
-  (js/setTimeout console-loop 2000))
+(defn share-console-loop []
+  (send-console)
+  (js/setTimeout share-console-loop 2000))
 
 (defn socket-ready []
   (add-msg 
@@ -34,45 +28,15 @@
        (str (.-readyState socket)) + " (open) " [:div#in]]))
   (share-console-loop))
 
-(defn enter-cb [e]
-  (if (= (.-keyCode e) 13)
-    (send-it)))
-
 (defn init-repl [config]
   (-> (jq "#console")
     (.console config)))
 
-(defn cljValidate []
-  false)
-
-(defn cljHandle [line report]
-  make-js-map (array {:msg "\n"
-               :className "jquery-console-message"}))
-
-(def clj-repl 
-  (make-js-map {:welcomeMessage "Clojure REPL"
-                :promptLabel "user=> "
-                :commandValidate cljValidate
-                :commandHandle cljHandle
-                :autofocus true
-                :animateScroll true
-                :promptHistory true}))
-
-
-(def jqconsole
-  (-> (jq "#console")
-    (.jqconsole "hi\n" "=> " " ")))
-
-(def jqconsole-ro
-  (-> (jq "#console2")
-    (.jqconsole "Read-only\n" "=> " " ")))
 
 (defn paren-match? [sexp]
   (>=
     (count (filter #(= % ")") sexp))
     (count (filter #(= % "(") sexp))))
-
-(.SetIndentWidth jqconsole 1)
 
 (defn sexp-indent [sexp]
   (let [lines (js->clj (.split sexp "\n"))
@@ -98,17 +62,13 @@
                                       false
                                       (sexp-indent sexp)))))
 
-(handler nil)
-(set! (.-onmessage socket)
-      (fn add-msg [msg]
-         (set! (.-innerHTML (dom/get-element :in)) (.-data msg))))
-(add-msg (crate/html [:p.event "Outgoing: " [:div#out]]))
+(defn init-repl []
+  (def jqconsole 
+    (-> (jq "#console")
+      (.jqconsole "hi\n" "=> " " ")))
+  (.SetIndentWidth jqconsole 1)
+  (handler nil)
+  (set! (.-onopen socket) socket-ready))
 
-(set! (.-onopen socket) socket-ready)
-
-(event/listen (dm/single-node (dmc/sel "#text"))
-              :keypress
-              (fn [e]
-                (if (= (.-keyCode e) 13)
-                  (send-it))))
-
+(if (= js/window.location.pathname "/")
+  (init-repl))

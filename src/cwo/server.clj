@@ -13,12 +13,16 @@
 (def broadcast-channel (permanent-channel))
 
 (defn chat-handler [ch handshake]
-  (receive ch
-           (fn [name]
-             (println (str "handler called on channel: " ch))
-             (siphon (map* #(str name ": " %) ch) broadcast-channel)
-             (siphon broadcast-channel ch))))
-;             (siphon ch broadcast-channel))))
+  (println (str "msg: " ch))
+  (siphon ch broadcast-channel)
+  (siphon broadcast-channel ch))
+;  (receive ch
+;           (fn [msg]
+;             (println (str "handler called on channel: " msg))
+;             (siphon (map* #(str %) ch) broadcast-channel)
+;             (enqueue broadcast-channel msg)
+;             (siphon ch @broadcast-channel)
+;             (siphon @broadcast-channel ch))))
 
 ; Load noir views
 (server/add-middleware wrap-file (System/getProperty "user.dir"))

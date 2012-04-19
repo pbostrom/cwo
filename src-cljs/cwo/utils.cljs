@@ -1,5 +1,9 @@
 (ns cwo.utils)
 
+(def jq js/jQuery)
+(def ws-url "ws://localhost:8080/socket")
+(def socket (js/WebSocket. ws-url))
+
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
    other ClojureScript colls into JavaScript arrays, and ClojureScript
@@ -19,3 +23,6 @@
   (let [out (js-obj)]
     (doall (map #(aset out (name (first %)) (second %)) cljmap))
     out))
+
+(defn jslog [out]
+  (.log js/console out))
