@@ -1,19 +1,19 @@
 (ns cwo.app
   (:use [cwo.utils :only (make-js-map clj->js)]
-        [cwo.ajax :only (eval-clojure)])
+        [cwo.ajax :only (eval-clojure)]
+        [cwo.share :only (share-console-loop socket)])
   (:require [crate.core :as crate]
             [domina :as dm]
             [domina.css :as dmc]
             [goog.dom :as gdom]
             [clojure.browser.dom :as dom]
             [clojure.string :as string]
-            [clojure.browser.event :as event]
-            [cwo.ajax :as ajax]))
+            [clojure.browser.event :as event]))
 
 
 (def jq js/jQuery)
-(def ws-url "ws://localhost:8080/socket")
-(def socket (js/WebSocket. ws-url))
+;(def ws-url "ws://localhost:8080/socket")
+;(def socket (js/WebSocket. ws-url))
 
 (defn add-msg [msg-el]
   (gdom/append (dm/single-node (dmc/sel "#chatLog")) msg-el))
@@ -32,7 +32,7 @@
     (crate/html 
       [:p.event "Socket Status: " + 
        (str (.-readyState socket)) + " (open) " [:div#in]]))
-  (console-loop))
+  (share-console-loop))
 
 (defn enter-cb [e]
   (if (= (.-keyCode e) 13)
@@ -66,14 +66,6 @@
 (def jqconsole-ro
   (-> (jq "#console2")
     (.jqconsole "Read-only\n" "=> " " ")))
-
-(defn startPrompt []
-  (.Prompt jqconsole true (fn [input]
-                            (.Write jqconsole (str (ajax/eval-clojure input) "\n", "jqconsole-output"))
-                            (startPrompt))))
-
-;(init-repl clj-repl)
-;(startPrompt)
 
 (defn paren-match? [sexp]
   (>=
@@ -120,9 +112,3 @@
                 (if (= (.-keyCode e) 13)
                   (send-it))))
 
-; Get console text as raw html
-; (def cons-text (-> (jq "#console .jqconsole-header ~ span")
-; (.clone)))
-; (-> (jq "<div>") (.append cons-text) (.remove) (.html))
-; When raw html is returned from websocket, insert into console2
-; (-> (jq cons-text) (.insertAfter (jq "#console2 .jqconsole-header"))))
