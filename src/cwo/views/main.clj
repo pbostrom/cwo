@@ -1,8 +1,9 @@
 (ns cwo.views.main
-  (:require [noir.session :as session])
+  (:require [cwo.user :as usr]
+            [cwo.eval :as evl])
   (:use noir.core 
         hiccup.page
-        cwo.eval))
+        [hiccup.core :only (html)]))
 
 (defpartial layout [& content]
   (html5 [:head [:title "new page"]
@@ -15,21 +16,36 @@
   [:script {:type "text/javascript"} "goog.require('myrepl')"]))
 
 (defn user-info []
-  (if-let [user (session/get "user")]
-    [:input#text {:type "text"}]
-    [:div#user (user :name)]
-    [:div#user [:button#login "Login"]]))
+  (if-let [user (usr/get-user)]
+    [:label user]
+    (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
+
+(defn some-partial []
+  (if-let [user "bar"]
+    (html [:input#userinput {:type "text"}] [:button#login "Login"])
+    (html [:input#userinput {:type "file"}] [:button#login "Upload"])))
+
+(defpage "/noir-test" []
+  (layout
+    [:div#wrapper
+     (some-partial)]))
 
   ;check for valid session
   ;else get user info from cookie and add to session
 
 (defpage "/" []
   (layout 
+    [:div#userbox
+     (user-info)]
     [:div#wrapper
-     (user-info)
      [:input#text {:type "text"}]
      [:button#disconnect "Disconnect"]
      [:div#console.console]]))
+
+(defpage [:post "/login"] {:keys [user]}
+  (usr/put-user user)
+  (println "user:" user)
+  "success")
 
 (defpage "/shared" []
   (layout 
@@ -40,12 +56,11 @@
       [:div#console2.console]]))
 
 (defpage [:post "/eval-clj"] {:keys [expr]}
-  (let [{:keys [expr result error message] :as res} (eval-request expr)
+  (let [{:keys [expr result error message] :as res} (evl/eval-request expr)
         data (if error
                res
                (let [[out res] result]
-                 {:expr (pr-str expr)
-                  :result (str out (pr-str res))}))]
+                  (str out (pr-str res))))]
     (println res)
     (println data)
     (pr-str data)))

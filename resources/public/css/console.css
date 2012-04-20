@@ -58,3 +58,7 @@ html, body {
 .jqconsole-output {
     color: white;
 }
+/* The text color of error output. */
+.jqconsole-error {
+    color: red;
+}

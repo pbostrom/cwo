@@ -1,16 +1,7 @@
 (ns cwo.app
-  (:use [cwo.utils :only (socket jq make-js-map clj->js)]
-        [cwo.ajax :only (eval-clojure)])
-  (:require [crate.core :as crate]
-            [domina :as dm]
-            [domina.css :as dmc]
-            [goog.dom :as gdom]
-            [clojure.browser.dom :as dom]
-            [clojure.string :as string]
-            [clojure.browser.event :as event]))
-
-(defn add-msg [msg-el]
-  (gdom/append (dm/single-node (dmc/sel "#user")) msg-el))
+  (:use [cwo.utils :only (socket jq make-js-map clj->js)])
+  (:require [cwo.ajax :as ajax]
+            [crate.core :as crate]))
 
 (defn send-console []
   (let [console-nodes (-> (jq "#console .jqconsole-header ~ span") (.clone))
@@ -22,24 +13,23 @@
   (js/setTimeout share-console-loop 1900))
 
 (defn socket-ready []
-  (add-msg 
-    (crate/html 
-      [:p.event "Socket Status: " + 
-       (str (.-readyState socket)) + " (open) " [:div#in]]))
+  (-> (jq "#userbox")
+    (.append
+      (crate/html [:p.event "Socket Status: " + 
+                   (str (.-readyState socket)) + " (open) " [:div#in]])))
   (share-console-loop))
 
 (defn init-repl [config]
   (-> (jq "#console")
     (.console config)))
 
-
-(defn paren-match? [sexp]
+(defn paren-match? [expr]
   (>=
-    (count (filter #(= % ")") sexp))
-    (count (filter #(= % "(") sexp))))
+    (count (filter #(= % ")") expr))
+    (count (filter #(= % "(") expr))))
 
-(defn sexp-indent [sexp]
-  (let [lines (js->clj (.split sexp "\n"))
+(defn expr-indent [expr]
+  (let [lines (js->clj (.split expr "\n"))
         line (.trim jq (last lines))
         offset (if (= (count lines) 1) 2 0)
         indent-vec (reduce 
@@ -54,13 +44,22 @@
         indent-val (+ (first (second indent-vec)) 2 offset)]
     indent-val))
 
-(defn handler [sexp]
-  (if sexp
-    (.Write jqconsole (str "==>" (eval-clojure sexp) "\n")))
-  (.Prompt jqconsole true handler (fn [sexp]
-                                    (if (paren-match? sexp)
+(defn console-write [output]
+  (if (:error output)
+    (.Write jqconsole (str (:message output) "\n") "jqconsole-error")
+    (.Write jqconsole (str output "\n"))))
+
+
+(defn handler [expr]
+  (if expr
+    (console-write (ajax/eval-clojure expr)))
+  (.Prompt jqconsole true handler (fn [expr]
+                                    (if (paren-match? expr)
                                       false
-                                      (sexp-indent sexp)))))
+                                      (expr-indent expr)))))
+
+(defn login-handler []
+  (ajax/login (.val (jq "#login-input"))))
 
 (defn init-repl []
   (def jqconsole 
@@ -72,3 +71,6 @@
 
 (if (= js/window.location.pathname "/")
   (init-repl))
+
+(-> (jq "#login")
+  (.bind "click" login-handler))

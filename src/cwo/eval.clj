@@ -9,6 +9,8 @@
 (defn eval-form [form sbox]
   (with-open [out (StringWriter.)]
     (let [result (sbox form {#'*out* out})]
+      (println "out" out)
+      (println "result" result)
       {:expr form
        :result [out result]})))
 

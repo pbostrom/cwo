@@ -1,7 +1,6 @@
 (ns cwo.utils)
 
 (def jq js/jQuery)
-;(def ws-url "/socket")
 (def ws-url (str "ws://" js/window.location.host "/socket"))
 (def socket (js/WebSocket. ws-url))
 
@@ -17,6 +16,12 @@
                (assoc m (clj->js k) (clj->js v))) {} x))
     (coll? x) (apply array (map clj->js x))
     :else x))
+
+(defn map->js [m]
+  (let [out (js-obj)]
+    (doseq [[k v] m]
+      (aset out (name k) v))
+    out))
 
 (defn make-js-map
   "makes a javascript map from a clojure one"
