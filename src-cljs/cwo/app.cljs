@@ -10,7 +10,7 @@
             [clojure.browser.event :as event]))
 
 (defn add-msg [msg-el]
-  (gdom/append (dm/single-node (dmc/sel "#chatLog")) msg-el))
+  (gdom/append (dm/single-node (dmc/sel "#user")) msg-el))
 
 (defn send-console []
   (let [console-nodes (-> (jq "#console .jqconsole-header ~ span") (.clone))
@@ -19,7 +19,7 @@
 
 (defn share-console-loop []
   (send-console)
-  (js/setTimeout share-console-loop 2000))
+  (js/setTimeout share-console-loop 1900))
 
 (defn socket-ready []
   (add-msg 

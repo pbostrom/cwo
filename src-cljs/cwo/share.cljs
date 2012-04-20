@@ -6,9 +6,11 @@
   (def jqconsole-ro
     (-> (jq "#console2")
       (.jqconsole "Read-only\n" "=> " " ")))
+  (set! (.-onopen socket) #(-> (jq "#user") (.append "Socket Ready")))
+  (set! (.-onerror socket) #(-> (jq "#user") (.append "Socket fubar")))
   (set! (.-onmessage socket)
         (fn [msg]
-          (jslog (.-data msg))
+;          (jslog (.-data msg))
           (-> (jq "#console2 .jqconsole-header ~ span")
             (.remove))
           (-> (jq (.-data msg))

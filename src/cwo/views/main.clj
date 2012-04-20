@@ -1,6 +1,5 @@
 (ns cwo.views.main
-  (:require [noir.session :as session]
-            [cwo.user :as user])
+  (:require [noir.session :as session])
   (:use noir.core 
         hiccup.page
         cwo.eval))
@@ -15,20 +14,27 @@
               "/js/bootstrap.js")
   [:script {:type "text/javascript"} "goog.require('myrepl')"]))
 
-;(defn
+(defn user-info []
+  (if-let [user (session/get "user")]
+    [:input#text {:type "text"}]
+    [:div#user (user :name)]
+    [:div#user [:button#login "Login"]]))
+
+  ;check for valid session
+  ;else get user info from cookie and add to session
 
 (defpage "/" []
   (layout 
-    [:div#wrapper 
-      [:div#user (user/user-info)]
-      [:input#text {:type "text"}]
-      [:button#disconnect "Disconnect"]
-      [:div#console.console]]))
+    [:div#wrapper
+     (user-info)
+     [:input#text {:type "text"}]
+     [:button#disconnect "Disconnect"]
+     [:div#console.console]]))
 
 (defpage "/shared" []
   (layout 
     [:div#wrapper 
-      [:div#chatLog]
+      [:div#user]
       [:input#text {:type "text"}]
       [:button#disconnect "Disconnect"]
       [:div#console2.console]]))
