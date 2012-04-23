@@ -58,8 +58,6 @@
                                       false
                                       (expr-indent expr)))))
 
-(defn login-handler []
-  (ajax/login (.val (jq "#login-input"))))
 
 (defn init-repl []
   (def jqconsole 
@@ -72,5 +70,9 @@
 (if (= js/window.location.pathname "/")
   (init-repl))
 
+; login mgmt
 (-> (jq "#login")
-  (.bind "click" login-handler))
+  (.bind "click" (fn [] (ajax/login (.val (jq "#login-input"))))))
+
+(-> (jq "#logout")
+  (.bind "click" (fn [] (ajax/logout))))

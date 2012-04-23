@@ -15,9 +15,9 @@
               "/js/bootstrap.js")
   [:script {:type "text/javascript"} "goog.require('myrepl')"]))
 
-(defn user-info []
+(defpartial user-info []
   (if-let [user (usr/get-user)]
-    [:label user]
+    (html [:label user][:button#logout "Logout"])
     (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
 
 (defn some-partial []
@@ -42,10 +42,16 @@
      [:button#disconnect "Disconnect"]
      [:div#console.console]]))
 
+; User managment
 (defpage [:post "/login"] {:keys [user]}
   (usr/put-user user)
   (println "user:" user)
-  "success")
+  (user-info))
+
+(defpage [:post "/logout"] {:keys [user]}
+  (usr/rm-user)
+  (println "user:" user)
+  (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"]))
 
 (defpage "/shared" []
   (layout 

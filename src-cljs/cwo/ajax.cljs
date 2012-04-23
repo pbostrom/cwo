@@ -13,14 +13,29 @@
                                      :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
 
+(defn refresh-user [html]
+  (-> (jq "#userbox")
+    (.empty)
+    (.append html)))
+
 (defn login [user]
   (.ajax jq (map->js {:url "/login"
                       :type "POST"
                       :data (map->js {:user user})
                       :async true
-                      :success (fn [res] (-> (jq "#userbox")
-                                           (.empty)
-                                           (.append (html [:p user]))))})))
+                      :success (fn [html]
+                                 (refresh-user html)
+                                 (-> (jq "#logout")
+                                   (.bind "click" logout)))})))
+
+(defn logout []
+  (.ajax jq (map->js {:url "/logout"
+                      :type "POST"
+                      :data (map->js {})
+                      :async true
+                      :success (fn [html] (refresh-user html)
+                                 (-> (jq "#login")
+                                   (.bind "click" (fn [] (login (.val (jq "#login-input")))))))})))
 
 (defn sync-ajax [code]
   (.log js/console
