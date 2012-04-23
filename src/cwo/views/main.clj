@@ -56,9 +56,7 @@
 (defpage "/shared" []
   (layout 
     [:div#wrapper 
-      [:div#user]
-      [:input#text {:type "text"}]
-      [:button#disconnect "Disconnect"]
+      [:div#user-list [:p (apply str @usr/active-users)]]
       [:div#console2.console]]))
 
 (defpage [:post "/eval-clj"] {:keys [expr]}
