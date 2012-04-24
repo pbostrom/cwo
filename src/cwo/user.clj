@@ -7,6 +7,7 @@
 (defn cookie-map [value]
   {:value value
    :path "/"
+   :http-only nil
    :max-age 300000})
 
 (def rm-cookie-map

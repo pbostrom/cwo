@@ -1,6 +1,7 @@
-(ns cwo.views.main
+(ns cwo.views.noir
   (:require [cwo.user :as usr]
-            [cwo.eval :as evl])
+            [cwo.eval :as evl]
+            [cwo.views.enlive :as enlive])
   (:use noir.core 
         hiccup.page
         [hiccup.core :only (html)]))
@@ -12,7 +13,7 @@
 
   [:body content]
   (include-js "js/jqconsole-2.7.js"
-              "/js/bootstrap.js")
+              "/js/cljs-compiled.js")
   [:script {:type "text/javascript"} "goog.require('myrepl')"]))
 
 (defpartial user-info []
@@ -21,7 +22,7 @@
     (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
 
 (defn some-partial []
-  (if-let [user "bar"]
+  (if-let [user "bare"]
     (html [:input#userinput {:type "text"}] [:button#login "Login"])
     (html [:input#userinput {:type "file"}] [:button#login "Upload"])))
 
@@ -38,8 +39,6 @@
     [:div#userbox
      (user-info)]
     [:div#wrapper
-     [:input#text {:type "text"}]
-     [:button#disconnect "Disconnect"]
      [:div#console.console]]))
 
 ; User managment
@@ -58,6 +57,9 @@
     [:div#wrapper 
       [:div#user-list [:p (apply str @usr/active-users)]]
       [:div#console2.console]]))
+
+(defpage "/bs" []
+  (enlive/bootstrap))
 
 (defpage [:post "/eval-clj"] {:keys [expr]}
   (let [{:keys [expr result error message] :as res} (evl/eval-request expr)

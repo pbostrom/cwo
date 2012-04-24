@@ -1,7 +1,6 @@
 (ns cwo.ajax
   (:require [cljs.reader :as reader])
   (:use [cwo.utils :only (jq map->js)]
-        [jayq.core :only (xhr)]
         [crate.core :only (html)]))
 
 (defn eval-clojure [code]

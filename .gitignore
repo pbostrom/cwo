@@ -10,4 +10,4 @@
 /.lein-cljsbuild*
 /.lein-plugins
 /.repl
-resources/public/js/bootstrap.js
+resources/public/js/cljs-compiled.js

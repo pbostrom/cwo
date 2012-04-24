@@ -2,25 +2,25 @@
   (:use [compojure.core :only (defroutes GET)])
   (:require [compojure.route :as route]
             [ring.middleware.file :as ring-file]
+            [ring.middleware.reload :as reload]
             [aleph.core]
             [aleph.http :as aleph]
             [lamina.core :as lamina]
-            [noir.server :as server])
+            [noir.server :as noir])
   (:gen-class))
 
 (def broadcast-channel (lamina/permanent-channel))
 
 (defn socket-handler [ch handshake]
-  (println (str "msg: " ch))
   (lamina/siphon ch broadcast-channel)
   (lamina/siphon broadcast-channel ch))
 
 ; Need user.dir for Java policy file
-(server/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
+(noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
 
 ; Load noir views and get handler
-(server/load-views "src/cwo/views")
-(def noir-handler (server/gen-handler {:mode :dev :ns 'cwo}))
+(noir/load-views-ns 'cwo.views.noir)
+(def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
 ; Define routes for Websocket, noir, and static resources routes
 (defroutes handler

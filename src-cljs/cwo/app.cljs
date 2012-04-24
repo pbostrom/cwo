@@ -62,13 +62,15 @@
 (defn init-repl []
   (def jqconsole 
     (-> (jq "#console")
-      (.jqconsole "hi\n" "=> " " ")))
+      (.jqconsole "Clojure\n" "=> " " ")))
   (.SetIndentWidth jqconsole 1)
   (handler nil)
   (set! (.-onopen socket) socket-ready))
 
 (if (= js/window.location.pathname "/")
   (init-repl))
+
+(set! (.-onpopstate js/window) (fn [evt] (js/alert window.document.cookie)))
 
 ; login mgmt
 (-> (jq "#login")
