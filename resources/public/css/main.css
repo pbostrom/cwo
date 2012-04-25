@@ -21,3 +21,11 @@ body {
 	font-weight:bold;
 	color:#CCC;
 }
+
+.userbox input + .btn {
+  margin-left: -5px;
+}
+
+.userbox .handle {
+  font-size: 20px;
+}

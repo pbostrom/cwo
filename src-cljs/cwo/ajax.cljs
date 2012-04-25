@@ -13,7 +13,7 @@
     (reader/read-string @data)))
 
 (defn refresh-user [html]
-  (-> (jq "#userbox")
+  (-> (jq "#user-container")
     (.empty)
     (.append html)))
 

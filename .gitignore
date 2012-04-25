@@ -11,3 +11,4 @@
 /.lein-plugins
 /.repl
 resources/public/js/cljs-compiled.js
+resources/public/markup.html

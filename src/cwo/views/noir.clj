@@ -18,21 +18,8 @@
 
 (defpartial user-info []
   (if-let [user (usr/get-user)]
-    (html [:label user][:button#logout "Logout"])
+    (html [:span (str "Welcome " user)][:button#logout "Logout"])
     (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
-
-(defn some-partial []
-  (if-let [user "bare"]
-    (html [:input#userinput {:type "text"}] [:button#login "Login"])
-    (html [:input#userinput {:type "file"}] [:button#login "Upload"])))
-
-(defpage "/noir-test" []
-  (layout
-    [:div#wrapper
-     (some-partial)]))
-
-  ;check for valid session
-  ;else get user info from cookie and add to session
 
 (defpage "/" []
   (layout 
@@ -42,12 +29,12 @@
      [:div#console.console]]))
 
 ; User managment
-(defpage [:post "/login"] {:keys [user]}
+(defpage [:post "/login2"] {:keys [user]}
   (usr/put-user user)
   (println "user:" user)
   (user-info))
 
-(defpage [:post "/logout"] {:keys [user]}
+(defpage [:post "/logout2"] {:keys [user]}
   (usr/rm-user)
   (println "user:" user)
   (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"]))
@@ -58,9 +45,27 @@
       [:div#user-list [:p (apply str @usr/active-users)]]
       [:div#console2.console]]))
 
-(defpage "/bs" []
-  (enlive/bootstrap "some login"))
+;; enlive rendered routes
 
+(defpage [:post "/login"] {:keys [user]}
+  (usr/put-user user)
+  (println "user" user "logged in")
+  (enlive/render-snippet (enlive/logoutbox user)))
+
+(defpage [:post "/logout"] {:keys [user]}
+  (usr/rm-user)
+  (println "user" user "logged out")
+  (enlive/render-snippet (enlive/loginbox)))
+
+(defpage "/bs" []
+  (enlive/bootstrap (if-let [user (usr/get-user)]
+                      (enlive/logoutbox user)
+                      (enlive/loginbox))))
+
+(defpage "/snip" []
+  (enlive/render-snippet (enlive/loginbox)))
+
+;; evaluation route
 (defpage [:post "/eval-clj"] {:keys [expr]}
   (let [{:keys [expr result error message] :as res} (evl/eval-request expr)
         data (if error
@@ -71,3 +76,12 @@
     (println data)
     (pr-str data)))
 
+; test route
+(defn some-partial []
+  (if-let [user "bare"]
+    (html [:input#userinput {:type "text"}] [:button#login "Login"])
+    (html [:input#userinput {:type "file"}] [:button#login "Upload"])))
+(defpage "/noir-test" []
+  (layout
+    [:div#wrapper
+     (some-partial)]))
