@@ -59,7 +59,7 @@
       [:div#console2.console]]))
 
 (defpage "/bs" []
-  (enlive/bootstrap))
+  (enlive/bootstrap "some login"))
 
 (defpage [:post "/eval-clj"] {:keys [expr]}
   (let [{:keys [expr result error message] :as res} (evl/eval-request expr)
