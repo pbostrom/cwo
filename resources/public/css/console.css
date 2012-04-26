@@ -1,64 +1,68 @@
 html, body {
-    background-color: #333;
-    color: white;
-/*    font-family: monospace; */
-    margin: 0;
-    padding: 0;
+  background-color: #333; 
+  color: white;
+  /*    font-family: monospace; */
+  margin: 0;
+  padding: 0;
 }
 
 #console-panel {
-    display: -webkit-box
+  display: -webkit-box
 }
 /* The console container element */
 #console {
-    position: relative;
-    width: 400px;
-    height: 500px;
-    background-color:black;
+  position: relative;
+  width: 400px;
+  height: 500px;
+}
+
+/* solarized light color scheme */
+pre.jqconsole {
+  background-color: #fdf6e3; /* base3 */
+}
+/* The command history */
+.jqconsole-old-prompt {
+  color: #93a1a1; /* base1 */
+  font-weight: normal;
+}
+/* The current prompt text color */
+.jqconsole-prompt {
+  color: #657b83; /* base00 */
 }
 
 #console2 {
-    position: relative;
-    width: 400px;
-    height: 500px;
-    background-color: #2F4F4F;
+  position: relative;
+  width: 400px;
+  height: 500px;
+  background-color: #2F4F4F;
 }
 
 /* The inner console element. */
 .jqconsole {
-    padding: 10px;
+  padding: 10px;
 }
 /* The cursor. */
 .jqconsole-cursor {
-    background-color: gray;
+  background-color: gray;
 }
 /* The cursor color when the console looses focus. */
 .jqconsole-blurred .jqconsole-cursor {
-    background-color: #666;
-}
-/* The current prompt text color */
-.jqconsole-prompt {
-    color: #0d0;
-}
-/* The command history */
-.jqconsole-old-prompt {
-    color: #0b0;
-    font-weight: normal;
+  background-color: #666;
 }
 /* The text color when in input mode. */
 .jqconsole-input {
-    color: #dd0;
+  color: #dd0;
 }
 /* Previously entered input. */
 .jqconsole-old-input {
-    color: #bb0;
-    font-weight: normal;
+  color: #bb0;
+  font-weight: normal;
 }
 /* The text color of the output. */
 .jqconsole-output {
-    color: white;
+  color: white;
 }
 /* The text color of error output. */
 .jqconsole-error {
-    color: red;
+  color: red;
 }
