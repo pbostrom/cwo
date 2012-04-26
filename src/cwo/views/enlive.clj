@@ -11,4 +11,4 @@
 
 (html/deftemplate bootstrap "cwo/views/bootstrap.html" [userbox]
   [:div#user-container] (html/content userbox))
-;
+;;

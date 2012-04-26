@@ -19,10 +19,6 @@
                    (str (.-readyState socket)) + " (open) " [:div#in]])))
   (share-console-loop))
 
-(defn init-repl [config]
-  (-> (jq "#console")
-    (.console config)))
-
 (defn paren-match? [expr]
   (>=
     (count (filter #(= % ")") expr))
@@ -58,6 +54,10 @@
                                       false
                                       (expr-indent expr)))))
 
+(defn hash-navigate [] 
+  (if (empty? js/window.location.hash)
+    (js/alert "home")))
+
 
 (defn init-repl []
   (def jqconsole 
@@ -67,10 +67,14 @@
   (handler nil)
   (set! (.-onopen socket) socket-ready))
 
-(if (= js/window.location.pathname "/")
+(if (= js/window.location.pathname "/bs")
   (init-repl))
 
-(set! (.-onpopstate js/window) (fn [evt] (js/alert window.document.cookie)))
+;(set! (.-onpopstate js/window) hash-navigate)
+
+; navigation
+(-> (jq "ul.nav a")
+  (.bind "click" (fn [evt] (js/alert "click"))))
 
 ; login mgmt
 (-> (jq "#login")
