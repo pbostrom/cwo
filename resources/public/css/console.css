@@ -29,6 +29,10 @@ pre.jqconsole {
 .jqconsole-prompt {
   color: #657b83; /* base00 */
 }
+/* The text color of the output. */
+.jqconsole-output {
+  color: #268bd2; /* blue */
+}
 
 #console2 {
   position: relative;
@@ -57,10 +61,6 @@ pre.jqconsole {
 .jqconsole-old-input {
   color: #bb0;
   font-weight: normal;
-}
-/* The text color of the output. */
-.jqconsole-output {
-  color: white;
 }
 /* The text color of error output. */
 .jqconsole-error {

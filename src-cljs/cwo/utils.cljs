@@ -1,7 +1,7 @@
 (ns cwo.utils)
 
 (def jq js/jQuery)
-(def ws-url (str "ws://" js/window.location.host "/socket"))
+(def ws-url (str "ws://" js/window.location.host "/socket/pbostrom"))
 (def socket (js/WebSocket. ws-url))
 
 (defn clj->js

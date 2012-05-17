@@ -43,7 +43,7 @@
 (defn console-write [output]
   (if (:error output)
     (.Write jqconsole (str (:message output) "\n") "jqconsole-error")
-    (.Write jqconsole (str output "\n"))))
+    (.Write jqconsole (str output "\n") "jqconsole-output")))
 
 
 (defn handler [expr]

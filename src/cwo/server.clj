@@ -24,7 +24,8 @@
 
 ; Define routes for Websocket, noir, and static resources routes
 (defroutes handler
-  (GET "/socket" [] (aleph/wrap-aleph-handler socket-handler))
+  (GET "/socket/:handle" [handle] ((println "websocket for handle" handle)
+                                   aleph/wrap-aleph-handler socket-handler))
   noir-handler
   (route/resources "/"))
 
