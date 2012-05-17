@@ -54,11 +54,6 @@
                                       false
                                       (expr-indent expr)))))
 
-(defn hash-navigate [] 
-  (if (empty? js/window.location.hash)
-    (js/alert "home")))
-
-
 (defn init-repl []
   (def jqconsole 
     (-> (jq "#console")
@@ -67,14 +62,15 @@
   (handler nil)
   (set! (.-onopen socket) socket-ready))
 
+(defn nav-handler [evt]
+  (js/alert evt.target.hash))
+
 (if (= js/window.location.pathname "/bs")
   (init-repl))
 
-;(set! (.-onpopstate js/window) hash-navigate)
-
 ; navigation
 (-> (jq "ul.nav a")
-  (.bind "click" (fn [evt] (js/alert "click"))))
+  (.bind "click" nav-handler))
 
 ; login mgmt
 (-> (jq "#login")
