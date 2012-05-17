@@ -12,8 +12,9 @@
                                      :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
 
-(defn refresh-user [html]
-  (-> (jq "#user-container")
+;refresh a container div
+(defn refresh-ctr [ctrid html]
+  (-> (jq ctrid)
     (.empty)
     (.append html)))
 
@@ -21,20 +22,25 @@
   (.ajax jq (map->js {:url "/login"
                       :type "POST"
                       :data (map->js {:user user})
-                      :async true
                       :success (fn [html]
-                                 (refresh-user html)
+                                 (refresh-ctr "#user-container" html)
                                  (-> (jq "#logout")
                                    (.bind "click" logout)))})))
 
 (defn logout []
   (.ajax jq (map->js {:url "/logout"
                       :type "POST"
-                      :data (map->js {})
-                      :async true
-                      :success (fn [html] (refresh-user html)
+                      :success (fn [html]
+                                 (refresh-ctr "#user-container" html)
                                  (-> (jq "#login")
                                    (.bind "click" (fn [] (login (.val (jq "#login-input")))))))})))
+
+(defn share-list []
+  (.ajax jq (map->js {:url "/share-list"
+                      :success (fn [html]
+                                 (-> (jq "#your-console")
+                                   (.hide))
+                                 (refresh-ctr "#other-console" html))})))
 
 (defn sync-ajax [code]
   (.log js/console

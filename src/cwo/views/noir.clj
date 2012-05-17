@@ -28,25 +28,11 @@
     [:div#wrapper
      [:div#console.console]]))
 
-; User managment
-(defpage [:post "/login2"] {:keys [user]}
-  (usr/put-user user)
-  (println "user:" user)
-  (user-info))
-
-(defpage [:post "/logout2"] {:keys [user]}
-  (usr/rm-user)
-  (println "user:" user)
-  (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"]))
-
-(defpage "/shared" []
-  (layout 
-    [:div#wrapper 
-      [:div#user-list [:p (apply str @usr/active-users)]]
-      [:div#console2.console]]))
+; hiccup rendered routes
+(defpage "/share-list" []
+  (html [:div#user-list [:p (apply str @usr/active-users)]]))
 
 ;; enlive rendered routes
-
 (defpage [:post "/login"] {:keys [user]}
   (usr/put-user user)
   (println "user" user "logged in")

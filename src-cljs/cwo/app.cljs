@@ -45,7 +45,6 @@
     (.Write jqconsole (str (:message output) "\n") "jqconsole-error")
     (.Write jqconsole (str output "\n") "jqconsole-output")))
 
-
 (defn handler [expr]
   (if expr
     (console-write (ajax/eval-clojure expr)))
@@ -62,15 +61,19 @@
   (handler nil)
   (set! (.-onopen socket) socket-ready))
 
-(defn nav-handler [evt]
-  (js/alert evt.target.hash))
+(defn nav-handler []
+  (let [hsh js/window.location.hash]
+    (cond
+      (= hsh "#others") (ajax/share-list)
+      (empty? hsh) (-> (jq "#your-console")(.show)))))
 
 (if (= js/window.location.pathname "/bs")
   (init-repl))
 
 ; navigation
-(-> (jq "ul.nav a")
-  (.bind "click" nav-handler))
+(set! (.-onpopstate js/window) nav-handler)
+;(-> (jq "ul.nav a")
+;  (.bind "click" nav-handler))
 
 ; login mgmt
 (-> (jq "#login")
