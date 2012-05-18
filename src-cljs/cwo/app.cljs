@@ -64,8 +64,13 @@
 (defn nav-handler []
   (let [hsh js/window.location.hash]
     (cond
-      (= hsh "#others") (ajax/share-list)
-      (empty? hsh) (-> (jq "#your-console")(.show)))))
+      (= hsh "#others") (do 
+                          (-> (jq "#your-console") (.hide))
+                          (-> (jq "#other-console")(.show))
+                          (ajax/share-list))
+      (empty? hsh) (do 
+                     (-> (jq "#your-console")(.show))
+                     (-> (jq "#other-console")(.hide))))))
 
 (if (= js/window.location.pathname "/bs")
   (init-repl))

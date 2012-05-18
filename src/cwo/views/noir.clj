@@ -28,9 +28,12 @@
     [:div#wrapper
      [:div#console.console]]))
 
+(defn linkify [ul user]
+  (conj ul [:li user]))
+
 ; hiccup rendered routes
 (defpage "/share-list" []
-  (html [:div#user-list [:p (apply str @usr/active-users)]]))
+  (html [:div#user-list [:p (reduce linkify [:ul] @usr/active-users)]]))
 
 ;; enlive rendered routes
 (defpage [:post "/login"] {:keys [user]}
