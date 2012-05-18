@@ -1,10 +1,11 @@
 (ns cwo.app
   (:use [cwo.utils :only (socket jq make-js-map clj->js)])
   (:require [cwo.ajax :as ajax]
+            [cwo.connect :as connect]
             [crate.core :as crate]))
 
 (defn send-console []
-  (let [console-nodes (-> (jq "#console .jqconsole-header ~ span") (.clone))
+  (let [console-nodes (-> (jq "#your-console .jqconsole-header ~ span") (.clone))
         console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))]
     (.send socket (str console-html))))
 
@@ -13,7 +14,7 @@
   (js/setTimeout share-console-loop 1900))
 
 (defn socket-ready []
-  (-> (jq "#userbox")
+  (-> (jq "#debug-box")
     (.append
       (crate/html [:p.event "Socket Status: " + 
                    (str (.-readyState socket)) + " (open) " [:div#in]])))
@@ -40,6 +41,7 @@
         indent-val (+ (first (second indent-vec)) 2 offset)]
     indent-val))
 
+
 (defn console-write [output]
   (if (:error output)
     (.Write jqconsole (str (:message output) "\n") "jqconsole-error")
@@ -53,34 +55,39 @@
                                       false
                                       (expr-indent expr)))))
 
-(defn init-repl []
-  (def jqconsole 
-    (-> (jq "#console")
-      (.jqconsole "Clojure\n" "=> " " ")))
-  (.SetIndentWidth jqconsole 1)
-  (handler nil)
-  (set! (.-onopen socket) socket-ready))
+; init repl
+(def jqconsole 
+  (-> (jq "#your-console")
+    (.jqconsole "Your Clojure REPL\n" "=> " " ")))
+(.SetIndentWidth jqconsole 1)
+(handler nil)
+(set! (.-onopen socket) socket-ready)
 
+; navigation
 (defn nav-handler []
   (let [hsh js/window.location.hash]
     (cond
       (= hsh "#others") (do 
-                          (-> (jq "#your-console") (.hide))
-                          (-> (jq "#other-console")(.show))
+                          (-> (jq "#your-container") (.hide))
+                          (-> (jq "#other-container")(.show))
                           (ajax/share-list))
       (empty? hsh) (do 
-                     (-> (jq "#your-console")(.show))
-                     (-> (jq "#other-console")(.hide))))))
+                     (-> (jq "#your-container")(.show))
+                     (-> (jq "#other-container")(.hide))))))
 
-(if (= js/window.location.pathname "/bs")
-  (init-repl))
-
-; navigation
 (set! (.-onpopstate js/window) nav-handler)
-;(-> (jq "ul.nav a")
-;  (.bind "click" nav-handler))
 
-; login mgmt
+; hacky way to prevent muli-selects
+(-> (jq "#share-list")
+  (.on "click" (fn [evt] 
+                 (-> (jq "#share-list option:selected") (.removeAttr "selected"))
+                 (-> (jq evt.target) (.attr "selected" "selected")))))
+
+; connect button
+(-> (jq "#connect")
+  (.bind "click" (fn [] (connect/connect (-> (jq "#share-list option:selected") (.val))))))
+
+; login/out buttons 
 (-> (jq "#login")
   (.bind "click" (fn [] (ajax/login (.val (jq "#login-input"))))))
 

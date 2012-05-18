@@ -38,7 +38,7 @@
 (defn share-list []
   (.ajax jq (map->js {:url "/share-list"
                       :success (fn [html]
-                                 (refresh-ctr "#other-console" html))})))
+                                 (refresh-ctr "#share-list" html))})))
 
 (defn sync-ajax [code]
   (.log js/console

@@ -21,21 +21,27 @@
     (html [:span (str "Welcome " user)][:button#logout "Logout"])
     (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
 
-(defpage "/" []
+(defpage "/old" []
   (layout 
     [:div#userbox
      (user-info)]
     [:div#wrapper
      [:div#console.console]]))
 
-(defn linkify [ul user]
-  (conj ul [:li user]))
+(defn linkify [sel user]
+  (conj sel [:option user]))
 
 ; hiccup rendered routes
 (defpage "/share-list" []
-  (html [:div#user-list [:p (reduce linkify [:ul] @usr/active-users)]]))
+  (html 
+    [:div#user-list [:p (reduce linkify [:select#others-list {:multiple "multiple"}] @usr/active-users)]]))
 
 ;; enlive rendered routes
+(defpage "/" []
+  (enlive/bootstrap (if-let [user (usr/get-user)]
+                      (enlive/logoutbox user)
+                      (enlive/loginbox))))
+
 (defpage [:post "/login"] {:keys [user]}
   (usr/put-user user)
   (println "user" user "logged in")
@@ -44,14 +50,6 @@
 (defpage [:post "/logout"] {:keys [user]}
   (usr/rm-user)
   (println "user" user "logged out")
-  (enlive/render-snippet (enlive/loginbox)))
-
-(defpage "/bs" []
-  (enlive/bootstrap (if-let [user (usr/get-user)]
-                      (enlive/logoutbox user)
-                      (enlive/loginbox))))
-
-(defpage "/snip" []
   (enlive/render-snippet (enlive/loginbox)))
 
 ;; evaluation route
@@ -64,13 +62,3 @@
     (println res)
     (println data)
     (pr-str data)))
-
-; test route
-(defn some-partial []
-  (if-let [user "bare"]
-    (html [:input#userinput {:type "text"}] [:button#login "Login"])
-    (html [:input#userinput {:type "file"}] [:button#login "Upload"])))
-(defpage "/noir-test" []
-  (layout
-    [:div#wrapper
-     (some-partial)]))

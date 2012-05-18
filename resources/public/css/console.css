@@ -10,10 +10,17 @@ html, body {
   display: -webkit-box
 }
 /* The console container element */
-#console {
+#your-console {
   position: relative;
   width: 400px;
   height: 500px;
+}
+#other-console {
+  position: relative;
+  width: 400px;
+  height: 500px;
+  background-color: #2F4F4F;
+  float: left;
 }
 
 /* solarized light color scheme */
@@ -34,12 +41,6 @@ pre.jqconsole {
   color: #268bd2; /* blue */
 }
 
-#console2 {
-  position: relative;
-  width: 400px;
-  height: 500px;
-  background-color: #2F4F4F;
-}
 
 /* The inner console element. */
 .jqconsole {
