@@ -10,7 +10,7 @@
   (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
   (set! (.-onmessage socket)
         (fn [msg]
-          (jslog (.-data msg))
+;          (jslog (.-data msg))
           (-> (jq "#other-console .jqconsole-header ~ span")
             (.remove))
           (-> (jq (.-data msg))

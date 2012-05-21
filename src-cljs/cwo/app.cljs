@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:use [cwo.utils :only (socket jq make-js-map clj->js)])
+  (:use [cwo.utils :only (socket jq make-js-map clj->js jslog)])
   (:require [cwo.ajax :as ajax]
             [cwo.connect :as connect]
             [crate.core :as crate]))

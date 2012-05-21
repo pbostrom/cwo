@@ -12,8 +12,17 @@
 (def broadcast-channel (lamina/permanent-channel))
 
 (defn socket-handler [ch handshake]
+  (println "DEBUG2:" (:handle (:params handshake)))
   (lamina/siphon ch broadcast-channel)
-  (lamina/siphon broadcast-channel ch))
+  (lamina/siphon broadcast-channel ch)
+  (aleph/on-closed ch #(println "be closed")))
+
+(defn debug-socket-handler [ch handshake]
+  (lamina/receive ch
+    (fn [name]
+      (println "DEBUG:" name)
+      (lamina/siphon (lamina/map* #(str name ": " %) ch) broadcast-channel)
+      (lamina/siphon broadcast-channel ch))))
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
@@ -24,8 +33,9 @@
 
 ; Define routes for Websocket, noir, and static resources routes
 (defroutes handler
-  (GET "/socket/:handle" [handle] ((println "websocket for handle" handle)
-                                   aleph/wrap-aleph-handler socket-handler))
+  (GET "/socket/:handle" [handle] (aleph/wrap-aleph-handler socket-handler))
+;  (GET "/socket/pbostrom" [] (aleph/wrap-aleph-handler debug-socket-handler)
+;       (println "websocket for handle"))
   noir-handler
   (route/resources "/"))
 
