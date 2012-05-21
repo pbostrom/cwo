@@ -1,8 +1,10 @@
 (ns cwo.utils)
 
 (def jq js/jQuery)
-(def ws-url (str "ws://" js/window.location.host "/socket/pbostrom"))
-(def socket (js/WebSocket. ws-url))
+(def ws-url (str "ws://" js/window.location.host "/socket/"))
+
+(defn new-socket [handle]
+  (js/WebSocket. (str ws-url handle)))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,

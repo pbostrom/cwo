@@ -10,7 +10,7 @@ html, body {
   display: -webkit-box
 }
 /* The console container element */
-#your-console {
+#your-repl {
   position: relative;
   width: 400px;
   height: 500px;

@@ -6,8 +6,20 @@
 
 (html/defsnippet loginbox "cwo/views/snippets.html" [:#loginbox] [])
 
-(html/defsnippet logoutbox "cwo/views/snippets.html" [:#logoutbox] [username]
-  [:span.handle] (html/content username))
+(html/defsnippet default-text "cwo/views/snippets.html" [:#default-text] [])
 
-(html/deftemplate bootstrap "cwo/views/bootstrap.html" [userbox]
-  [:div#user-container] (html/content userbox))
+(html/defsnippet logoutbox "cwo/views/snippets.html" [:#logoutbox] [username]
+  [:span#handle] (html/content username))
+
+(html/defsnippet signedin-text "cwo/views/snippets.html" [:#signedin-text] [])
+
+(defn si-content [username]
+  {:userbox (logoutbox username) :text (signedin-text)})
+
+(defn default-content []
+  {:userbox (loginbox) :text (default-text)})
+
+(html/deftemplate bootstrap "cwo/views/bootstrap.html"
+  [{:keys [userbox text]}]
+  [:div#user-container] (html/content userbox)
+  [:div#text-box] (html/content text))

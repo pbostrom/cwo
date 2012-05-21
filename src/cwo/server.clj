@@ -15,7 +15,7 @@
   (println "DEBUG2:" (:handle (:params handshake)))
   (lamina/siphon ch broadcast-channel)
   (lamina/siphon broadcast-channel ch)
-  (aleph/on-closed ch #(println "be closed")))
+  (lamina/on-closed ch #(println "be closed")))
 
 (defn debug-socket-handler [ch handshake]
   (lamina/receive ch

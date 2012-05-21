@@ -1,67 +1,11 @@
 (ns cwo.app
   (:use [cwo.utils :only (socket jq make-js-map clj->js jslog)])
   (:require [cwo.ajax :as ajax]
-            [cwo.connect :as connect]
-            [crate.core :as crate]))
-
-(defn send-console []
-  (let [console-nodes (-> (jq "#your-console .jqconsole-header ~ span") (.clone))
-        console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))]
-    (.send socket (str console-html))))
-
-(defn share-console-loop []
-  (send-console)
-  (js/setTimeout share-console-loop 1900))
-
-(defn socket-ready []
-  (-> (jq "#debug-box")
-    (.append
-      (crate/html [:p.event "Socket Status: " + 
-                   (str (.-readyState socket)) + " (open) " [:div#in]])))
-  (share-console-loop))
-
-(defn paren-match? [expr]
-  (>=
-    (count (filter #(= % ")") expr))
-    (count (filter #(= % "(") expr))))
-
-(defn expr-indent [expr]
-  (let [lines (js->clj (.split expr "\n"))
-        line (.trim jq (last lines))
-        offset (if (= (count lines) 1) 2 0)
-        indent-vec (reduce 
-                     (fn [v x]
-                       (let [idx (first v)
-                             stack (second v)]
-                         (cond 
-                           (= x "(") [(inc idx) (cons idx stack)]
-                           (= x ")") [(inc idx) (rest stack)]
-                           true [(inc idx) stack]))) 
-                     [0 []] (seq line))
-        indent-val (+ (first (second indent-vec)) 2 offset)]
-    indent-val))
-
-
-(defn console-write [output]
-  (if (:error output)
-    (.Write jqconsole (str (:message output) "\n") "jqconsole-error")
-    (.Write jqconsole (str output "\n") "jqconsole-output")))
-
-(defn handler [expr]
-  (if expr
-    (console-write (ajax/eval-clojure expr)))
-  (.Prompt jqconsole true handler (fn [expr]
-                                    (if (paren-match? expr)
-                                      false
-                                      (expr-indent expr)))))
+            [cwo.share :as share]
+            [cwo.repl :as repl]))
 
 ; init repl
-(def jqconsole 
-  (-> (jq "#your-console")
-    (.jqconsole "Your Clojure REPL\n" "=> " " ")))
-(.SetIndentWidth jqconsole 1)
-(handler nil)
-(set! (.-onopen socket) socket-ready)
+(repl/init)
 
 ; navigation
 (defn nav-handler []
@@ -77,19 +21,29 @@
 
 (set! (.-onpopstate js/window) nav-handler)
 
+; button listeners
+; use body to register for ajax deferred event listeners
+(def body (jq "body"))
 ; hacky way to prevent muli-selects
-(-> (jq "#share-list")
-  (.on "click" (fn [evt] 
-                 (-> (jq "#share-list option:selected") (.removeAttr "selected"))
-                 (-> (jq evt.target) (.attr "selected" "selected")))))
+(-> body
+  (.on "click" "#share-list" (fn [evt] 
+                               (-> (jq "#share-list option:selected") (.removeAttr "selected"))
+                               (-> (jq evt.target) (.attr "selected" "selected")))))
 
 ; connect button
-(-> (jq "#connect")
-  (.bind "click" (fn [] (connect/connect (-> (jq "#share-list option:selected") (.val))))))
+(-> body
+  (.on "click" "#connect" (fn [] (share/connect (-> (jq "#share-list option:selected") (.val))))))
+
+; share button
+(-> body
+  (.on "click" "#share" (fn []
+                          (if (= (.text (jq "#share")) "Share")
+                            (share/share-repl)
+                            (share/unshare-repl))))) 
 
 ; login/out buttons 
-(-> (jq "#login")
-  (.bind "click" (fn [] (ajax/login (.val (jq "#login-input"))))))
+(-> body
+  (.on "click" "#login" (fn [] (ajax/login (.val (jq "#login-input"))))))
 
-(-> (jq "#logout")
-  (.bind "click" (fn [] (ajax/logout))))
+(-> body
+  (.on "click" "#logout" (fn [] (ajax/logout))))

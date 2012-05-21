@@ -1,37 +1,16 @@
 (ns cwo.views.noir
   (:require [cwo.user :as usr]
             [cwo.eval :as evl]
+            [cwo.util :as util]
             [cwo.views.enlive :as enlive])
   (:use noir.core 
         hiccup.page
         [hiccup.core :only (html)]))
 
-(defpartial layout [& content]
-  (html5 [:head [:title "new page"]
-   (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js")
-   (include-css "css/ansi.css" "css/console.css")]
-
-  [:body content]
-  (include-js "js/jqconsole-2.7.js"
-              "/js/cljs-compiled.js")
-  [:script {:type "text/javascript"} "goog.require('myrepl')"]))
-
-(defpartial user-info []
-  (if-let [user (usr/get-user)]
-    (html [:span (str "Welcome " user)][:button#logout "Logout"])
-    (html [:label "Username:"][:input#login-input {:type "text"}][:button#login "Login"])))
-
-(defpage "/old" []
-  (layout 
-    [:div#userbox
-     (user-info)]
-    [:div#wrapper
-     [:div#console.console]]))
-
+; hiccup rendered routes
 (defn linkify [sel user]
   (conj sel [:option user]))
 
-; hiccup rendered routes
 (defpage "/share-list" []
   (html 
     [:div#user-list [:p (reduce linkify [:select#others-list {:multiple "multiple"}] @usr/active-users)]]))
@@ -39,18 +18,18 @@
 ;; enlive rendered routes
 (defpage "/" []
   (enlive/bootstrap (if-let [user (usr/get-user)]
-                      (enlive/logoutbox user)
-                      (enlive/loginbox))))
+                            (enlive/si-content user)
+                            (enlive/default-content))))
 
 (defpage [:post "/login"] {:keys [user]}
   (usr/put-user user)
   (println "user" user "logged in")
-  (enlive/render-snippet (enlive/logoutbox user)))
+  (pr-str (util/fmap (enlive/si-content user) enlive/render-snippet)))
 
 (defpage [:post "/logout"] {:keys [user]}
   (usr/rm-user)
   (println "user" user "logged out")
-  (enlive/render-snippet (enlive/loginbox)))
+  (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
 
 ;; evaluation route
 (defpage [:post "/eval-clj"] {:keys [expr]}
