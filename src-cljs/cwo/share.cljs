@@ -28,7 +28,8 @@
     (set! (.-onopen @main-socket) socket-ready)))
 
 (defn unshare-repl []
-  (js/alert "Unshare!"))
+  (.text (jq "#share") "Share")
+  (.close @main-socket))
 
 (defn connect [user]
   (let [socket (new-socket user)]

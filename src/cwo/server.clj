@@ -6,16 +6,26 @@
             [aleph.core]
             [aleph.http :as aleph]
             [lamina.core :as lamina]
-            [noir.server :as noir])
+            [noir.server :as noir]
+            [cwo.user :as user])
   (:gen-class))
 
-(def broadcast-channel (lamina/permanent-channel))
+(def broadcast-channel nil)
+
+(def user-channels (atom {}))
 
 (defn socket-handler [ch handshake]
-  (println "DEBUG2:" (:handle (:params handshake)))
-  (lamina/siphon ch broadcast-channel)
-  (lamina/siphon broadcast-channel ch)
-  (lamina/on-closed ch #(println "be closed")))
+  (let [req-handle (:handle (:params handshake))
+        user (user/get-user)]
+    (println user "requests socket for handle" req-handle)
+    (if (= user req-handle) ;TODO check for nil user and req-handle here
+      (let [user-ch (lamina/permanent-channel)]
+        (println user "creates new socket for writing")
+        (swap! user-channels assoc user user-ch)
+        (lamina/siphon ch user-ch)
+        (lamina/on-closed ch #(println "be closed dissoc" user)))
+      (lamina/siphon (@user-channels req-handle) ch)) ;TODO check for nil channel here
+    ))
 
 (defn debug-socket-handler [ch handshake]
   (lamina/receive ch
