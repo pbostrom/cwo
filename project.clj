@@ -7,7 +7,7 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [aleph "0.2.1-beta1"]
-                 [noir "1.3.0-beta2"]
+                 [noir "1.3.0-beta4"]
                  [compojure "1.0.1"]
                  [hiccup "1.0.0-beta1"]
                  [enlive "1.0.0"]

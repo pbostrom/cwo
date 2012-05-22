@@ -25,6 +25,9 @@
   (let [handle (-> (jq "#handle") (.text))];TODO: verify login session
     (reset! main-socket (new-socket handle))
     (.text (jq "#share") "Unshare")
+    (set! (.-onerror @main-socket) (fn [evt] (-> (jq "#debug-box")
+                                               (.append
+                                                 (crate/html [:p.event "Error: " + evt.data])))))
     (set! (.-onopen @main-socket) socket-ready)))
 
 (defn unshare-repl []
@@ -33,13 +36,13 @@
 
 (defn connect [user]
   (let [socket (new-socket user)]
-    (-> (jq "#other-console") (.jqconsole (str user "'s REPL\n") "=> " " "))
+    (-> (jq "#other-repl") (.jqconsole (str user "'s REPL\n") "=> " " "))
     (set! (.-onopen socket) #(-> (jq "#debug-box") (.append "Socket Ready")))
     (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
     (set! (.-onmessage socket)
           (fn [msg]
             ;          (jslog (.-data msg))
-            (-> (jq "#other-console .jqconsole-header ~ span")
+            (-> (jq "#other-repl .jqconsole-header ~ span")
               (.remove))
             (-> (jq (.-data msg))
-              (.insertAfter (jq "#other-console .jqconsole-header")))))))
+              (.insertAfter (jq "#other-repl .jqconsole-header")))))))

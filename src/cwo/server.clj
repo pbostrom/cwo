@@ -7,10 +7,11 @@
             [aleph.http :as aleph]
             [lamina.core :as lamina]
             [noir.server :as noir]
+            [noir.session :as session]
             [cwo.user :as user])
   (:gen-class))
 
-(def broadcast-channel nil)
+(def broadcast-channel (lamina/permanent-channel))
 
 (def user-channels (atom {}))
 
@@ -28,24 +29,25 @@
     ))
 
 (defn debug-socket-handler [ch handshake]
-  (lamina/receive ch
-    (fn [name]
-      (println "DEBUG:" name)
-      (lamina/siphon (lamina/map* #(str name ": " %) ch) broadcast-channel)
-      (lamina/siphon broadcast-channel ch))))
+  (println "DEBUG2:" (:handle (:params handshake)) (user/get-user))
+  (lamina/siphon ch broadcast-channel)
+  (lamina/siphon broadcast-channel ch)
+  (lamina/on-closed ch #(println "be closed")))
+
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
 
-; Load noir views and get handler
+; Load noir views and generate handler
 (noir/load-views-ns 'cwo.views.noir)
 (def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
-; Define routes for Websocket, noir, and static resources routes
-(defroutes handler
-  (GET "/socket/:handle" [handle] (aleph/wrap-aleph-handler socket-handler))
-;  (GET "/socket/pbostrom" [] (aleph/wrap-aleph-handler debug-socket-handler)
-;       (println "websocket for handle"))
+; wrap socket handler twice to conform to ring and include noir session info
+(def wrapped-socket-handler (session/wrap-noir-session (aleph/wrap-aleph-handler socket-handler)))
+
+; Combine routes for Websocket, noir, and static resources
+(defroutes master-handler
+  (GET "/socket/:handle" [handle] wrapped-socket-handler)
   noir-handler
   (route/resources "/"))
 
@@ -53,5 +55,5 @@
 (defn -main []
   (let [port 8080]
     (aleph/start-http-server 
-      (aleph/wrap-ring-handler handler) {:port port :websocket true})
+      (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
     (println "server started on port" port)))

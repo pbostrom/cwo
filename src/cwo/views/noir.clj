@@ -8,12 +8,17 @@
         [hiccup.core :only (html)]))
 
 ; hiccup rendered routes
-(defn linkify [sel user]
+(defn others-opts [sel user]
   (conj sel [:option user]))
 
 (defpage "/share-list" []
-  (html 
-    [:div#user-list [:p (reduce linkify [:select#others-list {:multiple "multiple"}] @usr/active-users)]]))
+  (let [user-list (filter #(not= % (usr/get-user)) @usr/active-users)]
+    (html 
+      [:div#user-list
+       [:p (reduce
+             others-opts
+             [:select#others-list {:multiple "multiple"}]
+             user-list)]])))
 
 ;; enlive rendered routes
 (defpage "/" []
