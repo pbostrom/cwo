@@ -24,16 +24,14 @@
         (println user "creates new socket for writing")
         (swap! user-channels assoc user user-ch)
         (lamina/siphon ch user-ch)
-        (lamina/on-closed ch #(println "be closed dissoc" user)))
-      (lamina/siphon (@user-channels req-handle) ch)) ;TODO check for nil channel here
-    ))
+        (lamina/on-closed ch #(swap! user-channels dissoc user)))
+      (lamina/siphon (@user-channels req-handle) ch))));TODO check for nil channel here
 
 (defn debug-socket-handler [ch handshake]
   (println "DEBUG2:" (:handle (:params handshake)) (user/get-user))
   (lamina/siphon ch broadcast-channel)
   (lamina/siphon broadcast-channel ch)
   (lamina/on-closed ch #(println "be closed")))
-
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))

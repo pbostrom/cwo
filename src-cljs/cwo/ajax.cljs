@@ -1,5 +1,6 @@
 (ns cwo.ajax
-  (:require [cljs.reader :as reader])
+  (:require [cljs.reader :as reader]
+            [cwo.share :as share])
   (:use [cwo.utils :only (jq map->js)]))
 
 (defn eval-clojure [code]
@@ -21,9 +22,12 @@
                       :type "POST"
                       :data (map->js {:user user})
                       :success (fn [resp]
-                                 (let [{:keys [userbox text]} (reader/read-string resp)]
-                                   (re-html "#user-container" userbox)
-                                   (re-html "#text-box" text)))})))
+                                 (if-not (empty? resp)
+                                   (let [{:keys [userbox text]} (reader/read-string resp)]
+                                     (re-html "#user-container" userbox)
+                                     (re-html "#text-box" text)
+                                     (share/share-repl))
+                                   (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []
   (.ajax jq (map->js {:url "/logout"
@@ -31,7 +35,8 @@
                       :success (fn [resp]
                                  (let [{:keys [userbox text]} (reader/read-string resp)]
                                    (re-html "#user-container" userbox)
-                                   (re-html "#text-box" text)))})))
+                                   (re-html "#text-box" text)
+                                   (share/unshare-repl)))})))
 
 (defn share-list []
   (.ajax jq (map->js {:url "/share-list"

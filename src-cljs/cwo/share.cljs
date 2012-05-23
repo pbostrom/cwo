@@ -24,19 +24,16 @@
 (defn share-repl []
   (let [handle (-> (jq "#handle") (.text))];TODO: verify login session
     (reset! main-socket (new-socket handle))
-    (.text (jq "#share") "Unshare")
     (set! (.-onerror @main-socket) (fn [evt] (-> (jq "#debug-box")
                                                (.append
                                                  (crate/html [:p.event "Error: " + evt.data])))))
     (set! (.-onopen @main-socket) socket-ready)))
 
 (defn unshare-repl []
-  (.text (jq "#share") "Share")
   (.close @main-socket))
 
 (defn connect [user]
   (let [socket (new-socket user)]
-    (-> (jq "#other-repl") (.jqconsole (str user "'s REPL\n") "=> " " "))
     (set! (.-onopen socket) #(-> (jq "#debug-box") (.append "Socket Ready")))
     (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
     (set! (.-onmessage socket)

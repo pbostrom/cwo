@@ -12,7 +12,7 @@
   (conj sel [:option user]))
 
 (defpage "/share-list" []
-  (let [user-list (filter #(not= % (usr/get-user)) @usr/active-users)]
+  (let [user-list (filter #(not= % (usr/get-user)) (keys @cwo.server/user-channels))]
     (html 
       [:div#user-list
        [:p (reduce
@@ -27,9 +27,12 @@
                             (enlive/default-content))))
 
 (defpage [:post "/login"] {:keys [user]}
-  (usr/put-user user)
-  (println "user" user "logged in")
-  (pr-str (util/fmap (enlive/si-content user) enlive/render-snippet)))
+  (if-not (contains? @usr/active-users user)
+    (do 
+      (usr/put-user user)
+      (println "user" user "logged in")
+      (pr-str (util/fmap (enlive/si-content user) enlive/render-snippet)))
+    ""))
 
 (defpage [:post "/logout"] {:keys [user]}
   (usr/rm-user)
