@@ -3,46 +3,38 @@
   (:require [compojure.route :as route]
             [ring.middleware.file :as ring-file]
             [ring.middleware.reload :as reload]
-;            [aleph.core]
             [aleph.http :as aleph]
             [lamina.core :as lamina]
             [noir.server :as noir]
             [noir.session :as session]
-            [cwo.user :as user])
+            [cwo.user :as user]
+            [cwo.chmgr :as chmgr])
   (:gen-class))
 
-;(def broadcast-channel (lamina/channel* :grounded? true))
-;(def broadcast-channel (lamina/permanent-channel))
-;(def broadcast-channel (lamina/grounded-channel))
-(def broadcast-channel (lamina/closed-channel "Closed!"))
+(defn socket-handler [webch handshake]
+  (println handshake)
+  (when-let [req-handle (:handle (:params handshake))]
+    (let [user (user/get-user)
+          reqch (chmgr/get-ch req-handle)]
+      (println user "requests socket for handle" req-handle)
+      (if (= user req-handle)
+        (do
+          (println user "activates socket for writing")
+          (lamina/siphon webch reqch)
+          (lamina/on-closed webch (fn []
+                                 (println user "deactivates socket")
+                                 (lamina/enqueue reqch ":close"))))
+        (do
+          (println user "subscribes to" req-handle "socket")
+          (lamina/siphon reqch webch))))))
 
-(def user-channels (atom {}))
+(defn new-socket-handler [webch handshake]
+  (let [sesh-id (session/get "sesh-id")
+        ch (chmgr/get-ch sesh-id)]
+    (println "Session id:" sesh-id)
+    (println "handshake:" handshake)
+    (lamina/siphon webch ch)))
 
-(defn socket-handler [ch handshake]
-  (let [req-handle (:handle (:params handshake))
-        user (user/get-user)]
-    (println user "requests socket for handle" req-handle)
-    (if (= user req-handle) ;TODO check for nil user and req-handle here
-      (let [user-ch (lamina/channel* :grounded? true)]
-        (println user "creates new socket for writing")
-        (swap! user-channels assoc user {:master user-ch})
-        (lamina/siphon ch user-ch)
-        (lamina/siphon user-ch ch)
-;        (lamina/on-closed ch #(println "be closed")))
-        (lamina/on-closed ch (fn []
-                               (println "closing perm channel")
-                               (lamina/enqueue ((@user-channels user) :master) ":close")
-                               (lamina/close ((@user-channels user) :master))
-                               (swap! user-channels dissoc user))))
-      (do
-;        (swap! user-channels
-        (lamina/siphon ((@user-channels req-handle) :master) ch)))));TODO check for nil channel here
-
-(defn debug-socket-handler [ch handshake]
-  (println "DEBUG2:" (:handle (:params handshake)) (user/get-user))
-  (lamina/siphon ch broadcast-channel)
-  (lamina/siphon broadcast-channel ch)
-  (lamina/on-closed ch #(println "be closed")))
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
@@ -52,11 +44,12 @@
 (def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
 ; wrap socket handler twice to conform to ring and include noir session info
-(def wrapped-socket-handler (session/wrap-noir-session (aleph/wrap-aleph-handler socket-handler)))
+(def wrapped-socket-handler (session/wrap-noir-session (aleph/wrap-aleph-handler new-socket-handler)))
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
-  (GET "/socket/:handle" [handle] wrapped-socket-handler)
+;  (GET "/socket/:handle" [handle] wrapped-socket-handler)
+  (GET "/socket" [] wrapped-socket-handler)
   noir-handler
   (route/resources "/"))
 

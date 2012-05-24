@@ -2,7 +2,9 @@
   (:require [cwo.user :as usr]
             [cwo.eval :as evl]
             [cwo.util :as util]
-            [cwo.views.enlive :as enlive])
+            [cwo.views.enlive :as enlive]
+            [noir.session :as session]
+            [noir.cookies :as cookies])
   (:use noir.core 
         hiccup.page
         [hiccup.core :only (html)]))
@@ -12,7 +14,7 @@
   (conj sel [:option user]))
 
 (defpage "/share-list" []
-  (let [user-list (filter #(not= % (usr/get-user)) (keys @cwo.server/user-channels))]
+  (let [user-list (filter #(not= % (usr/get-user)) (keys @cwo.chmgr/channels))]
     (html 
       [:div#user-list
        [:p (reduce
@@ -22,6 +24,7 @@
 
 ;; enlive rendered routes
 (defpage "/" []
+  (session/put! "sesh-id" (cookies/get "ring-session"))
   (enlive/bootstrap (if-let [user (usr/get-user)]
                             (enlive/si-content user)
                             (enlive/default-content))))

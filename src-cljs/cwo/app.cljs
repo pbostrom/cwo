@@ -1,11 +1,14 @@
 (ns cwo.app
-  (:use [cwo.utils :only (socket jq make-js-map clj->js jslog)])
+  (:use [cwo.utils :only (new-socket jq ws-url)])
   (:require [cwo.ajax :as ajax]
             [cwo.share :as share]
             [cwo.repl :as repl]))
 
 ; init repl
 (repl/init)
+
+; open websocket
+(js/WebSocket. ws-url)
 
 ; navigation
 (defn nav-handler []
@@ -33,13 +36,6 @@
 ; connect button
 (-> body
   (.on "click" "#connect" (fn [] (share/connect (-> (jq "#share-list option:selected") (.val))))))
-
-; share button
-(-> body
-  (.on "click" "#share" (fn []
-                          (if (= (.text (jq "#share")) "Share")
-                            (share/share-repl)
-                            (share/unshare-repl))))) 
 
 ; login/out buttons 
 (-> body
