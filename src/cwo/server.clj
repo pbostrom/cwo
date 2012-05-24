@@ -3,7 +3,7 @@
   (:require [compojure.route :as route]
             [ring.middleware.file :as ring-file]
             [ring.middleware.reload :as reload]
-            [aleph.core]
+;            [aleph.core]
             [aleph.http :as aleph]
             [lamina.core :as lamina]
             [noir.server :as noir]
@@ -11,7 +11,10 @@
             [cwo.user :as user])
   (:gen-class))
 
-(def broadcast-channel (lamina/permanent-channel))
+;(def broadcast-channel (lamina/channel* :grounded? true))
+;(def broadcast-channel (lamina/permanent-channel))
+;(def broadcast-channel (lamina/grounded-channel))
+(def broadcast-channel (lamina/closed-channel "Closed!"))
 
 (def user-channels (atom {}))
 
@@ -20,12 +23,20 @@
         user (user/get-user)]
     (println user "requests socket for handle" req-handle)
     (if (= user req-handle) ;TODO check for nil user and req-handle here
-      (let [user-ch (lamina/permanent-channel)]
+      (let [user-ch (lamina/channel* :grounded? true)]
         (println user "creates new socket for writing")
-        (swap! user-channels assoc user user-ch)
+        (swap! user-channels assoc user {:master user-ch})
         (lamina/siphon ch user-ch)
-        (lamina/on-closed ch #(swap! user-channels dissoc user)))
-      (lamina/siphon (@user-channels req-handle) ch))));TODO check for nil channel here
+        (lamina/siphon user-ch ch)
+;        (lamina/on-closed ch #(println "be closed")))
+        (lamina/on-closed ch (fn []
+                               (println "closing perm channel")
+                               (lamina/enqueue ((@user-channels user) :master) ":close")
+                               (lamina/close ((@user-channels user) :master))
+                               (swap! user-channels dissoc user))))
+      (do
+;        (swap! user-channels
+        (lamina/siphon ((@user-channels req-handle) :master) ch)))));TODO check for nil channel here
 
 (defn debug-socket-handler [ch handshake]
   (println "DEBUG2:" (:handle (:params handshake)) (user/get-user))

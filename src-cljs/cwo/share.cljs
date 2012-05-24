@@ -36,10 +36,13 @@
   (let [socket (new-socket user)]
     (set! (.-onopen socket) #(-> (jq "#debug-box") (.append "Socket Ready")))
     (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
+    (set! (.-onclose socket) #(-> (jq "#debug-box") (.append "Socket Closed")))
     (set! (.-onmessage socket)
           (fn [msg]
-            ;          (jslog (.-data msg))
-            (-> (jq "#other-repl .jqconsole-header ~ span")
-              (.remove))
-            (-> (jq (.-data msg))
-              (.insertAfter (jq "#other-repl .jqconsole-header")))))))
+            (if (= ":close" msg.data)
+              (js/alert msg.data)
+              (do 
+                (-> (jq "#other-repl .jqconsole-header ~ span")
+                  (.remove))
+                (-> (jq (.-data msg))
+                  (.insertAfter (jq "#other-repl .jqconsole-header")))))))))

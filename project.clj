@@ -6,7 +6,7 @@
 (defproject codegroup "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.3.0"]
-                 [aleph "0.2.1-beta1"]
+                 [aleph "0.3.0-alpha2"]
                  [noir "1.3.0-beta4"]
                  [compojure "1.0.1"]
                  [hiccup "1.0.0-beta1"]
