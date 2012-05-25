@@ -1,9 +1,8 @@
 (ns cwo.share
   (:require [crate.core :as crate])
-  (:use [cwo.utils :only (jq jslog new-socket)]))
+  (:use [cwo.utils :only (jq jslog)]))
 
 (def main-socket (atom nil))
-(def ro-socket (atom nil))
 
 (defn send-console []
   (let [console-nodes (-> (jq "#your-repl .jqconsole-header ~ span") (.clone))
@@ -23,7 +22,6 @@
 
 (defn share-repl []
   (let [handle (-> (jq "#handle") (.text))];TODO: verify login session
-    (reset! main-socket (new-socket handle))
     (set! (.-onerror @main-socket) (fn [evt] (-> (jq "#debug-box")
                                                (.append
                                                  (crate/html [:p.event "Error: " + evt.data])))))
@@ -33,7 +31,7 @@
   (.close @main-socket))
 
 (defn connect [user]
-  (let [socket (new-socket user)]
+  (let [socket @main-socket]
     (set! (.-onopen socket) #(-> (jq "#debug-box") (.append "Socket Ready")))
     (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
     (set! (.-onclose socket) #(-> (jq "#debug-box") (.append "Socket Closed")))

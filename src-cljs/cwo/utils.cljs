@@ -3,9 +3,6 @@
 (def jq js/jQuery)
 (def ws-url (str "ws://" js/window.location.host "/socket"))
 
-(defn new-socket [handle]
-  (js/WebSocket. (str ws-url handle)))
-
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
    other ClojureScript colls into JavaScript arrays, and ClojureScript

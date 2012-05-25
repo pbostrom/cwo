@@ -30,7 +30,9 @@
 
 (defn new-socket-handler [webch handshake]
   (let [ch (chmgr/register)]
-    (lamina/siphon webch ch)))
+    (lamina/siphon webch ch)
+    (lamina/siphon ch webch)
+    (lamina/enqueue ch (pr-str (keys @chmgr/handles)))))
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))

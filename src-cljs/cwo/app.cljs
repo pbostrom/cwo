@@ -8,7 +8,12 @@
 (repl/init)
 
 ; open websocket
-(js/WebSocket. ws-url)
+(reset! share/main-socket (js/WebSocket. ws-url))
+
+(defn msg-hdlr [msg]
+  (js/alert msg.data))
+
+(set! (.-onmessage @share/main-socket) msg-hdlr)
 
 ; navigation
 (defn nav-handler []
