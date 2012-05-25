@@ -2,6 +2,7 @@
   (:require [cwo.user :as usr]
             [cwo.eval :as evl]
             [cwo.util :as util]
+            [cwo.chmgr :as chmgr]
             [cwo.views.enlive :as enlive]
             [noir.session :as session]
             [noir.cookies :as cookies])
@@ -29,17 +30,17 @@
                             (enlive/si-content user)
                             (enlive/default-content))))
 
-(defpage [:post "/login"] {:keys [user]}
-  (if-not (contains? @usr/active-users user)
-    (do 
-      (usr/put-user user)
-      (println "user" user "logged in")
-      (pr-str (util/fmap (enlive/si-content user) enlive/render-snippet)))
+(defpage [:post "/login"] {:keys [handle]}
+  (if-not (contains? @chmgr/handles handle)
+    (do
+      (session/put! "handle" handle)
+      (chmgr/register)
+      (pr-str (util/fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
-  (usr/rm-user)
-  (println "user" user "logged out")
+  (swap! @chmgr/handles dissoc (session/get "handle"))
+  (session/remove! "handle")
   (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
 
 ;; evaluation route

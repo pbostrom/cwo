@@ -20,7 +20,7 @@
 (defn login [user]
   (.ajax jq (map->js {:url "/login"
                       :type "POST"
-                      :data (map->js {:user user})
+                      :data (map->js {:handle user})
                       :success (fn [resp]
                                  (if-not (empty? resp)
                                    (let [{:keys [userbox text]} (reader/read-string resp)]

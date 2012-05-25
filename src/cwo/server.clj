@@ -15,7 +15,7 @@
   (println handshake)
   (when-let [req-handle (:handle (:params handshake))]
     (let [user (user/get-user)
-          reqch (chmgr/get-ch req-handle)]
+          reqch (chmgr/register req-handle)]
       (println user "requests socket for handle" req-handle)
       (if (= user req-handle)
         (do
@@ -29,12 +29,8 @@
           (lamina/siphon reqch webch))))))
 
 (defn new-socket-handler [webch handshake]
-  (let [sesh-id (session/get "sesh-id")
-        ch (chmgr/get-ch sesh-id)]
-    (println "Session id:" sesh-id)
-    (println "handshake:" handshake)
+  (let [ch (chmgr/register)]
     (lamina/siphon webch ch)))
-
 
 ; Need user.dir for Java policy file
 (noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
