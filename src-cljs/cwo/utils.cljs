@@ -29,5 +29,5 @@
     (doall (map #(aset out (name (first %)) (second %)) cljmap))
     out))
 
-(defn jslog [& out]
-  (apply (.log js/console) out))
+(defn jslog [out]
+  (.log js/console out))

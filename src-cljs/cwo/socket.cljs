@@ -14,7 +14,7 @@
   (js/setTimeout share-console-loop 1900))
 
 (defn connect [user]
-  (.send @sock (pr-str [:subscribe user])))
+  (.send @sock (pr-str [:connect user])))
 
 ; remove
 (defn socket-ready []

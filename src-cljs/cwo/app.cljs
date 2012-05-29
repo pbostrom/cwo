@@ -33,7 +33,7 @@
   (let [msg msg.data]
     (if (= (.charAt msg 0) "[")
       (let [[cmd args] (cljs.reader/read-string msg)]
-        (jslog (name cmd) ":" args)
+        (.log js/console (name cmd) ":" (pr-str args))
         ((.-value (js/Object.getOwnPropertyDescriptor cwo.app (name cmd))) args))
       (refresh-repl msg))))
 
