@@ -14,15 +14,6 @@
 (defn others-opts [sel user]
   (conj sel [:option user]))
 
-(defpage "/share-list" []
-  (let [user-list (filter #(not= % (usr/get-user)) (keys @cwo.chmgr/channels))]
-    (html 
-      [:div#user-list
-       [:p (reduce
-             others-opts
-             [:select#others-list {:multiple "multiple"}]
-             user-list)]])))
-
 ;; enlive rendered routes
 (defpage "/" []
   (session/put! "sesh-id" (cookies/get "ring-session"))
@@ -31,7 +22,7 @@
                             (enlive/default-content))))
 
 (defpage [:post "/login"] {:keys [handle]}
-  (if-not (contains? @chmgr/handles handle)
+  (if-not (contains? @chmgr/handle->srp handle)
     (do
       (session/put! "handle" handle)
       (chmgr/register)
@@ -39,7 +30,7 @@
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
-  (swap! @chmgr/handles dissoc (session/get "handle"))
+  (swap! chmgr/handle->srp dissoc (session/get "handle"))
   (session/remove! "handle")
   (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
 

@@ -1,37 +1,37 @@
-(ns cwo.share
+(ns cwo.socket
   (:require [crate.core :as crate])
   (:use [cwo.utils :only (jq jslog)]))
 
-(def main-socket (atom nil))
+(def sock (atom nil))
 
 (defn send-console []
   (let [console-nodes (-> (jq "#your-repl .jqconsole-header ~ span") (.clone))
         console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))]
-    (.send @main-socket (str console-html))))
+    (.send @sock (str console-html))))
 
 (defn share-console-loop []
   (send-console)
   (js/setTimeout share-console-loop 1900))
 
+(defn connect [user]
+  (.send @sock (pr-str [:subscribe user])))
+
+; remove
 (defn socket-ready []
   (-> (jq "#debug-box")
     (.append
       (crate/html [:p.event "Socket Status: " + 
-                   (str (.-readyState @main-socket)) + " (open) " [:div#in]])))
+                   (str (.-readyState @sock)) + " (open) " [:div#in]])))
   (share-console-loop))
-
 (defn share-repl []
   (let [handle (-> (jq "#handle") (.text))];TODO: verify login session
-    (set! (.-onerror @main-socket) (fn [evt] (-> (jq "#debug-box")
+    (set! (.-onerror @sock) (fn [evt] (-> (jq "#debug-box")
                                                (.append
                                                  (crate/html [:p.event "Error: " + evt.data])))))
-    (set! (.-onopen @main-socket) socket-ready)))
+    (set! (.-onopen @sock) socket-ready)))
 
-(defn unshare-repl []
-  (.close @main-socket))
-
-(defn connect [user]
-  (let [socket @main-socket]
+(defn connect-old [user]
+  (let [socket @sock]
     (set! (.-onopen socket) #(-> (jq "#debug-box") (.append "Socket Ready")))
     (set! (.-onerror socket) #(-> (jq "#debug-box") (.append "Socket fubar")))
     (set! (.-onclose socket) #(-> (jq "#debug-box") (.append "Socket Closed")))
