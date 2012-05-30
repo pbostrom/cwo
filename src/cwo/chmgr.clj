@@ -32,7 +32,7 @@
         (swap! session-map assoc-in [sesh-id :srp] newsrp)
         newsrp))))
 
-(defn register []
+(defn broadcast []
   (let [handle (session/get "handle")
         srp (get-srp)]
     (when handle 
@@ -42,7 +42,8 @@
     srp))
 
 (defn socket-handler [webch handshake]
-  (let [srp (register)]
+  (let [srp (get-srp)]
+    (when (session/get "handle") (broadcast))
     (lamina/siphon webch (srp :snd))
     (lamina/siphon (srp :rec) webch)
     (lamina/enqueue (srp :rec) (pr-str [:addhandles (keys @handle->srp)]))))
@@ -50,7 +51,11 @@
 
 (defn connect [sesh-id handle]
   (let [peer-handle (get-in @session-map [sesh-id :handle] "anonymous")
-        target-ch (@handle->srp handle)]
+        target-ch (@handle->srp handle)
+        tmp-ch (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (lamina/enqueue (target-ch :rec) (pr-str [:addpeer peer-handle]))
-    (lamina/siphon (target-ch :snd) (get-in @session-map [sesh-id :srp :rec]))))
+    (when-let [old-ch (get-in @session-map [sesh-id :tmp-ch] tmp-ch)]
+      (lamina/close old-ch))
+    (swap! session-map assoc-in [sesh-id :tmp-ch] tmp-ch)
+    (lamina/siphon (target-ch :snd) tmp-ch (get-in @session-map [sesh-id :srp :rec]))))

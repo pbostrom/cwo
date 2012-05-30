@@ -38,17 +38,18 @@
       <div id="your-container" class="container">
         <div id="text-box"></div>
         <div id="your-repl" class="console"></div>
-        Connected Peers
-        <div>
+        <div id="peer-box" style="display: none">
+          Connected Peers
           <select id="peer-list" multiple="multiple">
           </select>
+          <button id="transfer" class="btn">Transfer</button>
         </div>
-        <button id="transfer" class="btn">Transfer</button>
 
       </div> <!-- /you -->
 
       <div id="other-container" class="container">
-        <div id="other-text"><p>Other REPLs will be displayed below. </p></div>
+        <div id="other-text"><p>Select a REPL session from the list. While connected, output
+          will be displayed in the console.</p></div>
         <div id="other-repl" class="console"></div>
         Available REPLs
         <div>
