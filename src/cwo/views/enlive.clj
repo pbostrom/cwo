@@ -23,3 +23,4 @@
   [{:keys [userbox text]}]
   [:div#user-container] (html/content userbox)
   [:div#text-box] (html/content text))
+ 

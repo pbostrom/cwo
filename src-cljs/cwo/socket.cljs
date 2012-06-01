@@ -13,8 +13,11 @@
   (send-console)
   (js/setTimeout share-console-loop 1900))
 
-(defn connect [user]
-  (.send @sock (pr-str [:connect user])))
+(defn connect [handle]
+  (.send @sock (pr-str [:connect handle])))
+
+(defn transfer [handle]
+  (.send @sock (pr-str [:transfer handle])))
 
 ; remove
 (defn socket-ready []

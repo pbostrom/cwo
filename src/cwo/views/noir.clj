@@ -30,7 +30,7 @@
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
-  (swap! chmgr/handle->srp dissoc (session/get "handle"))
+  (chmgr/end-broadcast)
   (session/remove! "handle")
   (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
 

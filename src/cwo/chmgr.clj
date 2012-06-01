@@ -4,8 +4,8 @@
 
 ; nested map for assoc'ing session to handle, send/receive pair, and other-repl
 (def session-map (atom {}))
-; map to lookup srp from handle
-(def handle->srp (atom {}))
+; map to lookup session id from handle
+(def handle->sesh-id (atom {}))
 
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
@@ -41,6 +41,11 @@
       (lamina/enqueue handle-ch (pr-str [:addhandles [handle]])))
     srp))
 
+(defn end-broadcast []
+  (let [handle (session/get "handle")]
+    (swap! handle->srp dissoc handle)
+    (lamina/enqueue handle-ch (pr-str [:rmhandle handle]))))
+
 (defn socket-handler [webch handshake]
   (let [srp (get-srp)]
     (when (session/get "handle") (broadcast))
@@ -48,14 +53,22 @@
     (lamina/siphon (srp :rec) webch)
     (lamina/enqueue (srp :rec) (pr-str [:addhandles (keys @handle->srp)]))))
 
-
+; socket ctrl commands below
 (defn connect [sesh-id handle]
   (let [peer-handle (get-in @session-map [sesh-id :handle] "anonymous")
-        target-ch (@handle->srp handle)
+        target-srp (@handle->srp handle)
         tmp-ch (lamina/channel)]
     (println sesh-id "subscribe to" handle)
-    (lamina/enqueue (target-ch :rec) (pr-str [:addpeer peer-handle]))
+    (lamina/enqueue (target-srp :rec) (pr-str [:addpeer peer-handle]))
     (when-let [old-ch (get-in @session-map [sesh-id :tmp-ch] tmp-ch)]
       (lamina/close old-ch))
     (swap! session-map assoc-in [sesh-id :tmp-ch] tmp-ch)
-    (lamina/siphon (target-ch :snd) tmp-ch (get-in @session-map [sesh-id :srp :rec]))))
+    (lamina/siphon (target-srp :snd) tmp-ch (get-in @session-map [sesh-id :srp :rec]))))
+
+(defn transfer [sesh-id handle]
+  (let [new-srp (@handle->srp handle)
+        tmp-ch (lamina/channel)]
+    (lamina/close (new-srp :rec))
+    (swap! new-srp assoc-in [sesh-id :tmp-ch] tmp-ch)
+    (lamina/siphon ...
+

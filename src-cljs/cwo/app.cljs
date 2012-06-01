@@ -11,17 +11,6 @@
 ; open websocket
 (reset! socket/sock (js/WebSocket. ws-url))
 
-(defn addhandles [handles]
-  (dorun
-    (map #(-> (jq "#others-list")
-            (.append
-              (crate/html [:option %]))) handles)))
-
-(defn addpeer [handle]
-  (-> (jq "#peer-list")
-    (.append
-      (crate/html [:option handle]))))
-
 (defn refresh-repl [msg]
 ;  (jslog msg)
   (-> (jq "#other-repl .jqconsole-header ~ span")
@@ -34,7 +23,7 @@
     (if (= (.charAt msg 0) "[")
       (let [[cmd args] (cljs.reader/read-string msg)]
         (.log js/console (name cmd) ":" (pr-str args))
-        ((.-value (js/Object.getOwnPropertyDescriptor cwo.app (name cmd))) args))
+        ((.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) args))
       (refresh-repl msg))))
 
 (set! (.-onmessage @socket/sock) msg-hdlr)
@@ -64,6 +53,10 @@
 ; connect button
 (-> body
   (.on "click" "#connect" (fn [] (socket/connect (-> (jq "#others-list option:selected") (.val))))))
+
+; transfer button
+(-> body
+  (.on "click" "#transfer" (fn [] (socket/connect (-> (jq "#peer-list option:selected") (.val))))))
 
 ; login/out buttons 
 (-> body
