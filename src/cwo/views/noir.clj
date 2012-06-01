@@ -25,7 +25,7 @@
   (if-not (contains? @chmgr/handle->srp handle)
     (do
       (session/put! "handle" handle)
-      (chmgr/register)
+      (chmgr/broadcast)
       (pr-str (util/fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
 
