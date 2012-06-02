@@ -5,7 +5,7 @@
 ; nested map for assoc'ing session to handle, send/receive pair, and other-repl
 (def session-map (atom {}))
 ; map to lookup session id from handle
-(def handle->sesh-id (atom {}))
+(def handle->srp (atom {}))
 
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
@@ -70,5 +70,5 @@
         tmp-ch (lamina/channel)]
     (lamina/close (new-srp :rec))
     (swap! new-srp assoc-in [sesh-id :tmp-ch] tmp-ch)
-    (lamina/siphon ...
+    (lamina/siphon nil nil)))
 
