@@ -5,6 +5,7 @@ Shared REPL session
 ## Build Clojurescript and start server
 
 lein cljsbuild auto
+
 lein run
 
 ## Usage
