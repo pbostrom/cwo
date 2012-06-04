@@ -4,13 +4,12 @@ Shared REPL session
 
 ## Build Clojurescript and start server
 
-lein cljsbuild auto
-
-lein run
+  $ lein cljsbuild once
+  $ lein run
 
 ## Usage
 
-Open browser; start coding or connect to someone else's REPL.
+Open browser to http://localhost:8080; start coding or connect to someone else's REPL.
 
 ## License
 
