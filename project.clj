@@ -1,8 +1,3 @@
-(defn cljs-home [path]
-    (if-let [home (get (System/getenv) "CLOJURESCRIPT_HOME")]
-          (str home path)
-          (throw (Exception. "You must set the $CLOJURESCRIPT_HOME variable!"))))
-
 (defproject codegroup "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.4.0"]
@@ -15,11 +10,9 @@
                  [clojail "0.5.1"]
                  [ring "1.1.0-RC1"]]
   :plugins [[lein-cljsbuild "0.1.2"]]
-  :extra-classpath-dirs ~(map cljs-home ["/lib/*" "/src/clj" "/src/cljs"])
   :cljsbuild {
     :builds [{:source-path "src-cljs"
-              :compiler {:libs ["goog/dom/query.js"]
-                         :output-to "resources/public/js/cljs-compiled.js"
+              :compiler {:output-to "resources/public/js/cljs-compiled.js"
                          :optimizations :whitespace
                          :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
