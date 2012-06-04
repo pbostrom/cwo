@@ -1,28 +1,3 @@
-html, body {
-  background-color: #333; 
-  color: white;
-  /*    font-family: monospace; */
-  margin: 0;
-  padding: 0;
-}
-
-#console-panel {
-  display: -webkit-box
-}
-/* The console container element */
-#your-repl {
-  position: relative;
-  width: 400px;
-  height: 500px;
-  float: left;
-}
-#other-repl {
-  position: relative;
-  width: 400px;
-  height: 500px;
-  float: left;
-}
-
 /* solarized light color scheme */
 pre.jqconsole {
   background-color: #fdf6e3; /* base3 */
@@ -40,7 +15,6 @@ pre.jqconsole {
 .jqconsole-output {
   color: #268bd2; /* blue */
 }
-
 
 /* The inner console element. */
 .jqconsole {

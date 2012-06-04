@@ -1,25 +1,22 @@
-body {
-  font-family:Arial, Helvetica, sans-serif;
+html, body {
+  background-color: #333; 
+  color: white;
+  /*    font-family: monospace; */
+  margin: 0;
+  padding: 0;
 }
-#container{
-  border:5px solid grey;
-  /*	width:800px;*/
-  margin:0 auto;
-  padding:10px;
+
+#your-repl {
+  position: relative;
+  width: 400px;
+  height: 500px;
+  float: left;
 }
-#chatLog{
-  padding:5px;
-  border:1px solid black;
-}
-#chatLog p {
-  margin:0;
-}
-.event {
-  color:#999;
-}
-.warning{
-  font-weight:bold;
-  color:#CCC;
+#other-repl {
+  position: relative;
+  width: 400px;
+  height: 500px;
+  float: left;
 }
 
 .userbox input + .btn {
@@ -30,6 +27,7 @@ body {
   font-size: 20px;
 }
 
-ul.others {
-  list-style: none;
+.list-box {
+  float: left;
+  margin-left: 9px;
 }
