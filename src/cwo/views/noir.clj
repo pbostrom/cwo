@@ -22,7 +22,7 @@
                             (enlive/default-content))))
 
 (defpage [:post "/login"] {:keys [handle]}
-  (if-not (contains? @chmgr/handle->srp handle)
+  (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
       (session/put! "handle" handle)
       (chmgr/broadcast)

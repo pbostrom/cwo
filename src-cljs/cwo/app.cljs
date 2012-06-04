@@ -44,7 +44,8 @@
 ; button listeners
 ; use body to register for ajax deferred event listeners
 (def body (jq "body"))
-; hacky way to prevent muli-selects
+
+; prevent muli-selects
 (-> body
   (.on "click" "#others-list" (fn [evt] 
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
@@ -56,7 +57,7 @@
 
 ; transfer button
 (-> body
-  (.on "click" "#transfer" (fn [] (socket/connect (-> (jq "#peer-list option:selected") (.val))))))
+  (.on "click" "#transfer" (fn [] (socket/transfer (-> (jq "#peer-list option:selected") (.val))))))
 
 ; login/out buttons 
 (-> body

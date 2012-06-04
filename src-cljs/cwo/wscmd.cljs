@@ -9,12 +9,16 @@
               (crate/html [:option %]))) handles)))
 
 (defn addpeer [handle]
+  (rmoption "#peer-list" handle)
   (-> (jq "#peer-list")
     (.append
       (crate/html [:option handle]))))
 
 (defn rmhandle [handle]
-  (-> (jq "#others-list > option")
-    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) handle))))
-    (.remove)))
+  (rmoption "#others-list" handle))
 
+; remove an option from a select list
+(defn rmoption [list-id opt-val]
+(-> (jq (str list-id " > option"))
+    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
+    (.remove)))

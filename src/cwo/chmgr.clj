@@ -34,16 +34,14 @@
 
 (defn broadcast []
   (let [handle (session/get "handle")
-        srp (get-srp)]
-    (when handle 
-      (swap! handle->srp assoc handle srp)
-      (swap! session-map assoc-in [(session/get "sesh-id") :handle] handle)
-      (lamina/enqueue handle-ch (pr-str [:addhandles [handle]])))
-    srp))
+        sesh-id (session/get "sesh-id")]
+      (swap! handle->sesh-id assoc handle sesh-id)
+      (swap! session-map assoc-in [sesh-id :handle] handle)
+      (lamina/enqueue handle-ch (pr-str [:addhandles [handle]]))))
 
 (defn end-broadcast []
   (let [handle (session/get "handle")]
-    (swap! handle->srp dissoc handle)
+    (swap! handle->sesh-id dissoc handle)
     (lamina/enqueue handle-ch (pr-str [:rmhandle handle]))))
 
 (defn socket-handler [webch handshake]
@@ -51,22 +49,22 @@
     (when (session/get "handle") (broadcast))
     (lamina/siphon webch (srp :snd))
     (lamina/siphon (srp :rec) webch)
-    (lamina/enqueue (srp :rec) (pr-str [:addhandles (keys @handle->srp)]))))
+    (lamina/enqueue (srp :rec) (pr-str [:addhandles (keys @handle->sesh-id)]))))
 
 ; socket ctrl commands below
 (defn connect [sesh-id handle]
   (let [peer-handle (get-in @session-map [sesh-id :handle] "anonymous")
-        target-srp (@handle->srp handle)
+        target-srp (get-in @session-map [(@handle->sesh-id handle) :srp])
         tmp-ch (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (lamina/enqueue (target-srp :rec) (pr-str [:addpeer peer-handle]))
-    (when-let [old-ch (get-in @session-map [sesh-id :tmp-ch] tmp-ch)]
+    (when-let [old-ch (get-in @session-map [sesh-id :tmp-ch])]
       (lamina/close old-ch))
     (swap! session-map assoc-in [sesh-id :tmp-ch] tmp-ch)
     (lamina/siphon (target-srp :snd) tmp-ch (get-in @session-map [sesh-id :srp :rec]))))
 
 (defn transfer [sesh-id handle]
-  (let [new-srp (@handle->srp handle)
+  (let [new-srp (@session-map (@handle->sesh-id handle))
         tmp-ch (lamina/channel)]
     (lamina/close (new-srp :rec))
     (swap! new-srp assoc-in [sesh-id :tmp-ch] tmp-ch)
