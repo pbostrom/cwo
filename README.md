@@ -4,8 +4,8 @@ Shared REPL session
 
 ## Build Clojurescript and start server
 
-  $ lein cljsbuild once
-  $ lein run
+    $ lein cljsbuild once
+    $ lein run
 
 ## Usage
 
