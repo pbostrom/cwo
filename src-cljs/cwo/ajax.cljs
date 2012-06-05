@@ -6,10 +6,10 @@
 (defn eval-clojure [code]
   (let [data (atom "")]
     (.ajax jq (map->js {:url "/eval-clj"
-                                     :type "POST"
-                                     :data (map->js {:expr code})
-                                     :async false
-                                     :success (fn [res] (reset! data res))}))
+                        :type "POST"
+                        :data (map->js {:expr code})
+                        :async false
+                        :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
 
 ;refresh html of selector

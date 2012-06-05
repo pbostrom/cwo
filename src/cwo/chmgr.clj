@@ -3,10 +3,7 @@
             [noir.session :as session]))
 
 ; Channel mgmt architecture
-; Every web session has an associated channel controller
-(def sesh-id->cc (atom {}))
-
-; A channel controller is a map structure for regulating websocket traffic between clients
+; A channel controller is a map for regulating websocket traffic between clients
 ; {
 ;  :snd     Required, permanent channel to receive commands and shared REPLs
 ;  :rec     Required, permanent channel to send commands and REPL contents
@@ -17,6 +14,9 @@
 ;  :trans-valve  Optional, a subscription to a REPL has been transferred,
 ;                also acts as a pass-thru for other subscribers
 ; }
+
+; Every web session has an associated channel controller
+(def sesh-id->cc (atom {}))
 
 ; map to lookup session id from handle
 (def handle->sesh-id (atom {}))
@@ -41,7 +41,8 @@
     (if-let [cc (get-in @sesh-id->cc [sesh-id])]
       cc
       (let [newcc (init-cc)]
-        (lamina/receive-all (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
+        (lamina/receive-all 
+          (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
         (lamina/siphon handle-ch (newcc :rec))
         (swap! sesh-id->cc assoc sesh-id newcc)
         newcc))))

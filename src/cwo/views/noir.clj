@@ -1,25 +1,19 @@
 (ns cwo.views.noir
-  (:require [cwo.user :as usr]
-            [cwo.eval :as evl]
+  (:require [cwo.eval :as evl]
             [cwo.util :as util]
             [cwo.chmgr :as chmgr]
             [cwo.views.enlive :as enlive]
             [noir.session :as session]
             [noir.cookies :as cookies])
-  (:use noir.core 
-        hiccup.page
-        [hiccup.core :only (html)]))
-
-; hiccup rendered routes
-(defn others-opts [sel user]
-  (conj sel [:option user]))
+  (:use [noir.core  :only (defpage)]))
 
 ;; enlive rendered routes
 (defpage "/" []
+  (println (noir.request/ring-request))
   (session/put! "sesh-id" (cookies/get "ring-session"))
-  (enlive/bootstrap (if-let [user (usr/get-user)]
-                            (enlive/si-content user)
-                            (enlive/default-content))))
+  (enlive/bootstrap (if-let [handle (session/get "handle")]
+                      (enlive/si-content handle)
+                      (enlive/default-content))))
 
 (defpage [:post "/login"] {:keys [handle]}
   (if-not (contains? @chmgr/handle->sesh-id handle)
