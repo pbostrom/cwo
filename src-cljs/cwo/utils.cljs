@@ -31,3 +31,6 @@
 
 (defn jslog [out]
   (.log js/console out))
+
+(defn document-ready [func]
+  (.ready ($ js/document) func))

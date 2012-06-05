@@ -1,6 +1,7 @@
 (ns cwo.wscmd
   (:use [cwo.utils :only (jq)])
-  (:require [crate.core :as crate]))
+  (:require [crate.core :as crate]
+            [cwo.repl :as repl]))
 
 (defn addhandles [handles]
   (dorun
@@ -17,8 +18,12 @@
 (defn rmhandle [handle]
   (rmoption "#others-list" handle))
 
+(defn transfer [handle]
+  (.Reset repl/other-repl)
+  (repl/init-repl repl/other-repl))
+
 ; remove an option from a select list
-(defn rmoption [list-id opt-val]
+(defn- rmoption [list-id opt-val]
 (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
     (.remove)))
