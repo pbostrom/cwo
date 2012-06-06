@@ -2,7 +2,7 @@
   (:require [cwo.ajax :as ajax])
   (:use [cwo.utils :only (jq)]))
 
-(def other-repl (-> (jq "#other-repl") (.jqconsole "Another's REPL\n" "=> " " ")))
+(def others-repl (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " ")))
 
 (def your-repl (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " ")))
 

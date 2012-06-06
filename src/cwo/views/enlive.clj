@@ -22,4 +22,5 @@
 (html/deftemplate bootstrap "cwo/views/bootstrap.html"
   [{:keys [userbox text]}]
   [:div#user-container] (html/content userbox)
-  [:div#text-box] (html/content text))
+  [:div#your-text] (html/content text))
+
