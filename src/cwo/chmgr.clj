@@ -24,28 +24,26 @@
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
-; create a send/receive channel pair
-(defn init-cc []
-  {:snd (lamina/channel* :grounded? true :permanent? true)
-   :rec (lamina/channel* :grounded? true :permanent? true)})
-
 ; Handle commands from the channel
 (defn command-handler [sesh-id cmd-str]
   (let [[cmd arg] (read-string cmd-str)]
     (println "cmd:" cmd sesh-id arg)
     ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
 
+; create a send/receive channel pair, swap map structure
+(defn init-cc! [sesh-id]
+  (let [newcc {:snd (lamina/channel* :grounded? true :permanent? true)
+                :rec (lamina/channel* :grounded? true :permanent? true)}]
+    (lamina/receive-all 
+      (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
+    (lamina/siphon handle-ch (newcc :rec))
+    (swap! sesh-id->cc assoc sesh-id newcc)
+    newcc))
+
 ;get the channel controller of the current session, initializing if needed
 (defn get-cc []
   (let [sesh-id (session/get "sesh-id")]
-    (if-let [cc (get-in @sesh-id->cc [sesh-id])]
-      cc
-      (let [newcc (init-cc)]
-        (lamina/receive-all 
-          (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
-        (lamina/siphon handle-ch (newcc :rec))
-        (swap! sesh-id->cc assoc sesh-id newcc)
-        newcc))))
+    (@sesh-id->cc sesh-id (init-cc! sesh-id))))
 
 ; send a command to a websocket client
 (defn client-cmd [ch cmdvec]
