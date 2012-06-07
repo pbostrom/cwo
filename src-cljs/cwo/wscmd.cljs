@@ -19,8 +19,8 @@
   (rmoption "#others-list" handle))
 
 (defn transfer [handle]
-  (.Reset repl/other-repl)
-  (repl/init-repl repl/other-repl))
+  (.Reset repl/others-repl)
+  (repl/init-repl repl/others-repl))
 
 ; remove an option from a select list
 (defn- rmoption [list-id opt-val]

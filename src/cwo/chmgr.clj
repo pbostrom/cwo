@@ -32,6 +32,7 @@
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-id]
+  (println "init-cc!")
   (let [newcc {:snd (lamina/channel* :grounded? true :permanent? true)
                 :rec (lamina/channel* :grounded? true :permanent? true)}]
     (lamina/receive-all 
@@ -43,7 +44,7 @@
 ;get the channel controller of the current session, initializing if needed
 (defn get-cc []
   (let [sesh-id (session/get "sesh-id")]
-    (@sesh-id->cc sesh-id (init-cc! sesh-id))))
+    (or (@sesh-id->cc sesh-id) (init-cc! sesh-id))))
 
 ; send a command to a websocket client
 (defn client-cmd [ch cmdvec]

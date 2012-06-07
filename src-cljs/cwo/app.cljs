@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:use [cwo.utils :only (new-socket jq ws-url jslog)])
+  (:use [cwo.utils :only (jq ws-url jslog)])
   (:require [cwo.ajax :as ajax]
             [cwo.socket :as socket]
             [cwo.repl :as repl]
@@ -41,7 +41,7 @@
   (.on "click" "#connect" (fn [] (socket/connect (-> (jq "#others-list option:selected") (.val))))))
 
 ; transfer button
-(-> (jq "#your-box")
+(-> (jq "#peer-box")
   (.on "click" "#transfer" (fn [] 
                              (socket/transfer (-> (jq "#peer-list option:selected") (.val)))
                              (repl/init-repl repl/others-repl))))
@@ -59,3 +59,6 @@
                      (.preventDefault e)
                      (this-as ta (-> (jq ta)
                                    (.tab "show"))))))
+
+; activate 1st tab
+(.ready (jq js/document) #(-> (jq "#myTab a:first") (.tab "show")))

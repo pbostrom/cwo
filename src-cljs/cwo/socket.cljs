@@ -1,5 +1,4 @@
 (ns cwo.socket
-  (:require [crate.core :as crate])
   (:use [cwo.utils :only (jq jslog)]))
 
 (def sock (atom nil))

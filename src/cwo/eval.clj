@@ -29,14 +29,15 @@
                       (future (Thread/sleep 600000)
                               (-> *ns* .getName remove-ns)))))
 
-(defn find-sb [old]
-  (if-let [sb (get old "sb")]
-    old
-    (assoc old "sb" (make-sandbox))))
+(defn init-sb! []
+  (println "new sb")
+  (let [sb (make-sandbox)]
+    (session/put! "sb" sb)
+    sb))
 
 (defn eval-request [expr]
   (try
-    (eval-string expr (get (session/swap! find-sb) "sb"))
+    (eval-string expr (or (session/get "sb") (init-sb!)))
     (catch TimeoutException _
       {:error true :message "Execution Timed Out!"})
     (catch Exception e
