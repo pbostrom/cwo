@@ -9,7 +9,6 @@
 
 ;; enlive rendered routes
 (defpage "/" []
-  (println (noir.request/ring-request))
   (session/put! "sesh-id" (cookies/get "ring-session"))
   (enlive/bootstrap (if-let [handle (session/get "handle")]
                       (enlive/si-content handle)
@@ -30,11 +29,10 @@
 
 ;; evaluation route
 (defpage [:post "/eval-clj"] {:keys [expr sb]}
-  (let [{:keys [expr result error message] :as res} (evl/eval-request expr sb)
+  (println expr sb)
+  (let [{:keys [expr result error message] :as res} (evl/eval-request expr (keyword sb))
         data (if error
                res
                (let [[out res] result]
                   (str out (pr-str res))))]
-    (println res)
-    (println data)
     (pr-str data)))

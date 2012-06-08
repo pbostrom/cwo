@@ -1,13 +1,13 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
             [noir.session :as session]
-            [cwo.eval :as evl]))
+            [cwo.sandbox :as sb]))
 
 ; Channel mgmt architecture
 ; A channel controller is a map for regulating websocket traffic between clients
 ; {
-;  :snd     Required, permanent channel to receive commands and shared REPLs
-;  :rec     Required, permanent channel to send commands and REPL contents
+;  :snd     Required, permanent channel to send commands and REPL contents
+;  :rec     Required, permanent channel to receive commands and shared REPLs
 ;  :handle  Optional, anonymous users permitted
 ;
 ;   valves are closable channels that route traffic between permanent channels
@@ -40,7 +40,7 @@
   (println "init-cc!")
   (let [newcc {:snd (lamina/channel* :grounded? true :permanent? true)
                :rec (lamina/channel* :grounded? true :permanent? true)
-               :you (evl/make-sandbox)}]
+               :you (sb/make-sandbox)}]
     (lamina/receive-all 
       (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
     (lamina/siphon handle-ch (newcc :rec))
@@ -87,14 +87,19 @@
     (swap! sesh-id->cc assoc-in [sesh-id :rec-valve] rec-valve)
     (lamina/siphon (target-cc :snd) rec-valve (get-in @sesh-id->cc [sesh-id :rec]))))
 
+; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
-  (let [new-cc (@sesh-id->cc (@handle->sesh-id handle))
-        old-cc (@sesh-id->cc sesh-id)
+  (let [hdl-sesh-id (@handle->sesh-id handle)
+        {newccr :rec newccs :snd newccrv :rec-valve} (@sesh-id->cc hdl-sesh-id)
+        {oldccr :rec oldccs :snd oldcctv :trans-valve target-sb :you} (@sesh-id->cc sesh-id)
         trans-valve (lamina/channel)]
-    (lamina/close (new-cc :rec-valve))
-    (client-cmd (new-cc :rec) [:transfer handle])
-    (when-let [old-ch (get-in @sesh-id->cc [sesh-id :trans-valve])]
-      (lamina/close old-ch))
-    (swap! sesh-id->cc assoc-in [sesh-id :trans-valve] trans-valve)
-    (lamina/siphon (new-cc :snd) trans-valve (old-cc :rec))
-    (lamina/siphon trans-valve (old-cc :snd))))
+    (lamina/close newccrv) ; close subscription created by (connect ...)
+    (client-cmd newccr [:transfer handle]) ; tell client that subscribed REPL is being transfered
+    (when oldcctv (lamina/close oldcctv)) ;close previous trans-valve if it exists
+;    (swap! sesh-id->cc assoc-in [sesh-id :trans-valve] trans-valve)
+;    (swap! sesh-id->cc assoc-in [hdl-sesh-id :oth] oldsb)
+    (swap! sesh-id->cc
+           (fn [m] (reduce #(apply assoc-in %1 %2) m
+                           {[sesh-id :trans-valve] trans-valve, [hdl-sesh-id :oth] target-sb})))
+    (lamina/siphon newccs trans-valve oldccr)
+    (lamina/siphon trans-valve oldccr)))

@@ -7,7 +7,7 @@
   (let [data (atom "")]
     (.ajax jq (map->js {:url "/eval-clj"
                         :type "POST"
-                        :data (map->js {:expr code :sb sb})
+                        :data (map->js {:expr code :sb (name sb)})
                         :async false
                         :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
