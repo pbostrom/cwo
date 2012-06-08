@@ -3,11 +3,11 @@
             [cwo.socket :as socket])
   (:use [cwo.utils :only (jq map->js)]))
 
-(defn eval-clojure [code]
+(defn eval-clojure [code sb]
   (let [data (atom "")]
     (.ajax jq (map->js {:url "/eval-clj"
                         :type "POST"
-                        :data (map->js {:expr code})
+                        :data (map->js {:expr code :sb sb})
                         :async false
                         :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))

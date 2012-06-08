@@ -6,6 +6,8 @@
   (:import java.io.StringWriter
 	   java.util.concurrent.TimeoutException))
 
+(def sesh-id->sb (atom {}))
+
 (defn eval-form [form sbox]
   (with-open [out (StringWriter.)]
     (let [result (sbox form {#'*out* out})]
@@ -29,15 +31,20 @@
                       (future (Thread/sleep 600000)
                               (-> *ns* .getName remove-ns)))))
 
-(defn init-sb! []
+(defn init-sb! [sbk]
   (println "new sb")
   (let [sb (make-sandbox)]
+    (swap! sesh-id->sb assoc-in [
     (session/put! "sb" sb)
     sb))
 
-(defn eval-request [expr]
+(defn get-sb [sb]
+  (let [sesh-id (session/get "sesh-id")]
+    (get-in @sesh-id->sb [sesh-id sb])))
+
+(defn eval-request [expr sb]
   (try
-    (eval-string expr (or (session/get "sb") (init-sb!)))
+    (eval-string expr (get-sb sb))
     (catch TimeoutException _
       {:error true :message "Execution Timed Out!"})
     (catch Exception e

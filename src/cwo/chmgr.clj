@@ -1,6 +1,7 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
-            [noir.session :as session]))
+            [noir.session :as session]
+            [cwo.eval :as evl]))
 
 ; Channel mgmt architecture
 ; A channel controller is a map for regulating websocket traffic between clients
@@ -9,10 +10,14 @@
 ;  :rec     Required, permanent channel to send commands and REPL contents
 ;  :handle  Optional, anonymous users permitted
 ;
-;valves are closable channels that route traffic between permanent channels
+;   valves are closable channels that route traffic between permanent channels
 ;  :rec-valve    Optional, a subscription to a shared REPL session
 ;  :trans-valve  Optional, a subscription to a REPL has been transferred,
 ;                also acts as a pass-thru for other subscribers
+;
+;  evaluation sandboxes
+;  :you  Your primary code evaluation environment
+;  :oth  Optional, if someone transfers their repl to you
 ; }
 
 ; Every web session has an associated channel controller
@@ -34,7 +39,8 @@
 (defn init-cc! [sesh-id]
   (println "init-cc!")
   (let [newcc {:snd (lamina/channel* :grounded? true :permanent? true)
-                :rec (lamina/channel* :grounded? true :permanent? true)}]
+               :rec (lamina/channel* :grounded? true :permanent? true)
+               :you (evl/make-sandbox)}]
     (lamina/receive-all 
       (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
     (lamina/siphon handle-ch (newcc :rec))

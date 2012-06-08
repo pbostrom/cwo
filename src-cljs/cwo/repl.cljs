@@ -3,8 +3,10 @@
   (:use [cwo.utils :only (jq)]))
 
 (def others-repl (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " ")))
+(set! (.-sb others-repl) :oth)
 
 (def your-repl (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " ")))
+(set! (.-sb your-repl) :you)
 
 (defn paren-match? [expr]
   (>=
@@ -35,7 +37,7 @@
 (defn init-repl [repl]
   (let [handler (fn hdlr [expr]
                   (if expr
-                    (console-write repl (ajax/eval-clojure expr)))
+                    (console-write repl (ajax/eval-clojure expr (.-sb repl))))
                   (.Prompt repl true hdlr (fn [expr]
                                             (if (paren-match? expr)
                                               false

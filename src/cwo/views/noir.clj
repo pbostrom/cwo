@@ -29,8 +29,8 @@
   (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
 
 ;; evaluation route
-(defpage [:post "/eval-clj"] {:keys [expr]}
-  (let [{:keys [expr result error message] :as res} (evl/eval-request expr)
+(defpage [:post "/eval-clj"] {:keys [expr sb]}
+  (let [{:keys [expr result error message] :as res} (evl/eval-request expr sb)
         data (if error
                res
                (let [[out res] result]
