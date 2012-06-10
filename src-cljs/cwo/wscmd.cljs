@@ -1,7 +1,8 @@
 (ns cwo.wscmd
   (:use [cwo.utils :only (jq)])
   (:require [crate.core :as crate]
-            [cwo.repl :as repl]))
+            [cwo.repl :as repl]
+            [cwo.socket :as socket]))
 
 (defn addhandles [handles]
   (dorun
@@ -20,7 +21,8 @@
 
 (defn transfer [handle]
   (.Reset repl/others-repl)
-  (repl/init-repl repl/others-repl))
+  (repl/init-repl repl/others-repl)
+  (socket/share-alt-console-loop))
 
 ; remove an option from a select list
 (defn- rmoption [list-id opt-val]

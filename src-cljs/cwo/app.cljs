@@ -12,19 +12,32 @@
 (reset! socket/sock (js/WebSocket. ws-url))
 
 (defn refresh-repl [msg]
-;  (jslog msg)
   (-> (jq "#others-repl .jqconsole-header ~ span")
     (.remove))
   (-> (jq msg)
     (.insertAfter (jq "#others-repl .jqconsole-header"))))
 
+(defn refresh-alt-repl [msg-obj]
+  (let [{msg :alt} msg-obj]
+  (-> (jq "#your-repl .jqconsole-header ~ span")
+    (.remove))
+  (-> (jq msg)
+    (.insertAfter (jq "#your-repl .jqconsole-header")))))
+
+(defn default? [msg]
+  (not (or (= (.charAt msg 0) "[") (= (.charAt msg 0) "{"))))
+
+(defn call-wscmd [[cmd args]]
+  (.log js/console (name cmd) ":" (pr-str args))
+  ((.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) args))
+
 (defn msg-hdlr [msg]
   (let [msg msg.data]
-    (if (= (.charAt msg 0) "[")
-      (let [[cmd args] (cljs.reader/read-string msg)]
-        (.log js/console (name cmd) ":" (pr-str args))
-        ((.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) args))
-      (refresh-repl msg))))
+    (if (default? msg)
+      (refresh-repl msg)
+      (let [msg-obj (cljs.reader/read-string msg)]
+        (cond (vector? msg-obj) (call-wscmd msg-obj)
+              (map? msg-obj) (refresh-alt-repl msg-obj))))))
 
 (set! (.-onmessage @socket/sock) msg-hdlr)
 
@@ -43,8 +56,7 @@
 ; transfer button
 (-> (jq "#peer-box")
   (.on "click" "#transfer" (fn [] 
-                             (socket/transfer (-> (jq "#peer-list option:selected") (.val)))
-                             (repl/init-repl repl/others-repl))))
+                             (socket/transfer (-> (jq "#peer-list option:selected") (.val))))))
 
 ; login/out buttons 
 (-> (jq "#user-container")

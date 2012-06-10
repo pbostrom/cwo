@@ -11,9 +11,9 @@
 ;  :handle  Optional, anonymous users permitted
 ;
 ;   valves are closable channels that route traffic between permanent channels
-;  :rec-valve    Optional, a subscription to a shared REPL session
-;  :trans-valve  Optional, a subscription to a REPL has been transferred,
-;                also acts as a pass-thru for other subscribers
+;  :sub-valve    Optional, a subscription to a shared REPL session
+;  :tsub-valve   Optional, a subscription to your own REPL after a transfer
+;  :pt-valve     Optional, a pass-thru for your subscribers after a transfer
 ;
 ;  evaluation sandboxes
 ;  :you  Your primary code evaluation environment
@@ -29,6 +29,14 @@
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
+; message predicates to aid in routing
+(defn cmd? [msg]
+  (.startsWith msg "["))
+;  (and msg (.startsWith msg "[")))
+
+(defn default? [msg]
+  (not (or (cmd? msg) (.startsWith msg "{"))))
+
 ; Handle commands from the channel
 (defn command-handler [sesh-id cmd-str]
   (let [[cmd arg] (read-string cmd-str)]
@@ -42,7 +50,7 @@
                :rec (lamina/channel* :grounded? true :permanent? true)
                :you (sb/make-sandbox)}]
     (lamina/receive-all 
-      (lamina/filter* #(.startsWith % "[") (newcc :snd)) #(command-handler sesh-id %))
+      (lamina/filter* cmd? (newcc :snd)) #(command-handler sesh-id %))
     (lamina/siphon handle-ch (newcc :rec))
     (swap! sesh-id->cc assoc sesh-id newcc)
     newcc))
@@ -79,27 +87,40 @@
 (defn connect [sesh-id handle]
   (let [peer-handle (get-in @sesh-id->cc [sesh-id :handle] "anonymous")
         target-cc (@sesh-id->cc (@handle->sesh-id handle))
-        rec-valve (lamina/channel)]
+        sub-valve (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (client-cmd (target-cc :rec) [:addpeer peer-handle])
-    (when-let [old-ch (get-in @sesh-id->cc [sesh-id :rec-valve])]
+    (when-let [old-ch (get-in @sesh-id->cc [sesh-id :sub-valve])]
       (lamina/close old-ch))
-    (swap! sesh-id->cc assoc-in [sesh-id :rec-valve] rec-valve)
-    (lamina/siphon (target-cc :snd) rec-valve (get-in @sesh-id->cc [sesh-id :rec]))))
+    (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] sub-valve)
+    (lamina/siphon (lamina/filter* default? (target-cc :snd))
+                   sub-valve (get-in @sesh-id->cc [sesh-id :rec]))))
+
+(defn strip-alt [msg]
+  (println msg)
+  (let [msg-obj (read-string msg)]
+    (:alt msg-obj)))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {newccr :rec newccs :snd newccrv :rec-valve} (@sesh-id->cc hdl-sesh-id)
-        {oldccr :rec oldccs :snd oldcctv :trans-valve target-sb :you} (@sesh-id->cc sesh-id)
-        trans-valve (lamina/channel)]
+        {newccr :rec newccs :snd newccrv :sub-valve} (@sesh-id->cc hdl-sesh-id)
+        {oldccr :rec oldccs :snd oldcctv :tsub-valve
+         oldccpv :pt-valve target-sb :you} (@sesh-id->cc sesh-id)
+        tsub-valve (lamina/channel)
+        pt-valve (lamina/map* strip-alt newccs)]
     (lamina/close newccrv) ; close subscription created by (connect ...)
-    (client-cmd newccr [:transfer handle]) ; tell client that subscribed REPL is being transfered
-    (when oldcctv (lamina/close oldcctv)) ;close previous trans-valve if it exists
+    
+    (when oldcctv 
+      (lamina/close oldcctv)
+      (lamina/close oldccpv)) ;close previous trans-valve if it exists
 ;    (swap! sesh-id->cc assoc-in [sesh-id :trans-valve] trans-valve)
 ;    (swap! sesh-id->cc assoc-in [hdl-sesh-id :oth] oldsb)
     (swap! sesh-id->cc
            (fn [m] (reduce #(apply assoc-in %1 %2) m
-                           {[sesh-id :trans-valve] trans-valve, [hdl-sesh-id :oth] target-sb})))
-    (lamina/siphon newccs trans-valve oldccr)
-    (lamina/siphon trans-valve oldccr)))
+                           {[sesh-id :tsub-valve] tsub-valve,
+                            [sesh-id :pt-valve] pt-valve,
+                            [hdl-sesh-id :oth] target-sb})))
+    (lamina/siphon pt-valve oldccs)
+    (lamina/siphon newccs tsub-valve oldccr)
+    (client-cmd newccr [:transfer handle]))) ; tell client that subscribed REPL is being transfered

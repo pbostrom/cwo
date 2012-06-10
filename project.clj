@@ -14,6 +14,7 @@
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
                          :optimizations :whitespace
+                         ;:optimizations :advanced
                          :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)
