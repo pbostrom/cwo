@@ -5,8 +5,16 @@
             [cwo.repl :as repl]
             [crate.core :as crate]))
 
+(def publish-console? (atom true))
+
 ; init repl
 (repl/init-repl :you)
+
+; init subscription repl
+(let [repl (repl/repls :oth)]
+  (.Prompt repl true (fn [] nil))
+  (.Disable repl))
+
 
 ; open websocket
 (reset! socket/sock (js/WebSocket. ws-url))
@@ -24,6 +32,19 @@
   (-> (jq msg)
     (.insertAfter (jq "#your-repl .jqconsole-header")))))
 
+(defn route [msg-obj]
+  (let [{msg :p} msg-obj]
+    (.SetPromptText (repl/repls :oth) msg)))
+
+(defn send-prompt []
+  (let [prompt-text (.GetPromptText (repl/repls :you))]
+    (.send @socket/sock (pr-str {:p prompt-text}))))
+
+(defn share-console-loop []
+  (when @publish-console?
+    (send-prompt)
+    (js/setTimeout share-console-loop 1900)))
+
 (defn default? [msg]
   (not (or (= (.charAt msg 0) "[") (= (.charAt msg 0) "{"))))
 
@@ -37,7 +58,7 @@
       (refresh-repl msg)
       (let [msg-obj (cljs.reader/read-string msg)]
         (cond (vector? msg-obj) (call-wscmd msg-obj)
-              (map? msg-obj) (refresh-alt-repl msg-obj))))))
+              (map? msg-obj) (route msg-obj))))))
 
 (set! (.-onmessage @socket/sock) msg-hdlr)
 
@@ -73,4 +94,6 @@
                                    (.tab "show"))))))
 
 ; activate 1st tab
-(.ready (jq js/document) #(-> (jq "#myTab a:first") (.tab "show")))
+(.ready (jq js/document) #(do 
+                            (-> (jq "#myTab a:first") (.tab "show"))
+                            (share-console-loop)))

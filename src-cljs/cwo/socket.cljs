@@ -5,7 +5,7 @@
 (def publish-console? (atom true))
 (def eval-result (atom nil))
 
-(defn send-console []
+(defn send-console-old []
   (let [console-nodes (-> (jq "#your-repl .jqconsole-header ~ span") (.clone))
         console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))]
     (.send @sock console-html)))
@@ -15,11 +15,6 @@
         console-html (-> (jq "<div>") (.append console-nodes) (.remove) (.html))
         alt-str (pr-str {:alt console-html})]
     (.send @sock alt-str)))
-
-(defn share-console-loop []
-  (when @publish-console?
-    (send-console)
-    (js/setTimeout share-console-loop 1900)))
 
 (defn share-alt-console-loop []
   (send-alt-console)

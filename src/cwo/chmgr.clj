@@ -34,8 +34,18 @@
 (defn cc-from-handle [handle]
   (@sesh-id->cc (@handle->sesh-id handle)))
 
+; higher order function to filter routes
+(defn route? [dst]
+  (when (not (contains? #{:prompt} dst))
+    (println "Unsupported route filter!"))
+  (let [dst-pre (first (name :dst))]
+    #(.startsWith % (str "{:" dst-pre))))
+
+(defn cmd? [msg]
+  (.startsWith msg "["))
+
 ; Handle commands send via srv-ch
-(defn command-handler [sesh-id cmd-str]
+(defn cmd-hdlr [sesh-id cmd-str]
   (let [[cmd arg] (read-string cmd-str)]
     (println "cmd:" cmd sesh-id arg)
     ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
@@ -47,7 +57,7 @@
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
                :repl-ch (lamina/channel* :permanent? true)
                :you (sb/make-sandbox)}]
-    (lamina/receive-all (newcc :srv-ch) #(command-handler sesh-id %))
+    (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-id->cc assoc sesh-id newcc)
     newcc))
@@ -82,7 +92,7 @@
 
 ; socket ctrl commands below
 (defn subscribe [sesh-id handle]
-  (let [{{:keys [repl-ch cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
+  (let [{{:keys [repl-ch cl-ch srv-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
         {{old-sv :sub-valve subclch :cl-ch pr-hdl :handle
           :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc ;subscriber
         sub-valve (lamina/channel)]
@@ -90,7 +100,8 @@
     (client-cmd cl-ch [:addsub pr-hdl])
     (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] sub-valve)
-    (lamina/siphon (lamina/fork repl-ch) sub-valve subclch)))
+    (lamina/siphon (lamina/fork repl-ch) sub-valve subclch)
+    (lamina/siphon (lamina/filter* (route? :prompt) repl-ch) sub-valve subclch)))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]

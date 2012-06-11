@@ -38,9 +38,9 @@
 (defn hist [hist-pair]
   (let [[expr rslt] (reader/read-string hist-pair)
         repl (:oth repl/repls)]
-    (.Prompt repl true (fn [] nil))
     (.SetPromptText repl (pr-str expr))
     (.AbortPrompt repl)
     (if (:error rslt)
       (.Write repl (str (:message rslt) "\n") "jqconsole-error")
-      (.Write repl (str rslt "\n") "jqconsole-output"))))
+      (.Write repl (str rslt "\n") "jqconsole-output"))
+    (.Prompt repl true (fn [] nil))))
