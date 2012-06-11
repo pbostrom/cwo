@@ -30,7 +30,7 @@
 ;; evaluation route
 (defpage [:post "/eval-clj"] {:keys [expr sb]}
   (println expr sb)
-  (let [{:keys [expr result error message] :as res} (evl/eval-request expr (keyword sb))
+  (let [{:keys [expr result error message] :as res} (evl/eval-expr expr (keyword sb))
         data (if error
                res
                (let [[out res] result]

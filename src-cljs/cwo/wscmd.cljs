@@ -1,6 +1,7 @@
 (ns cwo.wscmd
   (:use [cwo.utils :only (jq)])
   (:require [crate.core :as crate]
+            [cljs.reader :as reader]
             [cwo.repl :as repl]
             [cwo.socket :as socket]))
 
@@ -10,9 +11,9 @@
             (.append
               (crate/html [:option %]))) handles)))
 
-(defn addpeer [handle]
-  (rmoption "#peer-list" handle)
-  (-> (jq "#peer-list")
+(defn addsub [handle]
+  (rmoption "#sub-list" handle)
+  (-> (jq "#sub-list")
     (.append
       (crate/html [:option handle]))))
 
@@ -29,3 +30,17 @@
 (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
     (.remove)))
+
+(defn result [rslt]
+  (let [[repl rslt] (reader/read-string rslt)]
+    (repl/console-write repl rslt)))
+
+(defn hist [hist-pair]
+  (let [[expr rslt] (reader/read-string hist-pair)
+        repl (:oth repl/repls)]
+    (.Prompt repl true (fn [] nil))
+    (.SetPromptText repl (pr-str expr))
+    (.AbortPrompt repl)
+    (if (:error rslt)
+      (.Write repl (str (:message rslt) "\n") "jqconsole-error")
+      (.Write repl (str rslt "\n") "jqconsole-output"))))

@@ -26,8 +26,8 @@
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
                                      (re-html "#user-container" userbox)
                                      (re-html "#text-box" text)
-                                     (-> (jq "#peer-box") (.show))
-                                     (socket/share-console-loop))
+                                     (-> (jq "#sub-box") (.show)))
+;                                     (socket/share-console-loop))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []

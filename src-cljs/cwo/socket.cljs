@@ -3,6 +3,7 @@
 
 (def sock (atom nil))
 (def publish-console? (atom true))
+(def eval-result (atom nil))
 
 (defn send-console []
   (let [console-nodes (-> (jq "#your-repl .jqconsole-header ~ span") (.clone))
@@ -24,8 +25,19 @@
   (send-alt-console)
   (js/setTimeout share-alt-console-loop 1900))
 
-(defn connect [handle]
-  (.send @sock (pr-str [:connect handle])))
+(defn eval-wait []
+  (when-not eval-result ;TODO: nil could be a valid result!
+    (js/setTimeout eval-wait 100)))
+
+(defn eval-clj [expr sb]
+  (.send @sock (pr-str [:eval-clj [expr sb]]))
+  (eval-wait)
+  (let [res @eval-result]
+    (reset! eval-result nil)
+    res))
+
+(defn subscribe [handle]
+  (.send @sock (pr-str [:subscribe handle])))
 
 (defn transfer [handle]
   (reset! publish-console? false)

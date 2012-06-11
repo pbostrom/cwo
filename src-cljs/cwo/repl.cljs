@@ -1,12 +1,11 @@
 (ns cwo.repl
-  (:require [cwo.ajax :as ajax])
+  (:require [cwo.ajax :as ajax]
+            [cwo.socket :as socket])
   (:use [cwo.utils :only (jq)]))
 
-(def others-repl (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " ")))
-(set! (.-sb others-repl) :oth)
-
-(def your-repl (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " ")))
-(set! (.-sb your-repl) :you)
+(def repls
+  {:oth (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " "))
+   :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
 (defn paren-match? [expr]
   (>=
@@ -29,18 +28,19 @@
         indent-val (+ (first (second indent-vec)) 2 offset)]
     indent-val))
 
+(defn prompt [repl]
+  (let [handler #(socket/eval-clj % repl)]
+    (.Prompt (repl repls) true handler (fn [expr]
+                                 (if (paren-match? expr)
+                                   false
+                                   (expr-indent expr))))))
+
 (defn console-write [repl output]
   (if (:error output)
-    (.Write repl (str (:message output) "\n") "jqconsole-error")
-    (.Write repl (str output "\n") "jqconsole-output")))
+    (.Write (repl repls) (str (:message output) "\n") "jqconsole-error")
+    (.Write (repl repls) (str output "\n") "jqconsole-output"))
+  (prompt repl))
 
 (defn init-repl [repl]
-  (let [handler (fn hdlr [expr]
-                  (if expr
-                    (console-write repl (ajax/eval-clojure expr (.-sb repl))))
-                  (.Prompt repl true hdlr (fn [expr]
-                                            (if (paren-match? expr)
-                                              false
-                                              (expr-indent expr)))))]
-    (.SetIndentWidth repl 1)
-    (handler nil)))
+  (.SetIndentWidth (repl repls) 1)
+  (prompt repl))

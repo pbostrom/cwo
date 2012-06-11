@@ -1,14 +1,16 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
             [noir.session :as session]
-            [cwo.sandbox :as sb]))
+            [cwo.sandbox :as sb]
+            [cwo.eval :as evl]))
 
 ; Channel mgmt architecture
 ; A channel controller is a map for regulating websocket traffic between clients
 ; {
-;  :snd     Required, permanent channel to send commands and REPL contents
-;  :rec     Required, permanent channel to receive commands and shared REPLs
-;  :handle  Optional, anonymous users permitted
+;  :srv-ch    Required, permanent channel to send commands to server
+;  :cl-ch     Required, permanent channel to send commands to client
+;  :repl-ch   Required, queue to store repl history
+;  :handle    Optional, anonymous users permitted
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub-valve    Optional, a subscription to a shared REPL session
@@ -29,15 +31,10 @@
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
-; message predicates to aid in routing
-(defn cmd? [msg]
-  (.startsWith msg "["))
-;  (and msg (.startsWith msg "[")))
+(defn cc-from-handle [handle]
+  (@sesh-id->cc (@handle->sesh-id handle)))
 
-(defn default? [msg]
-  (not (or (cmd? msg) (.startsWith msg "{"))))
-
-; Handle commands from the channel
+; Handle commands send via srv-ch
 (defn command-handler [sesh-id cmd-str]
   (let [[cmd arg] (read-string cmd-str)]
     (println "cmd:" cmd sesh-id arg)
@@ -46,12 +43,12 @@
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-id]
   (println "init-cc!")
-  (let [newcc {:snd (lamina/channel* :grounded? true :permanent? true)
-               :rec (lamina/channel* :grounded? true :permanent? true)
+  (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
+               :cl-ch (lamina/channel* :grounded? true :permanent? true)
+               :repl-ch (lamina/channel* :permanent? true)
                :you (sb/make-sandbox)}]
-    (lamina/receive-all 
-      (lamina/filter* cmd? (newcc :snd)) #(command-handler sesh-id %))
-    (lamina/siphon handle-ch (newcc :rec))
+    (lamina/receive-all (newcc :srv-ch) #(command-handler sesh-id %))
+    (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-id->cc assoc sesh-id newcc)
     newcc))
 
@@ -79,43 +76,34 @@
 (defn socket-handler [webch handshake]
   (let [cc (get-cc)]
     (when (session/get "handle") (broadcast))
-    (lamina/siphon webch (cc :snd))
-    (lamina/siphon (cc :rec) webch)
-    (client-cmd (cc :rec) [:addhandles (keys @handle->sesh-id)])))
+    (lamina/siphon webch (cc :srv-ch))
+    (lamina/siphon (cc :cl-ch) webch)
+    (client-cmd (cc :cl-ch) [:addhandles (keys @handle->sesh-id)])))
 
 ; socket ctrl commands below
-(defn connect [sesh-id handle]
-  (let [peer-handle (get-in @sesh-id->cc [sesh-id :handle] "anonymous")
-        target-cc (@sesh-id->cc (@handle->sesh-id handle))
+(defn subscribe [sesh-id handle]
+  (let [{{:keys [repl-ch cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
+        {{old-sv :sub-valve subclch :cl-ch pr-hdl :handle
+          :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc ;subscriber
         sub-valve (lamina/channel)]
     (println sesh-id "subscribe to" handle)
-    (client-cmd (target-cc :rec) [:addpeer peer-handle])
-    (when-let [old-ch (get-in @sesh-id->cc [sesh-id :sub-valve])]
-      (lamina/close old-ch))
+    (client-cmd cl-ch [:addsub pr-hdl])
+    (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] sub-valve)
-    (lamina/siphon (lamina/filter* default? (target-cc :snd))
-                   sub-valve (get-in @sesh-id->cc [sesh-id :rec]))))
-
-(defn strip-alt [msg]
-  (println msg)
-  (let [msg-obj (read-string msg)]
-    (:alt msg-obj)))
+    (lamina/siphon (lamina/fork repl-ch) sub-valve subclch)))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {newccr :rec newccs :snd newccrv :sub-valve} (@sesh-id->cc hdl-sesh-id)
+        {newccr :rec newccs :snd newccsv :sub-valve} (@sesh-id->cc hdl-sesh-id)
         {oldccr :rec oldccs :snd oldcctv :tsub-valve
          oldccpv :pt-valve target-sb :you} (@sesh-id->cc sesh-id)
         tsub-valve (lamina/channel)
-        pt-valve (lamina/map* strip-alt newccs)]
-    (lamina/close newccrv) ; close subscription created by (connect ...)
-    
+        pt-valve nil]
+    (lamina/close newccsv) ; close subscription created by (connect ...)
     (when oldcctv 
       (lamina/close oldcctv)
       (lamina/close oldccpv)) ;close previous trans-valve if it exists
-;    (swap! sesh-id->cc assoc-in [sesh-id :trans-valve] trans-valve)
-;    (swap! sesh-id->cc assoc-in [hdl-sesh-id :oth] oldsb)
     (swap! sesh-id->cc
            (fn [m] (reduce #(apply assoc-in %1 %2) m
                            {[sesh-id :tsub-valve] tsub-valve,
@@ -124,3 +112,14 @@
     (lamina/siphon pt-valve oldccs)
     (lamina/siphon newccs tsub-valve oldccr)
     (client-cmd newccr [:transfer handle]))) ; tell client that subscribed REPL is being transfered
+
+(defn eval-clj [sesh-id [expr sb-key]]
+  (let [{{:keys [cl-ch repl-ch] :as cc} sesh-id} @sesh-id->cc
+        sb (sb-key cc)
+        {:keys [expr result error message] :as res} (evl/eval-expr expr sb)
+        data (if error
+               res
+               (let [[out res] result]
+                 (str out (pr-str res))))]
+    (client-cmd cl-ch [:result (pr-str [sb-key data])])
+    (client-cmd repl-ch [:hist (pr-str [expr data])])))

@@ -6,7 +6,7 @@
             [crate.core :as crate]))
 
 ; init repl
-(repl/init-repl repl/your-repl)
+(repl/init-repl :you)
 
 ; open websocket
 (reset! socket/sock (js/WebSocket. ws-url))
@@ -51,12 +51,12 @@
 
 ; connect button
 (-> (jq "#others-box")
-  (.on "click" "#connect" (fn [] (socket/connect (-> (jq "#others-list option:selected") (.val))))))
+  (.on "click" "#connect" (fn [] (socket/subscribe (-> (jq "#others-list option:selected") (.val))))))
 
 ; transfer button
-(-> (jq "#peer-box")
+(-> (jq "#sub-box")
   (.on "click" "#transfer" (fn [] 
-                             (socket/transfer (-> (jq "#peer-list option:selected") (.val))))))
+                             (socket/transfer (-> (jq "#sub-list option:selected") (.val))))))
 
 ; login/out buttons 
 (-> (jq "#user-container")
