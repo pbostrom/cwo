@@ -124,12 +124,14 @@
     (client-cmd newcc [:transfer handle]))) ; tell client that subscribed REPL is being transfered
 
 (defn eval-clj [sesh-id [expr sb-key]]
-  (let [{{:keys [cl-ch] repl sb-key} sesh-id} @sesh-id->cc
+  (let [expr (binding [*read-eval* false] (read-string expr))
+        {{:keys [cl-ch] repl sb-key} sesh-id} @sesh-id->cc
         sb (:sb repl)
-        {:keys [expr result error message] :as res} (evl/eval-expr expr sb)
+        {:keys [result error message] :as res} (evl/eval-expr expr sb)
         data (if error
                res
                (let [[out res] result]
                  (str out (pr-str res))))]
+    (println res)
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])))

@@ -5,7 +5,7 @@
 (def publish-console? (atom true))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " "))
+  {:oth (-> (jq "#others-repl") (.jqconsole "Select a REPL from the list\n" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
 (defn send-prompt []
