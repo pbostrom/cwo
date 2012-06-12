@@ -5,33 +5,18 @@
             [cwo.repl :as repl]
             [crate.core :as crate]))
 
-; init repl
-(repl/init-repl :you)
 
-; init subscription repl
-(let [repl (repl/repls :oth)]
-  (.Prompt repl true (fn [] nil))
-  (.Disable repl))
+
+; init repls
+(repl/set-repl-mode :you :active)
+(repl/set-repl-mode :oth :sub)
 
 ; open websocket
 (reset! socket/sock (js/WebSocket. ws-url))
 
-(defn refresh-repl [msg]
-  (-> (jq "#others-repl .jqconsole-header ~ span")
-    (.remove))
-  (-> (jq msg)
-    (.insertAfter (jq "#others-repl .jqconsole-header"))))
-
-(defn refresh-alt-repl [msg-obj]
-  (let [{msg :alt} msg-obj]
-  (-> (jq "#your-repl .jqconsole-header ~ span")
-    (.remove))
-  (-> (jq msg)
-    (.insertAfter (jq "#your-repl .jqconsole-header")))))
-
 (defn route [msg-obj]
   (let [{msg :p} msg-obj]
-    (.SetPromptText (repl/repls :oth) msg)))
+    (.SetPromptText (:oth repl/repls) msg)))
 
 (defn default? [msg]
   (not (or (= (.charAt msg 0) "[") (= (.charAt msg 0) "{"))))
@@ -58,9 +43,11 @@
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                                (-> (jq evt.target) (.attr "selected" "selected")))))
 
-; connect button
+; subscribe button
 (-> (jq "#others-box")
-  (.on "click" "#connect" (fn [] (socket/subscribe (-> (jq "#others-list option:selected") (.val))))))
+  (.on "click" "#subscribe" (fn []
+                              (repl/set-repl-mode :oth :sub)
+                              (socket/subscribe (-> (jq "#others-list option:selected") (.val))))))
 
 ; transfer button
 (-> (jq "#sub-box")

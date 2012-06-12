@@ -21,7 +21,7 @@
   (rmoption "#others-list" handle))
 
 (defn transfer [handle]
-  (repl/init-repl :oth))
+  (repl/set-repl-mode :oth :active))
 
 ; remove an option from a select list
 (defn- rmoption [list-id opt-val]

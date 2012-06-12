@@ -92,7 +92,7 @@
 
 ; socket ctrl commands below
 (defn subscribe [sesh-id handle]
-  (let [{{:keys [cl-ch srv-ch {:keys [hist]} you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
+  (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
         {{old-sv :sub-valve subclch :cl-ch pr-hdl :handle
           :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc ;subscriber
         sub-valve (lamina/channel)]
@@ -100,15 +100,15 @@
     (client-cmd cl-ch [:addsub pr-hdl])
     (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] sub-valve)
-    (lamina/siphon (lamina/fork hist) sub-valve subclch)
+    (lamina/siphon (lamina/fork (:hist you)) sub-valve subclch)
     (lamina/siphon (lamina/filter* (route? :prompt) srv-ch) sub-valve subclch)))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {newccr :rec newccs :snd newccsv :sub-valve} (@sesh-id->cc hdl-sesh-id)
+        {newcc :cl-ch newccs :snd newccsv :sub-valve} (@sesh-id->cc hdl-sesh-id)
         {oldccr :rec oldccs :snd oldcctv :tsub-valve
-         oldccpv :pt-valve target-sb :you} (@sesh-id->cc sesh-id)
+         oldccpv :pt-valve target-repl :you} (@sesh-id->cc sesh-id)
         tsub-valve (lamina/channel)
         pt-valve nil]
     (lamina/close newccsv) ; close subscription created by (connect ...)
@@ -119,10 +119,9 @@
            (fn [m] (reduce #(apply assoc-in %1 %2) m
                            {[sesh-id :tsub-valve] tsub-valve,
                             [sesh-id :pt-valve] pt-valve,
-                            [hdl-sesh-id :oth] target-sb})))
-    (lamina/siphon pt-valve oldccs)
-    (lamina/siphon newccs tsub-valve oldccr)
-    (client-cmd newccr [:transfer handle]))) ; tell client that subscribed REPL is being transfered
+                            [hdl-sesh-id :oth] target-repl})))
+    ;(lamina/siphon newccs tsub-valve oldccr)
+    (client-cmd newcc [:transfer handle]))) ; tell client that subscribed REPL is being transfered
 
 (defn eval-clj [sesh-id [expr sb-key]]
   (let [{{:keys [cl-ch] repl sb-key} sesh-id} @sesh-id->cc

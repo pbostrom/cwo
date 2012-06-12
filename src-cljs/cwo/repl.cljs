@@ -52,7 +52,19 @@
     (.Write (repl repls) (str output "\n") "jqconsole-output"))
   (prompt repl))
 
-(defn init-repl [repl]
-  (.Enable (repls repl))
-  (.SetIndentWidth (repls repl) 1)
-  (prompt repl))
+(defn init-active-mode [repl-kw]
+  (let [repl (repl-kw repls)]
+    (when (= (.GetState repl) "prompt") (.AbortPrompt repl))
+    (.Enable repl)
+    (.SetIndentWidth repl 1)
+    (prompt repl-kw)))
+
+(defn init-sub-mode [repl-kw]
+  (let [repl (repl-kw repls)]
+    (.Reset repl)
+    (.Prompt repl true (fn [] nil))
+    (.Disable repl)))
+
+(defn set-repl-mode [repl mode]
+  (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
+    (modef repl)))
