@@ -1,6 +1,6 @@
 (ns cwo.ajax
   (:require [cljs.reader :as reader]
-            [cwo.socket :as socket])
+            [cwo.repl :as repl])
   (:use [cwo.utils :only (jq map->js)]))
 
 (defn eval-clojure [code sb]
@@ -26,8 +26,8 @@
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
                                      (re-html "#user-container" userbox)
                                      (re-html "#text-box" text)
-                                     (-> (jq "#sub-box") (.show)))
-;                                     (socket/share-console-loop))
+                                     (-> (jq "#sub-box") (.show))
+                                     (repl/share-console-loop))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []

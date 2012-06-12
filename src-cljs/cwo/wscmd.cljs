@@ -21,9 +21,7 @@
   (rmoption "#others-list" handle))
 
 (defn transfer [handle]
-  (.Reset repl/others-repl)
-  (repl/init-repl repl/others-repl)
-  (socket/share-alt-console-loop))
+  (repl/init-repl :oth))
 
 ; remove an option from a select list
 (defn- rmoption [list-id opt-val]

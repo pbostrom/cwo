@@ -5,8 +5,6 @@
             [cwo.repl :as repl]
             [crate.core :as crate]))
 
-(def publish-console? (atom true))
-
 ; init repl
 (repl/init-repl :you)
 
@@ -14,7 +12,6 @@
 (let [repl (repl/repls :oth)]
   (.Prompt repl true (fn [] nil))
   (.Disable repl))
-
 
 ; open websocket
 (reset! socket/sock (js/WebSocket. ws-url))
@@ -35,15 +32,6 @@
 (defn route [msg-obj]
   (let [{msg :p} msg-obj]
     (.SetPromptText (repl/repls :oth) msg)))
-
-(defn send-prompt []
-  (let [prompt-text (.GetPromptText (repl/repls :you))]
-    (.send @socket/sock (pr-str {:p prompt-text}))))
-
-(defn share-console-loop []
-  (when @publish-console?
-    (send-prompt)
-    (js/setTimeout share-console-loop 1900)))
 
 (defn default? [msg]
   (not (or (= (.charAt msg 0) "[") (= (.charAt msg 0) "{"))))
@@ -76,7 +64,8 @@
 
 ; transfer button
 (-> (jq "#sub-box")
-  (.on "click" "#transfer" (fn [] 
+  (.on "click" "#transfer" (fn []
+                             (reset! repl/publish-console? false)
                              (socket/transfer (-> (jq "#sub-list option:selected") (.val))))))
 
 ; login/out buttons 
@@ -95,5 +84,4 @@
 
 ; activate 1st tab
 (.ready (jq js/document) #(do 
-                            (-> (jq "#myTab a:first") (.tab "show"))
-                            (share-console-loop)))
+                            (-> (jq "#myTab a:first") (.tab "show"))))

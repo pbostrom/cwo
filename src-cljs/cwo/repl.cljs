@@ -1,11 +1,22 @@
 (ns cwo.repl
-  (:require [cwo.ajax :as ajax]
-            [cwo.socket :as socket])
-  (:use [cwo.utils :only (jq)]))
+  (:require [cwo.socket :as socket])
+  (:use [cwo.utils :only (jq jslog)]))
+
+(def publish-console? (atom true))
 
 (def repls
   {:oth (-> (jq "#others-repl") (.jqconsole "Another's REPL\n" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
+
+(defn send-prompt []
+  (let [repl (repls :you)]
+    (when-let [prompt-text (and (= (.GetState repl) "prompt")(.GetPromptText repl))]
+      (.send @socket/sock (pr-str {:p prompt-text})))))
+
+(defn share-console-loop []
+  (when @publish-console?
+    (send-prompt)
+    (js/setTimeout share-console-loop 1900)))
 
 (defn paren-match? [expr]
   (>=
@@ -42,5 +53,6 @@
   (prompt repl))
 
 (defn init-repl [repl]
-  (.SetIndentWidth (repl repls) 1)
+  (.Enable (repls repl))
+  (.SetIndentWidth (repls repl) 1)
   (prompt repl))
