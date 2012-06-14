@@ -1,17 +1,17 @@
 (ns cwo.repl
-  (:require [cwo.socket :as socket])
-  (:use [cwo.utils :only (jq jslog)]))
+  (:use [cwo.utils :only (jq jslog sock srv-cmd)])
+  (:require [crate.core :as crate]))
 
 (def publish-console? (atom true))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "Select a REPL from the list\n" "=> " " "))
+  {:oth (-> (jq "#others-repl") (.jqconsole "Not connected\n" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
 (defn send-prompt []
   (let [repl (repls :you)]
     (when-let [prompt-text (and (= (.GetState repl) "prompt")(.GetPromptText repl))]
-      (.send @socket/sock (pr-str {:p prompt-text})))))
+      (.send @sock (pr-str {:p prompt-text})))))
 
 (defn share-console-loop []
   (when @publish-console?
@@ -40,7 +40,7 @@
     indent-val))
 
 (defn prompt [repl]
-  (let [handler #(socket/eval-clj % repl)]
+  (let [handler #(srv-cmd :eval-clj [% repl])]
     (.Prompt (repl repls) true handler (fn [expr]
                                  (if (paren-match? expr)
                                    false
@@ -68,3 +68,26 @@
 (defn set-repl-mode [repl mode]
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
     (modef repl)))
+
+(defn subscribe []
+  (set-repl-mode :oth :sub)
+  (let [handle (-> (jq "#others-list option:selected") (.val))
+        header (jq "#others-repl span.jqconsole-header > span")
+        btn [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]
+    (.before header (crate/html btn))
+    (.text header (str handle "'s REPL\n"))
+    (srv-cmd :subscribe handle)))
+
+(defn disconnect []
+  (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
+                 (.remove (jq btn))
+                 (srv-cmd :disconnect handle)))
+  (let [header (jq "#others-repl span.jqconsole-header > span")]
+    (set-repl-mode :oth :sub)
+    (.text header "Not connected\n")))
+        
+
+(defn transfer []
+  (reset! publish-console? false)
+  (let [handle (-> (jq "#sub-list option:selected") (.val))]
+    (srv-cmd :transfer handle)))

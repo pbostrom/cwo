@@ -103,6 +103,14 @@
     (lamina/siphon (lamina/fork (:hist you)) sub-valve subclch)
     (lamina/siphon (lamina/filter* (route? :prompt) srv-ch) sub-valve subclch)))
 
+(defn disconnect [sesh-id handle]
+  (println "disconnect" handle)
+  (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
+        {{sv :sub-valve pr-hdl :handle :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc] ;subscriber
+    (lamina/close sv)
+    (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] nil)
+    (client-cmd cl-ch [:rmsub pr-hdl])))
+
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)

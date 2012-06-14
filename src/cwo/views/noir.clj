@@ -1,11 +1,13 @@
 (ns cwo.views.noir
   (:require [cwo.eval :as evl]
-            [cwo.util :as util]
             [cwo.chmgr :as chmgr]
             [cwo.views.enlive :as enlive]
             [noir.session :as session]
             [noir.cookies :as cookies])
   (:use [noir.core  :only (defpage)]))
+
+(defn fmap [m f]
+  (into {} (for [[k v] m] [k (f v)])))
 
 ;; enlive rendered routes
 (defpage "/" []
@@ -19,13 +21,13 @@
     (do
       (session/put! "handle" handle)
       (chmgr/broadcast)
-      (pr-str (util/fmap (enlive/si-content handle) enlive/render-snippet)))
+      (pr-str (fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
   (chmgr/end-broadcast)
   (session/remove! "handle")
-  (pr-str (util/fmap (enlive/default-content) enlive/render-snippet)))
+  (pr-str (fmap (enlive/default-content) enlive/render-snippet)))
 
 ;; evaluation route
 (defpage [:post "/eval-clj"] {:keys [expr sb]}

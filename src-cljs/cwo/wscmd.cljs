@@ -2,8 +2,7 @@
   (:use [cwo.utils :only (jq)])
   (:require [crate.core :as crate]
             [cljs.reader :as reader]
-            [cwo.repl :as repl]
-            [cwo.socket :as socket]))
+            [cwo.repl :as repl]))
 
 (defn addhandles [handles]
   (dorun
@@ -16,6 +15,9 @@
   (-> (jq "#sub-list")
     (.append
       (crate/html [:option handle]))))
+
+(defn rmsub [handle]
+  (rmoption "#sub-list" handle))
 
 (defn rmhandle [handle]
   (rmoption "#others-list" handle))

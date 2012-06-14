@@ -2,6 +2,13 @@
 
 (def jq js/jQuery)
 (def ws-url (str "ws://" js/window.location.host "/socket"))
+(def sock (atom nil))
+
+(defn srv-cmd
+  "Send a command to be executed on the server in the
+   form of [:command arg]."
+  [cmd arg]
+  (.send @sock (pr-str [cmd arg])))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
