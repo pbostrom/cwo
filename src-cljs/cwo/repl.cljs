@@ -89,5 +89,14 @@
 
 (defn transfer []
   (reset! publish-console? false)
-  (let [handle (-> (jq "#sub-list option:selected") (.val))]
-    (srv-cmd :transfer handle)))
+  (let [handle (-> (jq "#sub-list option:selected") (.val))
+        header (jq "#your-repl span.jqconsole-header > span")
+        btn [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]
+    (srv-cmd :transfer handle)
+    (.before header (crate/html btn))))
+
+(defn reclaim []
+  (reset! publish-console? true)
+  (this-as btn 
+           (.remove (jq btn))
+           (srv-cmd :reclaim)))
