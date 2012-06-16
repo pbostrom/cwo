@@ -4,7 +4,7 @@
 
 (def try-clojure-tester
   (into secure-tester-without-def
-        #{'tryclojure.core}))
+        #{'cwo.chmgr}))
 
 (defn make-sandbox []
   (sandbox try-clojure-tester

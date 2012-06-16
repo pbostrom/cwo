@@ -1,45 +1,29 @@
 (ns cwo.app
-  (:use [cwo.utils :only (jq ws-url jslog)])
+  (:use [cwo.utils :only (jq ws-url jslog sock)])
   (:require [cwo.ajax :as ajax]
-            [cwo.socket :as socket]
-            [cwo.repl :as repl]
-            [crate.core :as crate]))
+            [cwo.repl :as repl]))
 
-; init repl
-(repl/init-repl repl/your-repl)
+; init repls
+(repl/set-repl-mode :you :active)
+(repl/set-repl-mode :oth :sub)
 
 ; open websocket
-(reset! socket/sock (js/WebSocket. ws-url))
+(reset! sock (js/WebSocket. ws-url))
 
-(defn refresh-repl [msg]
-  (-> (jq "#others-repl .jqconsole-header ~ span")
-    (.remove))
-  (-> (jq msg)
-    (.insertAfter (jq "#others-repl .jqconsole-header"))))
-
-(defn refresh-alt-repl [msg-obj]
-  (let [{msg :alt} msg-obj]
-  (-> (jq "#your-repl .jqconsole-header ~ span")
-    (.remove))
-  (-> (jq msg)
-    (.insertAfter (jq "#your-repl .jqconsole-header")))))
-
-(defn default? [msg]
-  (not (or (= (.charAt msg 0) "[") (= (.charAt msg 0) "{"))))
+(defn route [msg-obj]
+  (let [{msg :p} msg-obj]
+    (.SetPromptText (:oth repl/repls) msg)))
 
 (defn call-wscmd [[cmd args]]
   (.log js/console (name cmd) ":" (pr-str args))
   ((.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) args))
 
 (defn msg-hdlr [msg]
-  (let [msg msg.data]
-    (if (default? msg)
-      (refresh-repl msg)
-      (let [msg-obj (cljs.reader/read-string msg)]
-        (cond (vector? msg-obj) (call-wscmd msg-obj)
-              (map? msg-obj) (refresh-alt-repl msg-obj))))))
+  (let [msg-obj (cljs.reader/read-string (.-data msg))]
+    (cond (vector? msg-obj) (call-wscmd msg-obj)
+          (map? msg-obj) (route msg-obj))))
 
-(set! (.-onmessage @socket/sock) msg-hdlr)
+(set! (.-onmessage @sock) msg-hdlr)
 
 ; ui listeners
 
@@ -49,14 +33,13 @@
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                                (-> (jq evt.target) (.attr "selected" "selected")))))
 
-; connect button
-(-> (jq "#others-box")
-  (.on "click" "#connect" (fn [] (socket/connect (-> (jq "#others-list option:selected") (.val))))))
+; subscribe button
+(-> (jq "#others-box") (.on "click" "#subscribe" repl/subscribe))
+; disconnect button
+(-> (jq "#others-repl") (.on "click" "#discon" repl/disconnect))
 
 ; transfer button
-(-> (jq "#peer-box")
-  (.on "click" "#transfer" (fn [] 
-                             (socket/transfer (-> (jq "#peer-list option:selected") (.val))))))
+(-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
 
 ; login/out buttons 
 (-> (jq "#user-container")
@@ -72,5 +55,8 @@
                      (this-as ta (-> (jq ta)
                                    (.tab "show"))))))
 
-; activate 1st tab
-(.ready (jq js/document) #(-> (jq "#myTab a:first") (.tab "show")))
+; $(document).ready function
+(defn ready []
+  (-> (jq "#myTab a:first") (.tab "show"))) ; activate 1st tab
+
+(.ready (jq js/document) ready)

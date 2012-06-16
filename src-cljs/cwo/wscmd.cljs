@@ -1,8 +1,8 @@
 (ns cwo.wscmd
   (:use [cwo.utils :only (jq)])
   (:require [crate.core :as crate]
-            [cwo.repl :as repl]
-            [cwo.socket :as socket]))
+            [cljs.reader :as reader]
+            [cwo.repl :as repl]))
 
 (defn addhandles [handles]
   (dorun
@@ -10,22 +10,37 @@
             (.append
               (crate/html [:option %]))) handles)))
 
-(defn addpeer [handle]
-  (rmoption "#peer-list" handle)
-  (-> (jq "#peer-list")
+(defn addsub [handle]
+  (rmoption "#sub-list" handle)
+  (-> (jq "#sub-list")
     (.append
       (crate/html [:option handle]))))
+
+(defn rmsub [handle]
+  (rmoption "#sub-list" handle))
 
 (defn rmhandle [handle]
   (rmoption "#others-list" handle))
 
 (defn transfer [handle]
-  (.Reset repl/others-repl)
-  (repl/init-repl repl/others-repl)
-  (socket/share-alt-console-loop))
+  (repl/set-repl-mode :oth :active))
 
 ; remove an option from a select list
 (defn- rmoption [list-id opt-val]
 (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
     (.remove)))
+
+(defn result [rslt]
+  (let [[repl rslt] (reader/read-string rslt)]
+    (repl/console-write repl rslt)))
+
+(defn hist [hist-pair]
+  (let [[expr rslt] (reader/read-string hist-pair)
+        repl (:oth repl/repls)]
+    (.SetPromptText repl (pr-str expr))
+    (.AbortPrompt repl)
+    (if (:error rslt)
+      (.Write repl (str (:message rslt) "\n") "jqconsole-error")
+      (.Write repl (str rslt "\n") "jqconsole-output"))
+    (.Prompt repl true (fn [] nil))))

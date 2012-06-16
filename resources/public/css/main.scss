@@ -95,12 +95,23 @@ html, body {
   color: $base01;
 }
 
+/* Others REPL heading */
+#discon {
+  padding: 0px 3px;
+  margin-right: 3px;
+}
+
 .console {
   margin-bottom: 9px;
 }
 pre.jqconsole {
   background-color: $base3;
 }
+/* console header */
+span.jqconsole-header > span {
+  color: $base01
+}
+
 /* The command history */
 .jqconsole-old-prompt {
   color: $base1;
@@ -108,7 +119,7 @@ pre.jqconsole {
 }
 /* The current prompt text color */
 .jqconsole-prompt {
-  color: $base00
+  color: $base01
 }
 /* The text color of the output. */
 .jqconsole-output {
@@ -121,11 +132,11 @@ pre.jqconsole {
 }
 /* The cursor. */
 .jqconsole-cursor {
-  background-color: gray;
+  background-color: $base1;
 }
 /* The cursor color when the console looses focus. */
 .jqconsole-blurred .jqconsole-cursor {
-  background-color: #666;
+  background-color: $base2;
 }
 /* The text color when in input mode. */
 .jqconsole-input {
@@ -138,5 +149,5 @@ pre.jqconsole {
 }
 /* The text color of error output. */
 .jqconsole-error {
-  color: red;
+  color: $red;
 }
