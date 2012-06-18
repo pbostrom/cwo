@@ -11,16 +11,11 @@
     <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
     <link href="css/ansi.css" rel="stylesheet">
-    <style>
-      body {
-        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-      }
-    </style>
-    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
   </head>
 
   <body>
-      <div class="span9">
+    <div class="container">
+      <div class="span12">
         <ul id="myTab" class="nav nav-tabs">
           <li><a href="#your-tab" data-toggle="tab">You</a></li>
           <li><a href="#others-tab" data-toggle="tab">Others</a></li>
@@ -30,7 +25,7 @@
 
           <div id="your-tab" class="tab-pane">
             <div id="your-text"></div>
-            <div id="your-repl" class="console"></div>
+            <div id="your-repl" class="console span6"></div>
             <div id="sub-box" class="list-box" style="display: none;">
               Subscribers
               <div>
@@ -44,8 +39,11 @@
           <div id="others-tab" class="tab-pane">
             <div id="others-text"><p>Select a REPL session from the list. While connected, output
               will be displayed in the console.</p></div>
-            <div id="others-repl" class="console"></div>
-            <div id="others-box" class="list-box">
+            <div class="row">
+            <div class="span6">
+              <div id="others-repl" class="console"></div>
+            </div>
+            <div id="others-box" class="list-box span6">
               Available REPLs
               <div>
                 <select id="others-list" multiple="multiple">
@@ -53,10 +51,11 @@
               </div>
               <button id="subscribe" class="btn">Connect</button>
             </div>
+          </div>
           </div> <!-- /others -->
         </div>
       </div>
-
+    </div>
       <script type="text/javascript"> 
         var CLOSURE_NO_DEPS = true; 
         </script>

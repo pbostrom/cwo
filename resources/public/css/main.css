@@ -7,25 +7,17 @@ html, body {
 
 #your-repl {
   position: relative;
-  width: 400px;
-  height: 500px;
-  float: left; }
+  height: 500px; }
 
 #others-repl {
   position: relative;
-  width: 400px;
-  height: 500px;
-  float: left; }
+  height: 500px; }
 
 .userbox input + .btn {
   margin-left: -5px; }
 
 .userbox .handle {
   font-size: 20px; }
-
-.list-box {
-  float: left;
-  margin-left: 9px; }
 
 /* console styles */
 /* solarized light color scheme */
@@ -37,9 +29,6 @@ html, body {
   box-shadow: 0 0 8px 2px #888;
   position: relative;
   z-index: 2; }
-
-.tab-content > div {
-  margin: 9px; }
 
 .nav-tabs {
   margin-bottom: 0px;
@@ -72,7 +61,8 @@ html, body {
   margin-right: 3px; }
 
 .console {
-  margin-bottom: 9px; }
+  margin-left: 10px;
+  margin-bottom: 10px; }
 
 pre.jqconsole {
   background-color: #fdf6e3; }
