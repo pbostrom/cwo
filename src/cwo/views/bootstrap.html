@@ -15,6 +15,17 @@
 
   <body>
     <div class="container">
+      <div class="header span7 offset4">
+        <div class="row">
+          <div class="span3"><h3>ipsu etal odwlaw</h3></div>
+          <div id="user-container" class="span4">
+            <div id="loginbox" class="userbox input-append pull-right">
+              <input id="login-input" type="text" class="span3" placeholder="handle">
+              <button id="login" class="btn" href="#">Sign In</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="span12">
         <ul id="myTab" class="nav nav-tabs">
           <li><a href="#your-tab" data-toggle="tab">You</a></li>
@@ -44,10 +55,8 @@
               <div class="span6">
                 <div class="row">
                   <div id="others-box" class="list-box span3">
-                    <div>
-                      <select id="others-list" multiple="multiple">
-                      </select>
-                    </div>
+                    <select id="others-list" multiple="multiple">
+                    </select>
                     <button id="subscribe" class="btn">Connect</button>
                   </div>
                   <div class="span3">
@@ -57,7 +66,11 @@
                     </p>
                   </div>
                 </div>
-                <div id="chat">
+                <div id="others-chat" class="chat">
+                  <pre>Chat line 1
+Chat line 2
+</pre>
+                <input type="text" placeholder="chat">
               </div>
             </div>
           </div> <!-- /others -->

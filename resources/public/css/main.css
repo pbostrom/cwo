@@ -1,28 +1,64 @@
 /* solarized colors */
 html, body {
-  background-color: #93a1a1;
-  /*    font-family: monospace; */
-  margin: 0;
-  padding: 0; }
+  color: #586e75; }
 
-#your-repl {
-  position: relative;
-  height: 500px; }
+.header {
+  background-color: #eee8d5;
+  margin-top: 10px;
+  margin-bottom: -10px;
+  padding: 5px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px 2px #888; }
 
-#others-repl {
-  position: relative;
-  height: 500px; }
+.userbox {
+  margin-bottom: 0px; }
 
-.userbox input + .btn {
+.userbox .btn {
   margin-left: -5px; }
+
+.container > .span12 {
+  margin-left: 0px; }
+
+.tab-pane {
+  margin-top: 10px; }
+
+.console {
+  position: relative;
+  height: 624px; }
+
+.list-box > select {
+  margin-bottom: 10px;
+  height: 160px;
+  background-color: #fdf6e3;
+  border-radius: 4px;
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15); }
+
+.chat {
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+  margin-right: 10px;
+  margin-top: 39px;
+  background-color: #eee8d5; }
+
+.chat > pre {
+  height: 310px;
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background-color: #fdf6e3;
+  border-radius: 3px; }
+
+.chat > input {
+  width: 418px;
+  margin-bottom: 0px;
+  /*  background-color: $base3;*/
+  border-radius: 3px; }
 
 .userbox .handle {
   font-size: 20px; }
-
-/* console styles */
-/* solarized light color scheme */
-.navbar-inner {
-  background-color: #002b36; }
 
 .tab-content {
   border-radius: 4px;
@@ -44,7 +80,7 @@ html, body {
   z-index: 3; }
 
 .nav-tabs > li > a:hover {
-  background-color: white; }
+  background-color: #93a1a1; }
 
 .nav-tabs > li > a {
   background-color: #eee8d5;
