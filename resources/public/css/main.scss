@@ -17,6 +17,7 @@ $cyan:      #2aa198;
 $green:     #859900;
 
 html, body {
+  background-color: #ededed;
   color: $base01;
 }
 
@@ -26,10 +27,9 @@ html, body {
 .header {
   background-color: $base2;
   margin-top: 10px;
-  margin-bottom: -10px;
   padding: 5px;
   border-radius: 4px;
-  box-shadow: 0 0 8px 2px #888;
+  box-shadow: 0 0 8px 0px #888;
 }
 
 .userbox {
@@ -88,13 +88,14 @@ html, body {
   border-radius: 3px;
 }
 
-.userbox .handle {
-  font-size: 20px;
+#handle {
+  font-size: 15px;
+  margin-right: 10px;
 }
 
 .tab-content {
   border-radius: 4px;
-  box-shadow: 0 0 8px 2px #888;
+  box-shadow: 0 0 8px 0px #888;
   position: relative;
   z-index: 2;
 }

@@ -15,6 +15,7 @@
 
   <body>
     <div class="container">
+      <!-- header -->
       <div class="header span7 offset4">
         <div class="row">
           <div class="span3"><h3>ipsu etal odwlaw</h3></div>
@@ -26,6 +27,8 @@
           </div>
         </div>
       </div>
+      <!-- /header -->
+
       <div class="span12">
         <ul id="myTab" class="nav nav-tabs">
           <li><a href="#your-tab" data-toggle="tab">You</a></li>
@@ -33,25 +36,40 @@
         </ul>
 
         <div class="tab-content">
-
           <div id="your-tab" class="tab-pane">
-            <div id="your-text"></div>
-            <div id="your-repl" class="console span6"></div>
-            <div id="sub-box" class="list-box" style="display: none;">
-              Subscribers
-              <div>
-                <select id="sub-list" multiple="multiple">
-                </select>
-              </div>
-              <button id="transfer" class="btn">Transfer</button>
+            <div id="your-text">
             </div>
-          </div> <!-- /you -->
+            <div class="row">
+              <div class="span6">
+                <div id="your-repl" class="console">
+                </div>
+              </div>
+              <div class="span6">
+                <div class="row">
+                  <div id="sub-box" class="list-box span3" style="display: none;">
+                    <select id="sub-list" multiple="multiple">
+                    </select>
+                    <button id="transfer" class="btn">Transfer</button>
+                  </div>
+                  <div class="span3">
+                    <p>
+                    Subscribers list
+                    </p>
+                  </div>
+                </div>
+                <div id="others-chat" class="chat"><pre></pre>
+                <input type="text" placeholder="chat"></input>
+              </div>
+            </div>
+          </div>
+          <!-- /your-tab -->
 
           <div id="others-tab" class="tab-pane">
             <div class="row">
               <div class="span6">
                 <div id="others-repl" class="console"></div>
               </div>
+              <!-- /span6 -->
               <div class="span6">
                 <div class="row">
                   <div id="others-box" class="list-box span3">
@@ -66,17 +84,20 @@
                     </p>
                   </div>
                 </div>
-                <div id="others-chat" class="chat">
-                  <pre>Chat line 1
-Chat line 2
-</pre>
-                <input type="text" placeholder="chat">
+                <div id="others-chat" class="chat"><pre></pre>
+                <input type="text" placeholder="chat"></input>
               </div>
+              <!-- /span6 -->
             </div>
-          </div> <!-- /others -->
+            <!-- /row -->
+          </div>
+          <!-- /others -->
         </div>
+        <!-- /tab-content -->
       </div>
+      <!-- /span12 -->
     </div>
+    <!-- /container -->
     <script type="text/javascript"> 
       var CLOSURE_NO_DEPS = true; 
       </script>
