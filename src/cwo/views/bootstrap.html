@@ -46,15 +46,15 @@
               </div>
               <div class="span6">
                 <div class="row">
-                  <div id="sub-box" class="list-box span3">
-                    <select id="sub-list" multiple="multiple">
-                    </select>
-                    <button id="transfer" class="btn">Transfer</button>
-                  </div>
                   <div class="span3">
                     <p>
                     Subscribers list
                     </p>
+                  </div>
+                  <div id="sub-box" class="list-box span3">
+                    <select id="sub-list" multiple="multiple">
+                    </select>
+                    <button id="transfer" class="btn">Transfer</button>
                   </div>
                 </div>
                 <div id="others-chat" class="chat">
@@ -74,16 +74,21 @@
               <!-- /span6 -->
               <div class="span6">
                 <div class="row">
+                  <div class="span3">
+                    <p>
+                    <span class="label">Status:</span> Not connected<br/>
+                    Select a REPL session from the list.
+                    <table class="status table table-condensed">
+                      <tr><td>Owner:</td><td>Foo</td></tr>
+                      <tr><td>Last Activity:</td><td>16 Jun 2012 17:17</td></tr>
+                      <tr><td colspan="2">Prompt assigned to guy</td></tr>
+                    </table>
+                    </p>
+                  </div>
                   <div id="others-box" class="list-box span3">
                     <select id="others-list" multiple="multiple">
                     </select>
                     <button id="subscribe" class="btn">Connect</button>
-                  </div>
-                  <div class="span3">
-                    <p>
-                    Select a REPL session from the list. While connected, output
-                    will be displayed in the console.
-                    </p>
                   </div>
                 </div>
                 <div id="others-chat" class="chat"><pre></pre>
