@@ -6,7 +6,9 @@ html, body {
 .header {
   background-color: #eee8d5;
   margin-top: 10px;
+  margin-bottom: -20px;
   padding: 5px;
+  position: relative;
   border-radius: 4px;
   box-shadow: 0 0 8px 0px #888; }
 
@@ -92,10 +94,14 @@ html, body {
   background-color: #eee8d5;
   color: #586e75; }
 
+.jqconsole-header {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
 /* Others REPL heading */
-#discon {
+.jqconsole-header > button {
   padding: 0px 3px;
-  margin-right: 3px; }
+  margin-left: 5px;
+  margin-bottom: 5px; }
 
 .console {
   margin-left: 10px;
