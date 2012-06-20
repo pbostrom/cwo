@@ -6,7 +6,7 @@
 (def publish-console? (atom true))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "Not connected\n" "=> " " "))
+  {:oth (-> (jq "#others-repl") (.jqconsole "" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
 (defn send-prompt []
@@ -70,11 +70,11 @@
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
     (modef repl)))
 
-(defn subscribe []
+(defn connect []
   (set-repl-mode :oth :sub)
-  (let [handle (-> (jq "#others-list option:selected") (.val))
-        stat-div (jq "#others-tab .status")]
-    (.append stat-div (widgets/oth-status handle))
+  (let [handle (-> (jq "#others-list option:selected") (.val))]
+    (.remove (jq "#others-box"))
+    (.append (jq "#others-tab > .row") (widgets/connect-panel handle))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []

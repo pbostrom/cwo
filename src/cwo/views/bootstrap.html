@@ -72,43 +72,28 @@
                 <div id="others-repl" class="console"></div>
               </div>
               <!-- /span6 -->
-              <div class="span6">
-                <div class="row">
-                  <div class="span3 status">
-                    <span class="label">Status:</span> Not connected<br/>
-                    Select a REPL session from the list.
-                    <table class="table table-condensed">
-                      <tr><td>Owner:</td><td>Foo</td></tr>
-                      <tr><td>Last Activity:</td><td>16 Jun 2012 17:17</td></tr>
-                      <tr><td colspan="2">Prompt assigned to guy</td></tr>
-                    </table>
-                  </div>
-                  <div id="others-box" class="list-box span3">
-                    <select id="others-list" multiple="multiple">
-                    </select>
-                    <button id="subscribe" class="btn">Connect</button>
-                  </div>
-                </div>
-                <div id="others-chat" class="chat"><pre></pre>
-                <input type="text" placeholder="chat"></input>
+                <div id="others-box" class="list-box span3 offset1">
+                  <p>Select a REPL session from the list.</p>
+                  <select id="others-list" multiple="multiple">
+                  </select>
+                  <button id="connect" class="btn">Connect</button>
+                <!-- /span6 -->
               </div>
-              <!-- /span6 -->
+              <!-- /row -->
             </div>
-            <!-- /row -->
+            <!-- /others -->
           </div>
-          <!-- /others -->
+          <!-- /tab-content -->
         </div>
-        <!-- /tab-content -->
+        <!-- /span12 -->
       </div>
-      <!-- /span12 -->
-    </div>
-    <!-- /container -->
-    <script type="text/javascript"> 
-      var CLOSURE_NO_DEPS = true; 
-      </script>
-      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
-      <script src="js/jqconsole-2.7.js" type="text/javascript"></script>
-      <script src="js/cljs-compiled.js"></script>
-      <script src="bootstrap/js/bootstrap.js"></script> 
-    </body>
-  </html>
+      <!-- /container -->
+      <script type="text/javascript"> 
+        var CLOSURE_NO_DEPS = true; 
+        </script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
+        <script src="js/jqconsole-2.7.js" type="text/javascript"></script>
+        <script src="js/cljs-compiled.js"></script>
+        <script src="bootstrap/js/bootstrap.js"></script> 
+      </body>
+    </html>

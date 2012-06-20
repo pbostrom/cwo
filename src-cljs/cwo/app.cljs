@@ -33,8 +33,8 @@
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                                (-> (jq evt.target) (.attr "selected" "selected")))))
 
-; subscribe button
-(-> (jq "#others-box") (.on "click" "#subscribe" repl/subscribe))
+; connect button
+(-> (jq "#others-box") (.on "click" "#connect" repl/connect))
 ; disconnect button
 (-> (jq "#others-repl") (.on "click" "#discon" repl/disconnect))
 

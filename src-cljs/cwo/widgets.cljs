@@ -1,11 +1,22 @@
 (ns cwo.widgets
   (:require [crate.core :as crate]))
 
-(defn oth-status [owner]
+(defn connect-panel [owner]
   (crate/html
-    [:table.status.table.table-condensed
-     [:tr 
-      [:td "Owner"]
-      [:td owner [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]]
-     [:tr [:td "Last Activity"][:td#last-act]]
-     [:tr [:td#prmpt {:colspan "2"} "Prompt assigned to"]]]))
+    [:div.span6 
+     [:div.row
+      [:div.span3
+       [:span " Connected"
+        [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]
+       [:table.status.table.table-condensed
+        [:tbody
+         [:tr [:td "Owner"]
+          [:td owner 
+           ]]
+         [:tr [:td "Last Activity"][:td#last-act]]
+         [:tr [:td#prmpt {:colspan "2"} "Prompt assigned to"]]]]]
+      [:div#peers.list-box.span3 [:select {:multiple "multiple"}]]]
+     [:div.chat [:pre] [:input {:placeholder "chat" :type "text"}]]]))
+
+(defn discon-status []
+  (crate/html [:span " Not connected"] [:p "Select a REPL session from the list."]))
