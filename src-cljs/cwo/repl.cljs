@@ -1,6 +1,7 @@
 (ns cwo.repl
   (:use [cwo.utils :only (jq jslog sock srv-cmd)])
-  (:require [crate.core :as crate]))
+  (:require [crate.core :as crate]
+            [cwo.widgets :as widgets]))
 
 (def publish-console? (atom true))
 
@@ -72,10 +73,8 @@
 (defn subscribe []
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))
-        header (jq "#others-repl .jqconsole-header")
-        new-hdr [:div.jqconsole-header (str handle "'s REPL")
-                 [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]]
-    (.replaceWith header (crate/html new-hdr))
+        stat-div (jq "#others-tab .status")]
+    (.append stat-div (widgets/oth-status handle))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
