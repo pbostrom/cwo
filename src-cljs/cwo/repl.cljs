@@ -79,11 +79,10 @@
 
 (defn disconnect []
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
-                 (.remove (jq btn))
                  (srv-cmd :disconnect handle)))
-  (let [header (jq "#others-repl .jqconsole-header")]
-    (set-repl-mode :oth :sub)
-    (.text header "Not connected\n")))
+  (set-repl-mode :oth :sub)
+  (.remove (jq "#others-tab .span6.panel"))
+  (.append (jq "#others-tab > .row") (widgets/others-list handle)))
 
 (defn transfer []
   (reset! publish-console? false)

@@ -3,9 +3,9 @@
 
 (defn connect-panel [owner]
   (crate/html
-    [:div.span6 
+    [:div.span6.panel
      [:div.row
-      [:div.span3
+      [:div#status-box.span3
        [:span " Connected"
         [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]
        [:table.status.table.table-condensed
@@ -18,5 +18,9 @@
       [:div#peers.list-box.span3 [:select {:multiple "multiple"}]]]
      [:div.chat [:pre] [:input {:placeholder "chat" :type "text"}]]]))
 
-(defn discon-status []
-  (crate/html [:span " Not connected"] [:p "Select a REPL session from the list."]))
+(defn others-list []
+  (crate/html 
+    [:div#others-box.list-box.span3.offset1
+     [:p "Select a REPL session from the list."]
+     [:select#others-list {:multiple "multiple"}]
+     [:button#connect.btn "Connect"]]))

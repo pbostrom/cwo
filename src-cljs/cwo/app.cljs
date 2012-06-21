@@ -28,15 +28,15 @@
 ; ui listeners
 
 ; prevent muli-selects
-(-> (jq "#others-box")
+(-> (jq "#others-tab")
   (.on "click" "#others-list" (fn [evt] 
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                                (-> (jq evt.target) (.attr "selected" "selected")))))
 
 ; connect button
-(-> (jq "#others-box") (.on "click" "#connect" repl/connect))
+(-> (jq "#others-tab") (.on "click" "#connect" repl/connect))
 ; disconnect button
-(-> (jq "#others-repl") (.on "click" "#discon" repl/disconnect))
+(-> (jq "#others-tab") (.on "click" "#discon" repl/disconnect))
 
 ; transfer button
 (-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
