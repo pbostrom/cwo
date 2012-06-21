@@ -6,16 +6,13 @@
     [:div.span6.panel
      [:div.row
       [:div#status-box.span3
-       [:span " Connected"
-        [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]
        [:table.status.table.table-condensed
         [:tbody
-         [:tr [:td "Owner"]
-          [:td owner 
-           ]]
-         [:tr [:td "Last Activity"][:td#last-act]]
-         [:tr [:td#prmpt {:colspan "2"} "Prompt assigned to"]]]]]
-      [:div#peers.list-box.span3 [:select {:multiple "multiple"}]]]
+         [:tr [:td "Owner:"] [:td owner ]]
+         [:tr [:td "Last Activity:"][:td#last-act "17:14 10-Jun-12"]]
+         [:tr [:td#prmpt {:colspan "2"} "Prompt assigned to"]]]]
+       [:button#discon.btn.btn-small {:handle owner} [:i.icon-off]" Disconnect"]]
+      [:div#peers.list-box.span3 [:p "Connected users:"] [:select {:multiple "multiple"}]]]
      [:div.chat [:pre] [:input {:placeholder "chat" :type "text"}]]]))
 
 (defn others-list []

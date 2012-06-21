@@ -78,11 +78,12 @@
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
-  (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
-                 (srv-cmd :disconnect handle)))
   (set-repl-mode :oth :sub)
   (.remove (jq "#others-tab .span6.panel"))
-  (.append (jq "#others-tab > .row") (widgets/others-list handle)))
+  (.append (jq "#others-tab > .row") (widgets/others-list handle))
+  (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
+                 (srv-cmd :disconnect handle))))
+  
 
 (defn transfer []
   (reset! publish-console? false)

@@ -106,10 +106,12 @@
 (defn disconnect [sesh-id handle]
   (println "disconnect" handle)
   (let [{{:keys [cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{sv :sub-valve pr-hdl :handle :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc] ;subscriber
+        {{sub-cc :cl-ch sv :sub-valve pr-hdl :handle :or 
+          {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc] ;subscriber
     (lamina/close sv)
     (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] nil)
-    (client-cmd cl-ch [:rmsub pr-hdl])))
+    (client-cmd cl-ch [:rmsub pr-hdl])
+    (client-cmd sub-cc [:addhandles (keys @handle->sesh-id)])))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]

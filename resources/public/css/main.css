@@ -102,9 +102,9 @@ html, body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
 
 /* Others REPL heading */
-.status button {
-  padding: 0px 3px;
-  margin-left: 5px;
+#status-box button {
+  /*  padding: 0px 3px;
+    margin-left: 5px;*/
   margin-bottom: 5px; }
 
 .console {
