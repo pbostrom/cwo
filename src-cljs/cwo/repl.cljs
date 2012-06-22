@@ -73,14 +73,14 @@
 (defn connect []
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
-    (.remove (jq "#others-box"))
-    (.append (jq "#others-tab > .row") (widgets/connect-panel handle))
+    (.append (jq "#widgets") (jq "#others-box"))
+    (.append (jq "#others-tab > .row") (jq "#widgets .span6.panel"))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
   (set-repl-mode :oth :sub)
-  (.remove (jq "#others-tab .span6.panel"))
-  (.append (jq "#others-tab > .row") (widgets/others-list handle))
+  (.append (jq "#widgets") (jq "#others-tab .span6.panel"))
+  (.append (jq "#others-tab > .row") (jq "#others-box"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
   

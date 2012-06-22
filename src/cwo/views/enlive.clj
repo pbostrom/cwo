@@ -4,14 +4,21 @@
 (defn render-snippet [s]
   (apply str (html/emit* s)))
 
-(html/defsnippet loginbox "cwo/views/snippets.html" [:#loginbox] [])
+(def pub "cwo/resources/public/")
 
-(html/defsnippet default-text "cwo/views/snippets.html" [:#default-text] [])
+(html/defsnippet loginbox (str pub "snippets.html") [:#loginbox] [])
 
-(html/defsnippet logoutbox "cwo/views/snippets.html" [:#logoutbox] [username]
+(html/defsnippet default-text (str pub "snippets.html") [:#default-text] [])
+
+(html/defsnippet logoutbox (str pub "snippets.html") [:#logoutbox] [username]
   [:span#handle] (html/content username))
 
-(html/defsnippet signedin-text "cwo/views/snippets.html" [:#signedin-text] [])
+(html/defsnippet signedin-text (str pub "snippets.html") [:#signedin-text] [])
+
+
+(html/defsnippet 
+  connect-status
+  (str pub "connected.html") [:#others-tab :.span6.panel] [])
 
 (defn si-content [username]
   {:userbox (logoutbox username) :text (signedin-text)})
@@ -19,7 +26,8 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(html/deftemplate bootstrap "cwo/views/bootstrap.html"
+(html/deftemplate bootstrap (str pub "bootstrap.html")
   [{:keys [userbox text]}]
   [:div#user-container] (html/content userbox)
-  [:div#your-status] (html/content text))
+  [:div#your-status] (html/content text)
+  [:div#widgets] (html/content (connect-status)))
