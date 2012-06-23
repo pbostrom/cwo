@@ -25,7 +25,7 @@
                                  (if-not (empty? resp)
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
                                      (re-html "#user-container" userbox)
-                                     (re-html "#text-box" text)
+                                     (re-html "#your-status" text)
                                      (-> (jq "#sub-box") (.show))
                                      (repl/share-console-loop))
                                    (js/alert (str "Handle " user " is taken"))))})))
@@ -36,7 +36,7 @@
                       :success (fn [resp]
                                  (let [{:keys [userbox text]} (reader/read-string resp)]
                                    (re-html "#user-container" userbox)
-                                   (re-html "#text-box" text)))})))
+                                   (re-html "#your-status" text)))})))
 
 (defn sync-ajax [code]
   (.log js/console

@@ -1,45 +1,77 @@
 /* solarized colors */
 html, body {
-  background-color: #93a1a1;
-  /*    font-family: monospace; */
-  margin: 0;
-  padding: 0; }
+  background-color: #ededed;
+  color: #586e75; }
 
-#your-repl {
+.header {
+  background-color: #eee8d5;
+  margin-top: 10px;
+  margin-bottom: -20px;
+  padding: 5px;
   position: relative;
-  width: 400px;
-  height: 500px;
-  float: left; }
+  border-radius: 4px;
+  box-shadow: 0 0 8px 0px #888; }
 
-#others-repl {
-  position: relative;
-  width: 400px;
-  height: 500px;
-  float: left; }
+.userbox {
+  margin-bottom: 0px; }
 
-.userbox input + .btn {
+.status td {
+  border-top: 1px solid #CCC;
+  border-top: 1px solid rgba(0, 0, 0, 0.15); }
+
+.userbox .btn {
   margin-left: -5px; }
 
-.userbox .handle {
-  font-size: 20px; }
+.container > .span12 {
+  margin-left: 0px; }
 
-.list-box {
-  float: left;
-  margin-left: 9px; }
+.tab-pane {
+  margin-top: 10px; }
 
-/* console styles */
-/* solarized light color scheme */
-.navbar-inner {
-  background-color: #002b36; }
+.console {
+  position: relative;
+  height: 624px; }
+
+.list-box > select {
+  margin-bottom: 10px;
+  height: 160px;
+  background-color: #fdf6e3;
+  border-radius: 4px;
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15); }
+
+.chat {
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+  margin-right: 10px;
+  margin-top: 39px;
+  background-color: #eee8d5; }
+
+.chat > pre {
+  height: 310px;
+  border: 1px solid #CCC;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background-color: #fdf6e3;
+  border-radius: 3px; }
+
+.chat > input {
+  width: 418px;
+  margin-bottom: 0px;
+  /*  background-color: $base3;*/
+  border-radius: 3px; }
+
+#handle {
+  font-size: 15px;
+  margin-right: 10px; }
 
 .tab-content {
   border-radius: 4px;
-  box-shadow: 0 0 8px 2px #888;
+  box-shadow: 0 0 8px 0px #888;
   position: relative;
   z-index: 2; }
-
-.tab-content > div {
-  margin: 9px; }
 
 .nav-tabs {
   margin-bottom: 0px;
@@ -55,7 +87,7 @@ html, body {
   z-index: 3; }
 
 .nav-tabs > li > a:hover {
-  background-color: white; }
+  background-color: #93a1a1; }
 
 .nav-tabs > li > a {
   background-color: #eee8d5;
@@ -66,13 +98,18 @@ html, body {
   background-color: #eee8d5;
   color: #586e75; }
 
+.jqconsole-header {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
 /* Others REPL heading */
-#discon {
-  padding: 0px 3px;
-  margin-right: 3px; }
+#status-box button {
+  /*  padding: 0px 3px;
+    margin-left: 5px;*/
+  margin-bottom: 5px; }
 
 .console {
-  margin-bottom: 9px; }
+  margin-left: 10px;
+  margin-bottom: 10px; }
 
 pre.jqconsole {
   background-color: #fdf6e3; }

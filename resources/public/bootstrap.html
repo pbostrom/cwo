@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>cwo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<!-- Le styles -->
+<link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+<link href="css/main.css" rel="stylesheet">
+<link href="css/ansi.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="container">
+  <!-- header -->
+  <div class="header span7 offset4">
+    <div class="row">
+      <div class="span3"><h3>ipsu etal odwlaw</h3></div>
+      <div id="user-container" class="span4">
+        <div id="loginbox" class="userbox input-append pull-right">
+          <input id="login-input" type="text" class="span3" placeholder="handle">
+          <button id="login" class="btn" href="#">Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /header -->
+
+  <div class="span12">
+    <ul id="myTab" class="nav nav-tabs">
+      <li><a href="#your-tab" data-toggle="tab">You</a></li>
+      <li><a href="#others-tab" data-toggle="tab">Others</a></li>
+    </ul>
+
+    <div class="tab-content">
+      <div id="your-tab" class="tab-pane">
+        <div id="your-text">
+        </div>
+        <div class="row">
+          <div class="span6">
+            <div id="your-repl" class="console">
+            </div>
+          </div>
+          <div class="span6">
+            <div class="row">
+              <div id="your-status" class="span3">
+              </div>
+              <div id="sub-box" class="list-box span3">
+                <select id="sub-list" multiple="multiple">
+                </select>
+                <button id="transfer" class="btn">Transfer</button>
+              </div>
+            </div>
+            <div id="others-chat" class="chat">
+              <pre></pre>
+              <input type="text" placeholder="chat"></input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /your-tab -->
+
+      <div id="others-tab" class="tab-pane">
+        <div class="row">
+          <div class="span6">
+            <div id="others-repl" class="console"></div>
+          </div>
+          <!-- /span6 -->
+          <div id="others-box" class="list-box span3 offset1">
+            <p>Select a REPL session from the list.</p>
+            <select id="others-list" multiple="multiple">
+            </select>
+            <button id="connect" class="btn">Connect</button>
+          </div>
+          <!-- /span3 -->
+        </div>
+        <!-- /row -->
+      </div>
+      <!-- /others -->
+    </div>
+    <!-- /tab-content -->
+  </div>
+  <!-- /span12 -->
+</div>
+<div style="display:none;">
+  <div id="widgets">
+    Widgets go here
+  </div>
+</div>
+<!-- /container -->
+<script type="text/javascript"> 
+var CLOSURE_NO_DEPS = true; 
+</script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js"></script>
+<script src="js/jqconsole-2.7.js" type="text/javascript"></script>
+<script src="js/cljs-compiled.js"></script>
+<script src="bootstrap/js/bootstrap.js"></script> 
+</body>
+</html>

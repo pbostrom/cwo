@@ -1,11 +1,12 @@
 (ns cwo.repl
   (:use [cwo.utils :only (jq jslog sock srv-cmd)])
-  (:require [crate.core :as crate]))
+  (:require [crate.core :as crate]
+            [cwo.widgets :as widgets]))
 
 (def publish-console? (atom true))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "Not connected\n" "=> " " "))
+  {:oth (-> (jq "#others-repl") (.jqconsole "" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
 (defn send-prompt []
@@ -69,31 +70,29 @@
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
     (modef repl)))
 
-(defn subscribe []
+(defn connect []
   (set-repl-mode :oth :sub)
-  (let [handle (-> (jq "#others-list option:selected") (.val))
-        header (jq "#others-repl span.jqconsole-header > span")
-        btn [:button#discon.btn.btn-small {:handle handle} [:i.icon-off]" Disconnect"]]
-    (.before header (crate/html btn))
-    (.text header (str handle "'s REPL\n"))
+  (let [handle (-> (jq "#others-list option:selected") (.val))]
+    (.append (jq "#widgets") (jq "#others-box"))
+    (.append (jq "#others-tab > .row") (jq "#widgets .span6.panel"))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
+  (set-repl-mode :oth :sub)
+  (.append (jq "#widgets") (jq "#others-tab .span6.panel"))
+  (.append (jq "#others-tab > .row") (jq "#others-box"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
-                 (.remove (jq btn))
-                 (srv-cmd :disconnect handle)))
-  (let [header (jq "#others-repl span.jqconsole-header > span")]
-    (set-repl-mode :oth :sub)
-    (.text header "Not connected\n")))
-        
+                 (srv-cmd :disconnect handle))))
+  
 
 (defn transfer []
   (reset! publish-console? false)
   (let [handle (-> (jq "#sub-list option:selected") (.val))
-        header (jq "#your-repl span.jqconsole-header > span")
-        btn [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]
+        header (jq "#your-repl .jqconsole-header")
+        new-hdr [:div.jqconsole-header "Your REPL"
+                 [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]]
     (srv-cmd :transfer handle)
-    (.before header (crate/html btn))))
+    (.replaceWith header (crate/html new-hdr))))
 
 (defn reclaim []
   (reset! publish-console? true)
