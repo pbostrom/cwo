@@ -26,8 +26,9 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(html/deftemplate bootstrap (str pub "bootstrap.html")
+(html/deftemplate bootstrap (str pub "disconnected.html")
   [{:keys [userbox text]}]
   [:div#user-container] (html/content userbox)
   [:div#your-status] (html/content text)
   [:div#widgets] (html/content (connect-status)))
+  
