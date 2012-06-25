@@ -74,6 +74,8 @@
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
     (.append (jq "#widgets") (jq "#disconnected"))
+    (.text (jq "#owner") handle)
+    (.attr (jq "#discon") "handle" handle)
     (.append (jq "#others-tab > .row") (jq "#connected"))
     (srv-cmd :subscribe handle)))
 
@@ -84,7 +86,6 @@
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
   
-
 (defn transfer []
   (reset! publish-console? false)
   (let [handle (-> (jq "#sub-list option:selected") (.val))
@@ -92,6 +93,9 @@
         new-hdr [:div.jqconsole-header "Your REPL"
                  [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]]
     (srv-cmd :transfer handle)
+    ; convert console to subscribe mode
+    (repl/set-repl/mode :you :subscribe)
+
     (.replaceWith header (crate/html new-hdr))))
 
 (defn reclaim []

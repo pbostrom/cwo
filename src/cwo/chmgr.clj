@@ -106,30 +106,19 @@
 (defn disconnect [sesh-id handle]
   (println "disconnect" handle)
   (let [{{:keys [cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{sub-cc :cl-ch sv :sub-valve pr-hdl :handle :or 
+        {{sv :sub-valve pr-hdl :handle :or 
           {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc] ;subscriber
     (lamina/close sv)
     (swap! sesh-id->cc assoc-in [sesh-id :sub-valve] nil)
-    (client-cmd cl-ch [:rmsub pr-hdl])
-    (client-cmd sub-cc [:addhandles (keys @handle->sesh-id)])))
+    (client-cmd cl-ch [:rmsub pr-hdl])))
 
 ; transfer control of sesh-id's REPL (oldcc) to newcc specified by handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {newcc :cl-ch newccs :snd newccsv :sub-valve} (@sesh-id->cc hdl-sesh-id)
-        {oldccr :rec oldccs :snd oldcctv :tsub-valve
-         oldccpv :pt-valve target-repl :you} (@sesh-id->cc sesh-id)
-        tsub-valve (lamina/channel)
-        pt-valve nil]
+        {newcc :cl-ch newccsv :sub-valve} (@sesh-id->cc hdl-sesh-id)
+        {target-repl :you} (@sesh-id->cc sesh-id)]
     (lamina/close newccsv) ; close subscription created by (connect ...)
-    (when oldcctv 
-      (lamina/close oldcctv)
-      (lamina/close oldccpv)) ;close previous trans-valve if it exists
-    (swap! sesh-id->cc
-           (fn [m] (reduce #(apply assoc-in %1 %2) m
-                           {[sesh-id :tsub-valve] tsub-valve,
-                            [sesh-id :pt-valve] pt-valve,
-                            [hdl-sesh-id :oth] target-repl})))
+    (swap! sesh-id->cc assoc-in [hdl-sesh-id :oth] target-repl)
     ;(lamina/siphon newccs tsub-valve oldccr)
     (client-cmd newcc [:transfer handle]))) ; tell client that subscribed REPL is being transfered
 
