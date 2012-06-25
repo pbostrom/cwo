@@ -1,18 +1,19 @@
 (ns cwo.app
   (:use [cwo.utils :only (jq ws-url jslog sock)])
   (:require [cwo.ajax :as ajax]
-            [cwo.repl :as repl]))
+            [cwo.repl :as repl]
+            [cwo.wscmd :as _]))
 
-; init repls
-(repl/set-repl-mode :you :active)
-(repl/set-repl-mode :oth :sub)
 
 ; open websocket
 (reset! sock (js/WebSocket. ws-url))
 
 (defn route [msg-obj]
-  (let [{msg :p} msg-obj]
-    (.SetPromptText (:oth repl/repls) msg)))
+  (let [{pmsg :p tmsg :t} msg-obj]
+    (when pmsg
+      (.SetPromptText (:oth repl/repls) pmsg))
+    (when tmsg
+      (.SetPromptText (:you repl/repls) tmsg))))
 
 (defn call-wscmd [[cmd args]]
   (.log js/console (name cmd) ":" (pr-str args))
@@ -24,6 +25,11 @@
           (map? msg-obj) (route msg-obj))))
 
 (set! (.-onmessage @sock) msg-hdlr)
+
+; init repls
+(set! (.-onopen @sock) (fn []
+                          (repl/set-repl-mode :you :active) 
+                          (repl/set-repl-mode :oth :sub))) 
 
 ; ui listeners
 

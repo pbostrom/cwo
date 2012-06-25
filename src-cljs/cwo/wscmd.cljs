@@ -10,6 +10,12 @@
             (.append
               (crate/html [:option %]))) handles)))
 
+; remove an option from a select list
+(defn- rmoption [list-id opt-val]
+(-> (jq (str list-id " > option"))
+    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
+    (.remove)))
+
 (defn addsub [handle]
   (rmoption "#sub-list" handle)
   (-> (jq "#sub-list")
@@ -25,12 +31,6 @@
 (defn transfer [handle]
   (repl/set-repl-mode :oth :active))
 
-; remove an option from a select list
-(defn- rmoption [list-id opt-val]
-(-> (jq (str list-id " > option"))
-    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))
-    (.remove)))
-
 (defn result [rslt]
   (let [[repl rslt] (reader/read-string rslt)]
     (repl/console-write repl rslt)))
@@ -38,6 +38,16 @@
 (defn hist [hist-pair]
   (let [[expr rslt] (reader/read-string hist-pair)
         repl (:oth repl/repls)]
+    (.SetPromptText repl (pr-str expr))
+    (.AbortPrompt repl)
+    (if (:error rslt)
+      (.Write repl (str (:message rslt) "\n") "jqconsole-error")
+      (.Write repl (str rslt "\n") "jqconsole-output"))
+    (.Prompt repl true (fn [] nil))))
+
+(defn thist [hist-pair]
+  (let [[expr rslt] (reader/read-string hist-pair)
+        repl (:you repl/repls)]
     (.SetPromptText repl (pr-str expr))
     (.AbortPrompt repl)
     (if (:error rslt)

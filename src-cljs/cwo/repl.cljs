@@ -3,21 +3,23 @@
   (:require [crate.core :as crate]
             [cwo.widgets :as widgets]))
 
-(def publish-console? (atom true))
+(def publish-console? (atom {:you true :oth false}))
 
 (def repls
   {:oth (-> (jq "#others-repl") (.jqconsole "" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
-(defn send-prompt []
-  (let [repl (repls :you)]
+(defn send-prompt [console-kw]
+  (let [repl (repls console-kw)
+        prompt-msg (console-kw {:you (fn [m] {:p m})
+                                :oth (fn [m] {:t {:p m}})})]
     (when-let [prompt-text (and (= (.GetState repl) "prompt")(.GetPromptText repl))]
-      (.send @sock (pr-str {:p prompt-text})))))
+      (.send @sock (pr-str (prompt-msg prompt-text))))))
 
-(defn share-console-loop []
-  (when @publish-console?
-    (send-prompt)
-    (js/setTimeout share-console-loop 1900)))
+(defn share-console-loop [console-kw]
+  (when (@publish-console? console-kw)
+    (send-prompt console-kw)
+    (js/setTimeout #(share-console-loop console-kw) 1900)))
 
 (defn paren-match? [expr]
   (>=
@@ -58,9 +60,12 @@
     (when (= (.GetState repl) "prompt") (.AbortPrompt repl))
     (.Enable repl)
     (.SetIndentWidth repl 1)
-    (prompt repl-kw)))
+    (prompt repl-kw))
+  (swap! publish-console? assoc repl-kw true)
+  (share-console-loop repl-kw))
 
 (defn init-sub-mode [repl-kw]
+  (swap! publish-console? assoc repl-kw false)
   (let [repl (repl-kw repls)]
     (.Reset repl)
     (.Prompt repl true (fn [] nil))
@@ -87,19 +92,17 @@
                  (srv-cmd :disconnect handle))))
   
 (defn transfer []
-  (reset! publish-console? false)
   (let [handle (-> (jq "#sub-list option:selected") (.val))
         header (jq "#your-repl .jqconsole-header")
         new-hdr [:div.jqconsole-header "Your REPL"
                  [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]]
-    (srv-cmd :transfer handle)
     ; convert console to subscribe mode
-    (repl/set-repl/mode :you :subscribe)
-
+    (set-repl-mode :you :sub)
+    ; configure transfer on server
+    (srv-cmd :transfer handle)
     (.replaceWith header (crate/html new-hdr))))
 
 (defn reclaim []
-  (reset! publish-console? true)
   (this-as btn 
            (.remove (jq btn))
-           (srv-cmd :reclaim)))
+           (srv-cmd :reclaim nil)))
