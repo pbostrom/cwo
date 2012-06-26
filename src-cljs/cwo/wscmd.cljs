@@ -31,6 +31,9 @@
 (defn transfer [handle]
   (repl/set-repl-mode :oth :active))
 
+(defn reclaim [handle]
+  (repl/set-repl-mode :you :active))
+
 (defn result [rslt]
   (let [[repl rslt] (reader/read-string rslt)]
     (repl/console-write repl rslt)))

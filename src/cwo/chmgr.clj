@@ -111,10 +111,10 @@
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
     (client-cmd cl-ch [:rmsub pr-hdl])))
 
-; transfer control of sesh-id's REPL to newcc specified by handle
+; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {new-cl :cl-ch new-srv :srv-ch subv :sub-vlv} (@sesh-id->cc hdl-sesh-id)
+        {tr-cl :cl-ch tr-srv :srv-ch subv :sub-vlv} (@sesh-id->cc hdl-sesh-id)
         {old-cl :cl-ch old-srv :srv-ch target-repl :you 
          old-pv :pt-vlv old-tv :tsub-vlv} (@sesh-id->cc sesh-id)
         pv (lamina/channel)
@@ -133,7 +133,7 @@
       (lamina/close old-pv)
       (lamina/close old-tv)) ; close old pt-vlv and tsub-vlv if exists
     (lamina/siphon 
-      (lamina/map* parse-tprompt (lamina/filter* (route? :t) new-srv))
+      (lamina/map* parse-tprompt (lamina/filter* (route? :t) tr-srv))
       pv old-srv)
     (lamina/siphon (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
     (lamina/siphon (lamina/map* route-prompt (lamina/fork pv)) tv old-cl)
@@ -142,7 +142,23 @@
                            {[sesh-id :tsub-vlv] tv,
                             [sesh-id :pt-vlv] pv,
                             [hdl-sesh-id :oth] target-repl})))
-    (client-cmd new-cl [:transfer handle])))
+    (client-cmd tr-cl [:transfer handle])))
+
+; reclaim control of sesh-id's REPL from specified handle
+(defn reclaim [sesh-id handle]
+  (let [hdl-sesh-id (@handle->sesh-id handle)
+        {pv :pt-vlv tv :tsub-vlv cl :srv-ch} (@sesh-id->cc sesh-id)]
+    (println "closing")
+    (lamina/close pv)
+    (lamina/close tv)
+    (swap! sesh-id->cc
+           (fn [m]
+             (println "nil here")
+             (reduce #(apply assoc-in %1 %2) m
+                           {[sesh-id :tsub-vlv] nil,
+                            [sesh-id :pt-vlv] nil,
+                            [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
+    (client-cmd cl [:reclaim handle])))
 
 (defn eval-clj [sesh-id [expr sb-key]]
   (let [expr (binding [*read-eval* false] (read-string expr))

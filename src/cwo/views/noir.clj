@@ -12,7 +12,7 @@
 ;; enlive rendered routes
 (defpage "/" []
   (session/put! "sesh-id" (cookies/get "ring-session"))
-  (enlive/bootstrap (if-let [handle (session/get "handle")]
+  (enlive/layout (if-let [handle (session/get "handle")]
                       (enlive/si-content handle)
                       (enlive/default-content))))
 

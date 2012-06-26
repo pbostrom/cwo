@@ -1,12 +1,73 @@
-<div id="loginbox" class="userbox input-append pull-right">
-  <input id="login-input" type="text" class="span3" placeholder="Handle">
-  <button id="login" class="btn" href="#">Sign In</button>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>cwo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
 
-<div id="logoutbox" class="userbox pull-right">
-  <span id="handle"> Somehandle </span>
-  <button id="logout" class="btn" href="#">Sign Out</button>
-</div>
+<!-- Le styles -->
+<link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+<link href="css/main.css" rel="stylesheet">
+<link href="css/ansi.css" rel="stylesheet">
+</head>
 
-<p id="default-text">Sign in to allow others to connect to your REPL session.</p>
-<p id="signedin-text">Connected users will be displayed in the list. Use the chat window to interact with them.</p>
+<body>
+<div class="container">
+  <div class="row">
+    <div id="loginbox" class="userbox input-append pull-right">
+      <input id="login-input" type="text" class="span3" placeholder="Handle">
+      <button id="login" class="btn" href="#">Sign In</button>
+    </div>
+  </div>
+  <div class="row">
+    <div id="logoutbox" class="userbox pull-right">
+      <span id="handle"> Somehandle </span>
+      <button id="logout" class="btn" href="#">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="span3">
+      <p id="default-text">Sign in to allow others to connect to your REPL session.</p>
+      <p id="signedin-text">Connected users will be displayed in the list. Use the chat window to interact with them.</p>
+      <div id="tr-box">
+        <p>
+        REPL has been transfered to <span id="tr-hdl">bob</span>
+        <button id="reclaim" handle="bob" class="btn btn-small">
+          <img class="icon" src="img/grab.png"/> Reclaim
+        </button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div id="connected" class="span6 panel">
+      <div class="row">
+        <div id="status-box" class="span3">
+          <table class="status table table-condensed">
+            <tbody>
+            <tr><td>Owner:</td><td id="owner">bob</td></tr>
+            <tr><td>Last Activity:</td><td id="last-act">17:14 10-Jun-12</td></tr>
+            </tbody>
+          </table>
+          <button id="discon" handle="bob" class="btn btn-small"><i class="icon-off"></i> Disconnect</button>
+        </div>
+        <div id="peers" class="list-box span3">
+          <p>Connected users:</p>
+          <select multiple="multiple"></select>
+        </div>
+      </div>
+      <div class="chat">
+        <pre></pre>
+        <input type="text" placeholder="chat">
+      </div>
+      <!-- /row -->
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

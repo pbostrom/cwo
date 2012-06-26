@@ -46,6 +46,8 @@
 
 ; transfer button
 (-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
+; reclaim button
+(-> (jq "#your-status") (.on "click" "#reclaim" repl/reclaim))
 
 ; login/out buttons 
 (-> (jq "#user-container")

@@ -92,17 +92,17 @@
                  (srv-cmd :disconnect handle))))
   
 (defn transfer []
-  (let [handle (-> (jq "#sub-list option:selected") (.val))
-        header (jq "#your-repl .jqconsole-header")
-        new-hdr [:div.jqconsole-header "Your REPL"
-                 [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]]
+  (let [handle (-> (jq "#sub-list option:selected") (.val))]
     ; convert console to subscribe mode
     (set-repl-mode :you :sub)
     ; configure transfer on server
     (srv-cmd :transfer handle)
-    (.replaceWith header (crate/html new-hdr))))
+    (.text (jq "#tr-hdl") handle)
+    (.attr (jq "#reclaim") "handle" handle)
+    (.append (jq "#your-status") (jq "#tr-box"))))
 
 (defn reclaim []
   (this-as btn 
-           (.remove (jq btn))
-           (srv-cmd :reclaim nil)))
+           (let [handle (-> (jq btn) (.attr "handle"))]
+             (.remove (jq btn))
+             (srv-cmd :reclaim handle))))
