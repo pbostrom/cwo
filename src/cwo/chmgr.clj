@@ -70,6 +70,11 @@
 (defn client-cmd [ch cmdvec]
   (lamina/enqueue ch (pr-str cmdvec)))
 
+; add handle of subscriber to publisher's list
+(defn add-sub [pub-hdl sub-hdl]
+  (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+    (client-cmd cl-ch [:addsub sub-hdl])))
+
 (defn broadcast []
   (let [handle (session/get "handle")
         sesh-id (session/get "sesh-id")]
@@ -78,8 +83,10 @@
     (client-cmd handle-ch [:addhandles [handle]])))
 
 (defn end-broadcast []
-  (let [handle (session/get "handle")]
+  (let [handle (session/get "handle")
+        sesh-id (@handle->sesh-id handle)]
     (swap! handle->sesh-id dissoc handle)
+    (swap! sesh-id->cc update-in [sesh-id] dissoc :handle)
     (client-cmd handle-ch [:rmhandle handle])))
 
 (defn socket-handler [webch handshake]
@@ -92,11 +99,10 @@
 ; socket ctrl commands below
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{old-sv :sub-vlv subclch :cl-ch pr-hdl :handle
-          :or {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc ;subscriber
+        {{old-sv :sub-vlv subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
-    (client-cmd cl-ch [:addsub pr-hdl])
+    (when pr-hdl (client-cmd cl-ch [:addsub pr-hdl]))
     (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] sub-vlv)
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
@@ -105,11 +111,10 @@
 (defn disconnect [sesh-id handle]
   (println "disconnect" handle)
   (let [{{:keys [cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{sv :sub-vlv pr-hdl :handle :or 
-          {pr-hdl "anonymous"}} sesh-id} @sesh-id->cc] ;subscriber
+        {{sv :sub-vlv pr-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
     (lamina/close sv)
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
-    (client-cmd cl-ch [:rmsub pr-hdl])))
+    (when pr-hdl (client-cmd cl-ch [:rmsub pr-hdl]))))
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]

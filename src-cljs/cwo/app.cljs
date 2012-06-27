@@ -51,7 +51,8 @@
 
 ; login/out buttons 
 (-> (jq "#user-container")
-  (.on "click" "#login" (fn [] (ajax/login (.val (jq "#login-input"))))))
+  (.on "click" "#login" (fn [] (ajax/login (.val (jq "#login-input")) 
+                                           (.text (jq "#others-tab #connected #owner"))))))
 
 (-> (jq "#user-container")
   (.on "click" "#logout" (fn [] (ajax/logout))))

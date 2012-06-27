@@ -15,6 +15,8 @@
 
 (html/defsnippet signedin-text (str pub "snippets.html") [:#signedin-text] [])
 
+(html/defsnippet statusbox-you (str pub "layout.html") [:#statusbox-you] [])
+
 (html/defsnippet connect-status (str pub "snippets.html") [:#connected] [])
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
@@ -25,9 +27,18 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(html/deftemplate layout (str pub "layout.html")
-  [{:keys [userbox text]}]
-  [:div#user-container] (html/content userbox)
-  [:div#your-status] (html/content text)
-  [:div#widgets] (html/content (connect-status) (transfer-text)))
-      
+(html/deftemplate signedin-layout (str pub "layout.html")
+  [handle]
+  [:div#user-container] (html/content (logoutbox handle))
+  [:div#widgets] (html/content (connect-status) (transfer-text) (default-text)))
+ 
+(html/deftemplate signedout-layout (str pub "layout.html")
+  []
+  [:div#user-container] (html/content (loginbox))
+  [:div#status-you] (html/content (default-text))
+  [:div#widgets] (html/content (connect-status) (transfer-text) (statusbox-you)))
+
+(defn layout [handle]
+  (if handle
+    (signedin-layout handle)
+    (signedout-layout)))

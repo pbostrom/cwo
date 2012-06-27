@@ -44,19 +44,22 @@
             <div id="your-repl" class="console">
             </div>
           </div>
-          <div class="span6">
-            <div class="row">
-              <div id="your-status" class="span3">
+          <div class="span6" id="status-you">
+            <div id="statusbox-you">
+              <div class="row">
+                <div class="span3">
+                  <p id="signedin-text">Connected users will be displayed in the list. Use the chat window to interact with them.</p>
+                </div>
+                <div id="sub-box" class="list-box span3">
+                  <select id="sub-list" multiple="multiple">
+                  </select>
+                  <button id="transfer" class="btn">Transfer</button>
+                </div>
               </div>
-              <div id="sub-box" class="list-box span3">
-                <select id="sub-list" multiple="multiple">
-                </select>
-                <button id="transfer" class="btn">Transfer</button>
+              <div id="others-chat" class="chat">
+                <pre></pre>
+                <input type="text" placeholder="chat"></input>
               </div>
-            </div>
-            <div id="others-chat" class="chat">
-              <pre></pre>
-              <input type="text" placeholder="chat"></input>
             </div>
           </div>
         </div>

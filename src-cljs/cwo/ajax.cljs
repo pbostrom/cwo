@@ -16,16 +16,16 @@
   (-> (jq sel)
     (.html html)))
 
-(defn login [user]
+(defn login [user other]
   (.ajax jq (map->js {:url "/login"
                       :type "POST"
-                      :data (map->js {:handle user})
+                      :data (map->js {:handle user :other other})
                       :success (fn [resp]
                                  (if-not (empty? resp)
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
                                      (re-html "#user-container" userbox)
-                                     (re-html "#your-status" text)
-                                     (-> (jq "#sub-box") (.show)))
+                                     (.append (jq "#widgets") (jq "#default-text"))
+                                     (.append (jq "#status-you") (jq "#statusbox-you")))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []
@@ -34,7 +34,8 @@
                       :success (fn [resp]
                                  (let [{:keys [userbox text]} (reader/read-string resp)]
                                    (re-html "#user-container" userbox)
-                                   (re-html "#your-status" text)))})))
+                                   (.append (jq "#status-you") (jq "#default-text"))
+                                   (.append (jq "#widgets") (jq "#statusbox-you"))))})))
 
 (defn sync-ajax [code]
   (.log js/console

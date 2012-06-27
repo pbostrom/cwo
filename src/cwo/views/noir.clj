@@ -12,14 +12,13 @@
 ;; enlive rendered routes
 (defpage "/" []
   (session/put! "sesh-id" (cookies/get "ring-session"))
-  (enlive/layout (if-let [handle (session/get "handle")]
-                      (enlive/si-content handle)
-                      (enlive/default-content))))
+  (enlive/layout (session/get "handle")))
 
-(defpage [:post "/login"] {:keys [handle]}
+(defpage [:post "/login"] {:keys [handle other]}
   (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
       (session/put! "handle" handle)
+      (when-not (empty? other) (chmgr/add-sub other handle))
       (chmgr/broadcast)
       (pr-str (fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
