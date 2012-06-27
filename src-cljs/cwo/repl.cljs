@@ -105,4 +105,5 @@
   (this-as btn 
            (let [handle (-> (jq btn) (.attr "handle"))]
              (.remove (jq btn))
+             (jslog "srv-cmd :reclaim")
              (srv-cmd :reclaim handle))))

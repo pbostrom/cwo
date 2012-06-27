@@ -30,4 +30,4 @@
   [:div#user-container] (html/content userbox)
   [:div#your-status] (html/content text)
   [:div#widgets] (html/content (connect-status) (transfer-text)))
-    
+      

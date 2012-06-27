@@ -147,13 +147,11 @@
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {pv :pt-vlv tv :tsub-vlv cl :srv-ch} (@sesh-id->cc sesh-id)]
-    (println "closing")
+        {pv :pt-vlv tv :tsub-vlv cl :cl-ch} (@sesh-id->cc sesh-id)]
     (lamina/close pv)
     (lamina/close tv)
     (swap! sesh-id->cc
            (fn [m]
-             (println "nil here")
              (reduce #(apply assoc-in %1 %2) m
                            {[sesh-id :tsub-vlv] nil,
                             [sesh-id :pt-vlv] nil,
