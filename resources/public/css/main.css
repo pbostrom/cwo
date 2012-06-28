@@ -152,3 +152,7 @@ span.jqconsole-header > span {
 /* The text color of error output. */
 .jqconsole-error {
   color: #dc322f; }
+
+/* Color of info messages */
+.jqconsole-info {
+  color: #cb4b16; }

@@ -4,6 +4,13 @@
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
 
+; Do a bit of JS reflection to call method passed in as websocket msg
+; Optionally specify a specific repl to run command on.
+; Note that we abuse JS lack of arity checking to pass along optional argument
+(defn call-wscmd [[cmd arg & opts]]
+  (.log js/console (name cmd) ":" (pr-str arg) "-" (pr-str opts))
+  (apply (.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) arg opts))
+
 (defn addhandles [handles]
   (dorun
     (map #(-> (jq "#others-list")
@@ -31,10 +38,6 @@
 (defn transfer [handle]
   (repl/set-repl-mode :oth :active))
 
-(defn chctrl [handle]
-  (.append (jq "#status-box tbody")
-           (crate/html [:tr [:td "Controlled by:"] [:td handle]])))
-
 (defn reclaim [handle]
   (repl/set-repl-mode :you :active))
 
@@ -42,9 +45,9 @@
   (let [[repl rslt] (reader/read-string rslt)]
     (repl/console-write repl rslt)))
 
-(defn hist [hist-pair]
+(defn hist [hist-pair & {:keys [repl-key] :or {repl-key :oth}}]
   (let [[expr rslt] (reader/read-string hist-pair)
-        repl (:oth repl/repls)]
+        repl (repl-key repl/repls)]
     (.SetPromptText repl (pr-str expr))
     (.AbortPrompt repl)
     (if (:error rslt)
@@ -52,8 +55,16 @@
       (.Write repl (str rslt "\n") "jqconsole-output"))
     (.Prompt repl true (fn [] nil))))
 
-(defn trepl [cmd]
-  "hey")
+(defn chctrl [handle & {:keys [repl-key] :or {repl-key :oth}}]
+  (if (= repl-key :oth)
+    (do 
+      (.remove (jq "#chctrl"))
+      (.append (jq "#status-box tbody")
+               (crate/html [:tr#chctrl [:td "Controlled by:"] [:td handle]]))))
+  (.Write (repl-key repl/repls) (str "REPL transferred to " handle "\n") "jqconsole-info"))
+
+(defn trepl [cmd-vec]
+  (call-wscmd (conj cmd-vec :repl-key :you)))
 
 (defn thist [hist-pair]
   (let [[expr rslt] (reader/read-string hist-pair)

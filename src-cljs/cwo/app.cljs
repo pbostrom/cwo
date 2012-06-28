@@ -2,8 +2,7 @@
   (:use [cwo.utils :only (jq ws-url jslog sock)])
   (:require [cwo.ajax :as ajax]
             [cwo.repl :as repl]
-            [cwo.wscmd :as _]))
-
+            [cwo.wscmd :as wscmd]))
 
 ; open websocket
 (reset! sock (js/WebSocket. ws-url))
@@ -15,13 +14,9 @@
     (when tmsg
       (.SetPromptText (:you repl/repls) tmsg))))
 
-(defn call-wscmd [[cmd args]]
-  (.log js/console (name cmd) ":" (pr-str args))
-  ((.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) args))
-
 (defn msg-hdlr [msg]
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
-    (cond (vector? msg-obj) (call-wscmd msg-obj)
+    (cond (vector? msg-obj) (wscmd/call-wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
 
 (set! (.-onmessage @sock) msg-hdlr)
