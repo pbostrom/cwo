@@ -31,6 +31,10 @@
 (defn transfer [handle]
   (repl/set-repl-mode :oth :active))
 
+(defn chctrl [handle]
+  (.append (jq "#status-box tbody")
+           (crate/html [:tr [:td "Controlled by:"] [:td handle]])))
+
 (defn reclaim [handle]
   (repl/set-repl-mode :you :active))
 
@@ -47,6 +51,9 @@
       (.Write repl (str (:message rslt) "\n") "jqconsole-error")
       (.Write repl (str rslt "\n") "jqconsole-output"))
     (.Prompt repl true (fn [] nil))))
+
+(defn trepl [cmd]
+  "hey")
 
 (defn thist [hist-pair]
   (let [[expr rslt] (reader/read-string hist-pair)

@@ -25,7 +25,7 @@
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
                                      (re-html "#user-container" userbox)
                                      (.append (jq "#widgets") (jq "#default-text"))
-                                     (.append (jq "#status-you") (jq "#statusbox-you")))
+                                     (.append (jq "#panel-box") (jq "#your-panel")))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []

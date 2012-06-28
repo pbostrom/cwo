@@ -20,7 +20,11 @@
 ;  :you Repl Your primary code evaluation environment
 ;  :oth Repl Optional, if someone transfers their repl to you
 ; }
-;
+
+;; {
+;;  :hist      Channel to send history commands to connected users
+;;  :sb        Evalutation sandbox
+;; }
 (defrecord Repl [hist sb])
 
 ; Every web session has an associated channel controller
@@ -41,8 +45,9 @@
     (println "Unsupported route filter!"))
     #(.startsWith % (str "{" dst)))
 
-(defn cmd? [msg]
-  (.startsWith msg "["))
+(defn cmd? 
+  ([msg] (.startsWith msg "["))
+  ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-id cmd-str]
@@ -128,11 +133,11 @@
                         (let [{msg :t} (read-string msg)]
                           (pr-str msg)))
         route-hist (fn [msg]
-                     (let [[_ expr] (read-string msg)]
-                       (pr-str [:thist expr])))
+                     (str "[:trepl " msg "]"))
         route-prompt (fn [msg]
                        (let [{prompt-txt :p} (read-string msg)]
                          (pr-str {:t prompt-txt})))]
+    (client-cmd (:hist target-repl) [:chctrl handle])
     (lamina/close subv) ; close subscription created by (connect ...)
     (when old-pv
       (lamina/close old-pv)
