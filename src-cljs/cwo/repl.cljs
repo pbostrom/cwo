@@ -104,6 +104,6 @@
 (defn reclaim []
   (this-as btn 
            (let [handle (-> (jq btn) (.attr "handle"))]
-             (.append (jq "widgets") (jq "#tr-box"))
+             (.append (jq "#widgets") (jq "#tr-box"))
              (jslog "srv-cmd :reclaim")
              (srv-cmd :reclaim handle))))

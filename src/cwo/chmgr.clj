@@ -10,21 +10,23 @@
 ;  :srv-ch    Required, permanent channel to send commands to server
 ;  :cl-ch     Required, permanent channel to send commands to client
 ;  :handle    Optional, anonymous users permitted
+;  :transfer  Optional, handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub-vlv    Optional, a subscription to a shared REPL session
 ;  :pt-vlv     Optional, a pass-thru for your subscribers after a transfer
 ;  :tsub-vlv   Optional, a subscription to your transfered REPL session
+;  
 ;
 ;  evaluation sandboxes
 ;  :you Repl Your primary code evaluation environment
 ;  :oth Repl Optional, if someone transfers their repl to you
 ; }
 
-;; {
-;;  :hist      Channel to send history commands to connected users
-;;  :sb        Evalutation sandbox
-;; }
+; {
+;  :hist      Channel to send history commands to connected users
+;  :sb        Evalutation sandbox
+; }
 (defrecord Repl [hist sb])
 
 ; Every web session has an associated channel controller
@@ -113,14 +115,6 @@
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (route? :p) srv-ch) sub-vlv subclch)))
 
-(defn disconnect [sesh-id handle]
-  (println "disconnect" handle)
-  (let [{{:keys [cl-ch]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{sv :sub-vlv pr-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
-    (lamina/close sv)
-    (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
-    (when pr-hdl (client-cmd cl-ch [:rmsub pr-hdl]))))
-
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
@@ -151,22 +145,42 @@
            (fn [m] (reduce #(apply assoc-in %1 %2) m
                            {[sesh-id :tsub-vlv] tv,
                             [sesh-id :pt-vlv] pv,
+                            [sesh-id :transfer] handle,
                             [hdl-sesh-id :oth] target-repl})))
     (client-cmd tr-cl [:transfer handle])))
 
-; reclaim control of sesh-id's REPL from specified handle
-(defn reclaim [sesh-id handle]
+(defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {pv :pt-vlv tv :tsub-vlv cl :cl-ch} (@sesh-id->cc sesh-id)]
+        {pv :pt-vlv tv :tsub-vlv cl :cl-ch owner-handle :handle} (@sesh-id->cc sesh-id)]
     (lamina/close pv)
     (lamina/close tv)
     (swap! sesh-id->cc
            (fn [m]
              (reduce #(apply assoc-in %1 %2) m
-                           {[sesh-id :tsub-vlv] nil,
-                            [sesh-id :pt-vlv] nil,
-                            [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
-    (client-cmd cl [:reclaim handle])))
+                     {[sesh-id :tsub-vlv] nil,
+                      [sesh-id :pt-vlv] nil,
+                      [sesh-id :transfer] nil,
+                      [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
+    (client-cmd cl [:reclaim handle])
+    (client-cmd (get-in @sesh-id->cc [hdl-sesh-id :cl-ch]) [:endtransfer :_])))
+
+(defn disconnect [sesh-id handle]
+  (println "disconnect" handle)
+  (let [pub-sesh-id (@handle->sesh-id handle)
+        {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-id->cc ;publisher
+        {{sv :sub-vlv sub-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
+    (when (and sub-hdl (= sub-hdl transfer))
+      (end-transfer pub-sesh-id sub-hdl))
+    (lamina/close sv)
+    (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
+    (when sub-hdl (client-cmd cl-ch [:rmsub sub-hdl]))))
+
+; reclaim control of sesh-id's REPL from specified handle
+(defn reclaim [sesh-id handle]
+  (let [hdl-sesh-id (@handle->sesh-id handle)
+        {owner-handle :handle} (@sesh-id->cc sesh-id)]
+    (end-transfer sesh-id handle)
+    (subscribe hdl-sesh-id owner-handle)))
 
 (defn eval-clj [sesh-id [expr sb-key]]
   (let [expr (binding [*read-eval* false] (read-string expr))
