@@ -41,7 +41,7 @@
 (defn endtransfer [_]
   (repl/set-repl-mode :oth :sub))
 
-(defn reclaim [handle]
+(defn reclaim [_]
   (.append (jq "#widgets") (jq "#tr-box"))
   (repl/set-repl-mode :you :active))
 

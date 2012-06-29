@@ -26,8 +26,9 @@
 ; {
 ;  :hist      Channel to send history commands to connected users
 ;  :sb        Evalutation sandbox
+;  :ts        Timestamp of last activity
 ; }
-(defrecord Repl [hist sb])
+(defrecord Repl [hist sb ts])
 
 ; Every web session has an associated channel controller
 (def sesh-id->cc (atom {}))
@@ -62,7 +63,9 @@
   (println "init-cc!")
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
-               :you (Repl. (lamina/permanent-channel) (sb/make-sandbox))}]
+               :you (Repl. (lamina/permanent-channel)
+                           (sb/make-sandbox)
+                           (atom (System/currentTimeMillis)))}]
     (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-id->cc assoc sesh-id newcc)
@@ -115,12 +118,26 @@
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (route? :p) srv-ch) sub-vlv subclch)))
 
+(defn end-transfer [sesh-id handle]
+  (let [hdl-sesh-id (@handle->sesh-id handle)
+        {pv :pt-vlv tv :tsub-vlv cl :cl-ch owner-handle :handle} (@sesh-id->cc sesh-id)]
+    (lamina/close pv)
+    (lamina/close tv)
+    (swap! sesh-id->cc
+           (fn [m]
+             (reduce #(apply assoc-in %1 %2) m
+                     {[sesh-id :tsub-vlv] nil,
+                      [sesh-id :pt-vlv] nil,
+                      [sesh-id :transfer] nil,
+                      [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
+    (client-cmd (get-in @sesh-id->cc [hdl-sesh-id :cl-ch]) [:endtransfer :_])))
+
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {tr-cl :cl-ch tr-srv :srv-ch subv :sub-vlv} (@sesh-id->cc hdl-sesh-id)
-        {old-cl :cl-ch old-srv :srv-ch target-repl :you 
-         old-pv :pt-vlv old-tv :tsub-vlv} (@sesh-id->cc sesh-id)
+        {tr-cl :cl-ch tr-srv :srv-ch subv :sub-vlv} (@sesh-id->cc hdl-sesh-id) ;transferee
+        {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-hdl :handle 
+         old-pv :pt-vlv old-tv :tsub-vlv trans :transfer} (@sesh-id->cc sesh-id) ;owner
         pv (lamina/channel)
         tv (lamina/channel)
         parse-tprompt (fn [msg]
@@ -131,11 +148,11 @@
         route-prompt (fn [msg]
                        (let [{prompt-txt :p} (read-string msg)]
                          (pr-str {:t prompt-txt})))]
+    (when trans
+      (end-transfer sesh-id trans)
+      (subscribe (@handle->sesh-id trans) owner-hdl))
     (client-cmd (:hist target-repl) [:chctrl handle])
     (lamina/close subv) ; close subscription created by (connect ...)
-    (when old-pv
-      (lamina/close old-pv)
-      (lamina/close old-tv)) ; close old pt-vlv and tsub-vlv if exists
     (lamina/siphon 
       (lamina/map* parse-tprompt (lamina/filter* (route? :t) tr-srv))
       pv old-srv)
@@ -149,28 +166,15 @@
                             [hdl-sesh-id :oth] target-repl})))
     (client-cmd tr-cl [:transfer handle])))
 
-(defn end-transfer [sesh-id handle]
-  (let [hdl-sesh-id (@handle->sesh-id handle)
-        {pv :pt-vlv tv :tsub-vlv cl :cl-ch owner-handle :handle} (@sesh-id->cc sesh-id)]
-    (lamina/close pv)
-    (lamina/close tv)
-    (swap! sesh-id->cc
-           (fn [m]
-             (reduce #(apply assoc-in %1 %2) m
-                     {[sesh-id :tsub-vlv] nil,
-                      [sesh-id :pt-vlv] nil,
-                      [sesh-id :transfer] nil,
-                      [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
-    (client-cmd cl [:reclaim handle])
-    (client-cmd (get-in @sesh-id->cc [hdl-sesh-id :cl-ch]) [:endtransfer :_])))
-
 (defn disconnect [sesh-id handle]
   (println "disconnect" handle)
   (let [pub-sesh-id (@handle->sesh-id handle)
         {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-id->cc ;publisher
         {{sv :sub-vlv sub-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
     (when (and sub-hdl (= sub-hdl transfer))
-      (end-transfer pub-sesh-id sub-hdl))
+      (end-transfer pub-sesh-id sub-hdl)
+      (client-cmd (get-in @sesh-id->cc [pub-sesh-id :cl-ch]) [:reclaim :_])
+      (client-cmd (:hist (get-in @sesh-id->cc [pub-sesh-id :you])) [:chctrl handle]))
     (lamina/close sv)
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
     (when sub-hdl (client-cmd cl-ch [:rmsub sub-hdl]))))
@@ -178,8 +182,10 @@
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {owner-handle :handle} (@sesh-id->cc sesh-id)]
+        {owner-handle :handle cl :cl-ch repl :you} (@sesh-id->cc sesh-id)]
     (end-transfer sesh-id handle)
+    (client-cmd cl [:reclaim :_]) 
+    (client-cmd (:hist repl) [:chctrl owner-handle])
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn eval-clj [sesh-id [expr sb-key]]
@@ -192,5 +198,6 @@
                (let [[out res] result]
                  (str out (pr-str res))))]
     (println res)
+    (reset! (:ts repl) (System/currentTimeMillis))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])))
