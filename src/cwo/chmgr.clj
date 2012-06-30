@@ -39,22 +39,45 @@
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
+;;
+;; helper functions
+;;
+
 (defn cc-from-handle [handle]
   (@sesh-id->cc (@handle->sesh-id handle)))
 
 ; higher order function to filter routes
-(defn route? [dst]
+(defn route-old? [dst]
   (when (not (contains? #{:p :t} dst))
     (println "Unsupported route filter!"))
-    #(.startsWith % (str "{" dst)))
+  #(.startsWith % (str "{" dst)))
+
+; higher order function to filter routes
+; :l last-activity timestamp
+; :p prompt text
+; :t wrapper for transferred prompt msgs
+(defn route? [rt-set]
+  (when (not (clojure.set/subset? rt-set #{:l :p :t}))
+    (println "Unsupported route filter!"))
+  (fn [msg]
+    (let [[msg-obj] (seq (safe-read-str msg))]
+      (contains? rt-set (key msg-obj)))))
+
+; avoid eval injections via websocket msgs
+(defn safe-read-str [st]
+  (binding [*read-eval* false] (read-string expr)))
 
 (defn cmd? 
   ([msg] (.startsWith msg "["))
   ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
+; return the number of milliseconds since the specified time
+(defn ms-since [t]
+  (- (System/currentTimeMillis) t))
+
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-id cmd-str]
-  (let [[cmd arg] (read-string cmd-str)]
+  (let [[cmd arg] (safe-read-str cmd-str)]
     (println "cmd:" cmd sesh-id arg)
     ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
 
@@ -106,7 +129,10 @@
     (lamina/siphon (cc :cl-ch) webch)
     (client-cmd (cc :cl-ch) [:addhandles (keys @handle->sesh-id)])))
 
-; socket ctrl commands below
+;;
+;; socket ctrl commands below
+;;
+
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
         {{old-sv :sub-vlv subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
@@ -116,7 +142,7 @@
     (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] sub-vlv)
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-    (lamina/siphon (lamina/filter* (route? :p) srv-ch) sub-vlv subclch)))
+    (lamina/siphon (lamina/filter* (route? #{:l :p}) srv-ch) sub-vlv subclch)))
 
 (defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
@@ -141,12 +167,12 @@
         pv (lamina/channel)
         tv (lamina/channel)
         parse-tprompt (fn [msg]
-                        (let [{msg :t} (read-string msg)]
+                        (let [{msg :t} (safe-read-str msg)]
                           (pr-str msg)))
         route-hist (fn [msg]
                      (str "[:trepl " msg "]"))
         route-prompt (fn [msg]
-                       (let [{prompt-txt :p} (read-string msg)]
+                       (let [{prompt-txt :p} (safe-read-str msg)]
                          (pr-str {:t prompt-txt})))]
     (when trans
       (end-transfer sesh-id trans)
@@ -154,7 +180,7 @@
     (client-cmd (:hist target-repl) [:chctrl handle])
     (lamina/close subv) ; close subscription created by (connect ...)
     (lamina/siphon 
-      (lamina/map* parse-tprompt (lamina/filter* (route? :t) tr-srv))
+      (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
       pv old-srv)
     (lamina/siphon (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
     (lamina/siphon (lamina/map* route-prompt (lamina/fork pv)) tv old-cl)
@@ -189,7 +215,7 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn eval-clj [sesh-id [expr sb-key]]
-  (let [expr (binding [*read-eval* false] (read-string expr))
+  (let [expr (safe-read-str expr) 
         {{:keys [cl-ch] repl sb-key} sesh-id} @sesh-id->cc
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
