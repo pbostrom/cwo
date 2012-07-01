@@ -70,6 +70,13 @@
 (defn trepl [cmd-vec]
   (call-wscmd (conj cmd-vec :repl-key :you)))
 
+(defn ts [offset]
+  (let [now (.getTime (js/Date.))
+        t (js/Date. (- now offset))
+        date (.toDateString t)
+        t-str (.toLocaleTimeString t)]
+    (.text (jq "#last-act") t-str)))
+
 (defn thist [hist-pair]
   (let [[expr rslt] (reader/read-string hist-pair)
         repl (:you repl/repls)]

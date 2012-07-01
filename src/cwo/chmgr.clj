@@ -43,6 +43,10 @@
 ;; helper functions
 ;;
 
+; avoid eval injections via websocket msgs
+(defn safe-read-str [st]
+  (binding [*read-eval* false] (read-string st)))
+
 (defn cc-from-handle [handle]
   (@sesh-id->cc (@handle->sesh-id handle)))
 
@@ -63,12 +67,12 @@
     (let [[msg-obj] (seq (safe-read-str msg))]
       (contains? rt-set (key msg-obj)))))
 
-; avoid eval injections via websocket msgs
-(defn safe-read-str [st]
-  (binding [*read-eval* false] (read-string expr)))
+(declare cmd-set)
 
 (defn cmd? 
-  ([msg] (.startsWith msg "["))
+  ([msg]
+   (let [msg-obj (safe-read-str msg)]
+     (and (vector? msg-obj) (contains? cmd-set (symbol (name (first msg-obj)))))))
   ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 ; return the number of milliseconds since the specified time
@@ -142,7 +146,9 @@
     (when old-sv (lamina/close old-sv))
     (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] sub-vlv)
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-    (lamina/siphon (lamina/filter* (route? #{:l :p}) srv-ch) sub-vlv subclch)))
+;(lamina/siphon (lamina/filter* (route? #{:l :p}) srv-ch) sub-vlv subclch)
+    (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+    (client-cmd srv-ch [:ts (ms-since @(:ts you))])))
 
 (defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
@@ -215,8 +221,7 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn eval-clj [sesh-id [expr sb-key]]
-  (let [expr (safe-read-str expr) 
-        {{:keys [cl-ch] repl sb-key} sesh-id} @sesh-id->cc
+  (let [{{:keys [cl-ch srv-ch] repl sb-key} sesh-id} @sesh-id->cc
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
         data (if error
@@ -226,4 +231,7 @@
     (println res)
     (reset! (:ts repl) (System/currentTimeMillis))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
-    (client-cmd (:hist repl) [:hist (pr-str [expr data])])))
+    (client-cmd (:hist repl) [:hist (pr-str [expr data])])
+    (client-cmd srv-ch [:ts 0])))
+
+(def cmd-set (set (keys (ns-publics 'cwo.chmgr))))

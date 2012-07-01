@@ -42,12 +42,17 @@
         indent-val (+ (first (second indent-vec)) 2 offset)]
     indent-val))
 
+(defn eval-hdlr [expr repl]
+  (if-not (empty? (.trim expr)) 
+    (srv-cmd :eval-clj [expr repl])
+    (prompt repl)))
+
 (defn prompt [repl]
-  (let [handler #(srv-cmd :eval-clj [% repl])]
-    (.Prompt (repl repls) true handler (fn [expr]
-                                 (if (paren-match? expr)
-                                   false
-                                   (expr-indent expr))))))
+  (.Prompt (repl repls) true #(eval-hdlr % repl) 
+           (fn [expr]
+             (if (paren-match? expr)
+               false
+               (expr-indent expr)))))
 
 (defn console-write [repl output]
   (if (:error output)
@@ -90,7 +95,7 @@
   (.append (jq "#others-tab > .row") (jq "#disconnected"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
-  
+
 (defn transfer []
   (let [handle (-> (jq "#sub-list option:selected") (.val))]
     ; convert console to subscribe mode

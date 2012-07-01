@@ -7,11 +7,11 @@
   ; update clients with last activity info
   (doseq [[k v] @chmgr/sesh-id->cc]
     (let [{:keys [you]} v
-          last-act (ms-since @(:ts you))
+          last-act (chmgr/ms-since @(:ts you))
           sec (mod (.toSeconds TimeUnit/MILLISECONDS last-act) 60)
           mins (mod (.toMinutes TimeUnit/MILLISECONDS last-act) 60)
           hr (mod (.toHours TimeUnit/MILLISECONDS last-act) 60)]
-      (println (format "h %d m %02d s %02d" hr mins sec)))))
+       )));remove old session data   
 
 (defn start []
   (let [executor (Executors/newSingleThreadScheduledExecutor)]

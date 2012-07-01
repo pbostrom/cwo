@@ -6,7 +6,8 @@
 (defn eval-expr [expr sb]
   (try
     (with-open [out (StringWriter.)]
-      (let [result (sb expr {#'*out* out})]
+      (let [expr (binding [*read-eval* false] (read-string expr))
+            result (sb expr {#'*out* out})]
         (println "out" out)
         (println "result" result)
         {:expr expr

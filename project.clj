@@ -7,7 +7,7 @@
                  [hiccup "1.0.0-beta1"]
                  [enlive "1.0.0"]
                  [crate "0.1.0-alpha2"]
-                 [clojail "0.5.1"]
+                 [clojail "0.6.0"]
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
   ;:plugins [[lein-cljsbuild "0.1.2"]]
