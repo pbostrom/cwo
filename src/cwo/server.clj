@@ -6,7 +6,9 @@
             [aleph.http :as aleph]
             [noir.server :as noir]
             [noir.session :as session]
-            [cwo.chmgr :as chmgr])
+            [cwo.chmgr :as chmgr]
+            [cwo.monitor :as monitor]
+            )
   (:gen-class))
 
 ; Need user.dir for Java policy file
@@ -31,4 +33,5 @@
   (let [port 8080]
     (aleph/start-http-server 
       (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
-    (println "server started on port" port)))
+    (println "server started on port" port)
+    (monitor/start)))

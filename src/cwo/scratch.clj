@@ -5,6 +5,17 @@
 
 (def flag (atom true))
 
+(def b (channel))
+(def myat (atom {"a" {:b b :c 2} :x {:y 3 :z 4}}))
+
+(defn testat []
+  (let [{sal :b} (@myat "a")]
+    (close sal)
+    (swap! myat (fn [m] (reduce #(apply assoc-in %1 %2) m
+                           {[:a :b] nil,
+                            [:a :c] nil,
+                            [:x :y] nil})))))
+
 (defn init []
   (def p1 (channel* :permanent? true))
   (def p2 (channel* :grounded? true :permanent? true))

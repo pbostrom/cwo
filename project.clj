@@ -7,15 +7,19 @@
                  [hiccup "1.0.0-beta1"]
                  [enlive "1.0.0"]
                  [crate "0.1.0-alpha2"]
-                 [clojail "0.5.1"]
+                 [clojail "0.6.0"]
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
-  :plugins [[lein-cljsbuild "0.1.2"]]
+  ;:plugins [[lein-cljsbuild "0.1.2"]]
+  :plugins [[lein-cljsbuild "0.2.1"]]
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
                          :optimizations :whitespace
-                         ;:optimizations :advanced
+;                         :optimizations :advanced
+                         :externs ["resources/public/js/jqconsole-2.7.js"
+                                   "resources/public/js/bootstrap.js"
+                                   "resources/public/js/jquery.js"]
                          :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)

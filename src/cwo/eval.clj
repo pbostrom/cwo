@@ -6,9 +6,8 @@
 (defn eval-expr [expr sb]
   (try
     (with-open [out (StringWriter.)]
-      (let [result (sb expr {#'*out* out})]
-        (println "out" out)
-        (println "result" result)
+      (let [expr (binding [*read-eval* false] (read-string expr))
+            result (sb expr {#'*out* out})]
         {:expr expr
          :result [out result]}))
     (catch TimeoutException _

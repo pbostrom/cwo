@@ -69,6 +69,10 @@ html, body {
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
+img.icon {
+  vertical-align: top;
+}
+
 .chat {
   border: 1px solid #CCC;
   border: 1px solid rgba(0, 0, 0, 0.15);
@@ -86,6 +90,7 @@ html, body {
   border: 1px solid rgba(0, 0, 0, 0.15);
   background-color: $base3;
   border-radius: 3px;
+  overflow: auto;
 }
 
 .chat > input {
@@ -142,13 +147,6 @@ html, body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-/* Others REPL heading */
-#status-box button {
-/*  padding: 0px 3px;
-  margin-left: 5px;*/
-  margin-bottom: 5px;
-}
-
 .console {
   margin-left: 10px;
   margin-bottom: 10px;
@@ -199,4 +197,9 @@ span.jqconsole-header > span {
 /* The text color of error output. */
 .jqconsole-error {
   color: $red;
+}
+
+/* Color of info messages */
+.jqconsole-info {
+  color: $orange;
 }

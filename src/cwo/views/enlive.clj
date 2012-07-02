@@ -15,10 +15,11 @@
 
 (html/defsnippet signedin-text (str pub "snippets.html") [:#signedin-text] [])
 
+(html/defsnippet your-panel (str pub "layout.html") [:#your-panel] [])
 
-(html/defsnippet 
-  connect-status
-  (str pub "connected.html") [:#others-tab :.span6.panel] [])
+(html/defsnippet connect-status (str pub "snippets.html") [:#connected] [])
+
+(html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
 
 (defn si-content [username]
   {:userbox (logoutbox username) :text (signedin-text)})
@@ -26,9 +27,19 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(html/deftemplate bootstrap (str pub "disconnected.html")
-  [{:keys [userbox text]}]
-  [:div#user-container] (html/content userbox)
-  [:div#your-status] (html/content text)
-  [:div#widgets] (html/content (connect-status)))
-  
+(html/deftemplate signedin-layout (str pub "layout.html")
+  [handle]
+  [:div#user-container] (html/content (logoutbox handle))
+  [:div#widgets] (html/content (connect-status) (transfer-text) (default-text)))
+ 
+(html/deftemplate signedout-layout (str pub "layout.html")
+  []
+  [:div#user-container] (html/content (loginbox))
+  [:div#panel-box] (html/content (default-text))
+  [:div#widgets] (html/content (connect-status) (transfer-text) (your-panel)))
+
+(defn layout [handle]
+  (if handle
+    (signedin-layout handle)
+    (signedout-layout)))
+          

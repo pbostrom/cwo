@@ -3,21 +3,23 @@
   (:require [crate.core :as crate]
             [cwo.widgets :as widgets]))
 
-(def publish-console? (atom true))
+(def publish-console? (atom {:you true :oth false}))
 
 (def repls
   {:oth (-> (jq "#others-repl") (.jqconsole "" "=> " " "))
    :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
 
-(defn send-prompt []
-  (let [repl (repls :you)]
+(defn send-prompt [console-kw]
+  (let [repl (repls console-kw)
+        prompt-msg (console-kw {:you (fn [m] {:p m})
+                                :oth (fn [m] {:t {:p m}})})]
     (when-let [prompt-text (and (= (.GetState repl) "prompt")(.GetPromptText repl))]
-      (.send @sock (pr-str {:p prompt-text})))))
+      (.send @sock (pr-str (prompt-msg prompt-text))))))
 
-(defn share-console-loop []
-  (when @publish-console?
-    (send-prompt)
-    (js/setTimeout share-console-loop 1900)))
+(defn share-console-loop [console-kw]
+  (when (@publish-console? console-kw)
+    (send-prompt console-kw)
+    (js/setTimeout #(share-console-loop console-kw) 1900)))
 
 (defn paren-match? [expr]
   (>=
@@ -25,27 +27,31 @@
     (count (filter #(= % "(") expr))))
 
 (defn expr-indent [expr]
+  (jslog expr)
   (let [lines (js->clj (.split expr "\n"))
         line (.trim jq (last lines))
         offset (if (= (count lines) 1) 2 0)
         indent-vec (reduce 
-                     (fn [v x]
-                       (let [idx (first v)
-                             stack (second v)]
-                         (cond 
-                           (= x "(") [(inc idx) (cons idx stack)]
-                           (= x ")") [(inc idx) (rest stack)]
-                           true [(inc idx) stack]))) 
-                     [0 []] (seq line))
-        indent-val (+ (first (second indent-vec)) 2 offset)]
-    indent-val))
+                     (fn [[idx stack] x]
+                       (cond 
+                         (= x "(") [(inc idx) (cons idx stack)]
+                         (= x ")") [(inc idx) (or (next stack) [(- (first stack) 2)])]
+                         true [(inc idx) stack])) 
+                     [0 [-2]] (seq line))]
+    (jslog (pr-str indent-vec))
+    (+ (first (second indent-vec)) 2 offset)))
+
+(defn eval-hdlr [expr repl]
+  (if-not (empty? (.trim expr)) 
+    (srv-cmd :eval-clj [expr repl])
+    (prompt repl)))
 
 (defn prompt [repl]
-  (let [handler #(srv-cmd :eval-clj [% repl])]
-    (.Prompt (repl repls) true handler (fn [expr]
-                                 (if (paren-match? expr)
-                                   false
-                                   (expr-indent expr))))))
+  (.Prompt (repl repls) true #(eval-hdlr % repl) 
+           (fn [expr]
+             (if (paren-match? expr)
+               false
+               (expr-indent expr)))))
 
 (defn console-write [repl output]
   (if (:error output)
@@ -58,9 +64,12 @@
     (when (= (.GetState repl) "prompt") (.AbortPrompt repl))
     (.Enable repl)
     (.SetIndentWidth repl 1)
-    (prompt repl-kw)))
+    (prompt repl-kw))
+  (swap! publish-console? assoc repl-kw true)
+  (share-console-loop repl-kw))
 
 (defn init-sub-mode [repl-kw]
+  (swap! publish-console? assoc repl-kw false)
   (let [repl (repl-kw repls)]
     (.Reset repl)
     (.Prompt repl true (fn [] nil))
@@ -74,28 +83,32 @@
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
     (.append (jq "#widgets") (jq "#disconnected"))
+    (.text (jq "#owner") handle)
+    (.attr (jq "#discon") "handle" handle)
     (.append (jq "#others-tab > .row") (jq "#connected"))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
   (set-repl-mode :oth :sub)
   (.append (jq "#widgets") (jq "#connected"))
+  (.html (jq "#oth-chat-box > pre") nil)
   (.append (jq "#others-tab > .row") (jq "#disconnected"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
-  
 
 (defn transfer []
-  (reset! publish-console? false)
-  (let [handle (-> (jq "#sub-list option:selected") (.val))
-        header (jq "#your-repl .jqconsole-header")
-        new-hdr [:div.jqconsole-header "Your REPL"
-                 [:button#reclaim.btn.btn-small [:img {:src "img/grab.png"}]" Reclaim"]]]
+  (let [handle (-> (jq "#sub-list option:selected") (.val))]
+    ; convert console to subscribe mode
+    (set-repl-mode :you :sub)
+    ; configure transfer on server
     (srv-cmd :transfer handle)
-    (.replaceWith header (crate/html new-hdr))))
+    (.text (jq "#tr-hdl") handle)
+    (.attr (jq "#reclaim") "handle" handle)
+    (.append (jq "#your-status") (jq "#tr-box"))))
 
 (defn reclaim []
-  (reset! publish-console? true)
   (this-as btn 
-           (.remove (jq btn))
-           (srv-cmd :reclaim)))
+           (let [handle (-> (jq btn) (.attr "handle"))]
+             (.append (jq "#widgets") (jq "#tr-box"))
+             (jslog "srv-cmd :reclaim")
+             (srv-cmd :reclaim handle))))

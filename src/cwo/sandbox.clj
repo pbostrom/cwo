@@ -1,14 +1,12 @@
 (ns cwo.sandbox
-  (:use [clojail.testers :only [secure-tester-without-def]]
-        [clojail.core :only [sandbox]]))
+  (:require [clojail.testers :refer [secure-tester-without-def blanket]]
+            [clojail.core :refer [sandbox]]))
 
-(def try-clojure-tester
-  (into secure-tester-without-def
-        #{'cwo.chmgr}))
+(def cwo-clojure-tester
+  (blanket secure-tester-without-def
+        "cwo" "noir" "aleph" "lamina" "ring" "clojail" "compojure"))
 
 (defn make-sandbox []
-  (sandbox try-clojure-tester
+  (sandbox cwo-clojure-tester
            :timeout 2000
-           :init '(do (use '[clojure.repl :only [doc]])
-                      (future (Thread/sleep 600000)
-                              (-> *ns* .getName remove-ns)))))
+           :init '(do (require '[clojure.repl :refer [doc]]))))
