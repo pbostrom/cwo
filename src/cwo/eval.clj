@@ -8,8 +8,6 @@
     (with-open [out (StringWriter.)]
       (let [expr (binding [*read-eval* false] (read-string expr))
             result (sb expr {#'*out* out})]
-        (println "out" out)
-        (println "result" result)
         {:expr expr
          :result [out result]}))
     (catch TimeoutException _

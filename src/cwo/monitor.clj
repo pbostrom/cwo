@@ -11,8 +11,11 @@
           sec (mod (.toSeconds TimeUnit/MILLISECONDS last-act) 60)
           mins (mod (.toMinutes TimeUnit/MILLISECONDS last-act) 60)
           hr (mod (.toHours TimeUnit/MILLISECONDS last-act) 60)]
-       )));remove old session data   
+      (when (> hr 8)
+        (println "Removing session data for" k)
+        (swap! chmgr/sesh-id->cc dissoc k)
+        ))));remove old session data   
 
 (defn start []
   (let [executor (Executors/newSingleThreadScheduledExecutor)]
-    (.scheduleAtFixedRate executor monitor 0 30 TimeUnit/SECONDS))) 
+    (.scheduleAtFixedRate executor monitor 0 30 TimeUnit/MINUTES))) 

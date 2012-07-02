@@ -15,8 +15,11 @@
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
-;                         :optimizations :whitespace
-                         ;:optimizations :advanced
+                         :optimizations :whitespace
+;                         :optimizations :advanced
+                         :externs ["resources/public/js/jqconsole-2.7.js"
+                                   "resources/public/js/bootstrap.js"
+                                   "resources/public/js/jquery.js"]
                          :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)

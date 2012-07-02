@@ -2,8 +2,7 @@
   (:use [cwo.utils :only (jq ws-url jslog sock)])
   (:require [cwo.ajax :as ajax]
             [cwo.repl :as repl]
-            [cwo.wscmd :as wscmd]
-            [cwo.chat :as chat]))
+            [cwo.wscmd :as wscmd]))
 
 ; open websocket
 (reset! sock (js/WebSocket. ws-url))
@@ -52,8 +51,14 @@
 (-> (jq "#user-container")
   (.on "click" "#logout" (fn [] (ajax/logout))))
 
+(defn chat-hdlr [e]
+  (when (= (.-which e) 13)
+    (this-as ta
+             (.send @sock (pr-str [:chat [(.-id ta) (.val (jq ta))]]))
+             (.val (jq ta) ""))))
+
 ; chat input listeners
-(-> (jq "#your-tab > .row") (.on "keydown" "#others-chat input" chat/chat-listner))
+(-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
 
 ; tab listener
 (-> (jq "#myTab")

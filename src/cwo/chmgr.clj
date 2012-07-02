@@ -13,9 +13,9 @@
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
-;  :sub-vlv    Optional, a subscription to a shared REPL session
-;  :pt-vlv     Optional, a pass-thru for your subscribers after a transfer
-;  :tsub-vlv   Optional, a subscription to your transfered REPL session
+;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
+;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
+;  :tsub-vlv          Optional, a subscription to your transfered REPL session
 ;  
 ;
 ;  evaluation sandboxes
@@ -82,12 +82,11 @@
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-id cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
-    (println "cmd:" cmd sesh-id arg)
     ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-id]
-  (println "init-cc!")
+  (println "init-cc!" sesh-id)
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
                :you (Repl. (lamina/permanent-channel)
@@ -139,14 +138,13 @@
 
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{old-sv :sub-vlv subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
+        {{old-sub :sub subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (when pr-hdl (client-cmd cl-ch [:addsub pr-hdl]))
-    (when old-sv (lamina/close old-sv))
-    (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] sub-vlv)
+    (when old-sub (lamina/close (:vlv old-sub)))
+    (swap! sesh-id->cc assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-;(lamina/siphon (lamina/filter* (route? #{:l :p}) srv-ch) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
     (client-cmd srv-ch [:ts (ms-since @(:ts you))])))
 
@@ -167,7 +165,7 @@
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {tr-cl :cl-ch tr-srv :srv-ch subv :sub-vlv} (@sesh-id->cc hdl-sesh-id) ;transferee
+        {tr-cl :cl-ch tr-srv :srv-ch sub :sub} (@sesh-id->cc hdl-sesh-id) ;transferee
         {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-hdl :handle 
          old-pv :pt-vlv old-tv :tsub-vlv trans :transfer} (@sesh-id->cc sesh-id) ;owner
         pv (lamina/channel)
@@ -184,7 +182,7 @@
       (end-transfer sesh-id trans)
       (subscribe (@handle->sesh-id trans) owner-hdl))
     (client-cmd (:hist target-repl) [:chctrl handle])
-    (lamina/close subv) ; close subscription created by (connect ...)
+    (lamina/close (:vlv sub)) ; close subscription created by (connect ...)
     (lamina/siphon 
       (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
       pv old-srv)
@@ -202,13 +200,13 @@
   (println "disconnect" handle)
   (let [pub-sesh-id (@handle->sesh-id handle)
         {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-id->cc ;publisher
-        {{sv :sub-vlv sub-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
+        {{sub :sub sub-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
     (when (and sub-hdl (= sub-hdl transfer))
       (end-transfer pub-sesh-id sub-hdl)
       (client-cmd (get-in @sesh-id->cc [pub-sesh-id :cl-ch]) [:reclaim :_])
       (client-cmd (:hist (get-in @sesh-id->cc [pub-sesh-id :you])) [:chctrl handle]))
-    (lamina/close sv)
-    (swap! sesh-id->cc assoc-in [sesh-id :sub-vlv] nil)
+    (lamina/close (:vlv sub))
+    (swap! sesh-id->cc assoc-in [sesh-id :sub] nil)
     (when sub-hdl (client-cmd cl-ch [:rmsub sub-hdl]))))
 
 ; reclaim control of sesh-id's REPL from specified handle
@@ -228,10 +226,24 @@
                res
                (let [[out res] result]
                  (str out (pr-str res))))]
-    (println res)
     (reset! (:ts repl) (System/currentTimeMillis))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])
     (client-cmd srv-ch [:ts 0])))
+
+(defn chat [sesh-id [chat-id txt]]
+  (let [{:keys [srv-ch cl-ch sub handle]} (@sesh-id->cc sesh-id) 
+        chat-hdlr {:you-chat 
+                   (fn [t]
+                     (client-cmd srv-ch [:othchat [handle txt]])
+                     (client-cmd cl-ch [:youchat [handle txt]]))
+                   :oth-chat 
+                   (fn [t]
+                     (let [{:keys [srv-ch cl-ch transfer]} (cc-from-handle (:hdl sub))]
+                       (client-cmd srv-ch [:othchat [handle txt]])
+                       (client-cmd cl-ch [:youchat [handle txt]])
+                       (when transfer
+                         (client-cmd (:cl-ch (cc-from-handle transfer)) [:othchat [handle txt]]))))}]
+    (((keyword chat-id) chat-hdlr) txt)))
 
 (def cmd-set (set (keys (ns-publics 'cwo.chmgr))))

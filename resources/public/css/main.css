@@ -58,7 +58,8 @@ img.icon {
   border: 1px solid #CCC;
   border: 1px solid rgba(0, 0, 0, 0.15);
   background-color: #fdf6e3;
-  border-radius: 3px; }
+  border-radius: 3px;
+  overflow: auto; }
 
 .chat > input {
   width: 418px;

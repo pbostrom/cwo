@@ -27,20 +27,19 @@
     (count (filter #(= % "(") expr))))
 
 (defn expr-indent [expr]
+  (jslog expr)
   (let [lines (js->clj (.split expr "\n"))
         line (.trim jq (last lines))
         offset (if (= (count lines) 1) 2 0)
         indent-vec (reduce 
-                     (fn [v x]
-                       (let [idx (first v)
-                             stack (second v)]
-                         (cond 
-                           (= x "(") [(inc idx) (cons idx stack)]
-                           (= x ")") [(inc idx) (rest stack)]
-                           true [(inc idx) stack]))) 
-                     [0 []] (seq line))
-        indent-val (+ (first (second indent-vec)) 2 offset)]
-    indent-val))
+                     (fn [[idx stack] x]
+                       (cond 
+                         (= x "(") [(inc idx) (cons idx stack)]
+                         (= x ")") [(inc idx) (or (next stack) [(- (first stack) 2)])]
+                         true [(inc idx) stack])) 
+                     [0 [-2]] (seq line))]
+    (jslog (pr-str indent-vec))
+    (+ (first (second indent-vec)) 2 offset)))
 
 (defn eval-hdlr [expr repl]
   (if-not (empty? (.trim expr)) 
@@ -92,6 +91,7 @@
 (defn disconnect []
   (set-repl-mode :oth :sub)
   (.append (jq "#widgets") (jq "#connected"))
+  (.html (jq "#oth-chat-box > pre") nil)
   (.append (jq "#others-tab > .row") (jq "#disconnected"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))

@@ -52,7 +52,7 @@
 (defn hist [hist-pair & {:keys [repl-key] :or {repl-key :oth}}]
   (let [[expr rslt] (reader/read-string hist-pair)
         repl (repl-key repl/repls)]
-    (.SetPromptText repl (pr-str expr))
+    (.SetPromptText repl (str expr))
     (.AbortPrompt repl)
     (if (:error rslt)
       (.Write repl (str (:message rslt) "\n") "jqconsole-error")
@@ -77,12 +77,12 @@
         t-str (.toLocaleTimeString t)]
     (.text (jq "#last-act") t-str)))
 
-(defn thist [hist-pair]
-  (let [[expr rslt] (reader/read-string hist-pair)
-        repl (:you repl/repls)]
-    (.SetPromptText repl (pr-str expr))
-    (.AbortPrompt repl)
-    (if (:error rslt)
-      (.Write repl (str (:message rslt) "\n") "jqconsole-error")
-      (.Write repl (str rslt "\n") "jqconsole-output"))
-    (.Prompt repl true (fn [] nil))))
+(defn othchat [[handle txt]]
+  (let [chat (jq "#oth-chat-box > pre")]
+    (.append chat (str handle ": " txt "\n"))
+    (.scrollTop chat (.prop chat "scrollHeight"))))
+
+(defn youchat [[handle txt]]
+  (let [chat (jq "#you-chat-box > pre")]
+    (.append chat (str handle ": " txt "\n"))
+    (.scrollTop chat (.prop chat "scrollHeight"))))
