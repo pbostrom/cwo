@@ -69,6 +69,8 @@
 
 ; $(document).ready function
 (defn ready []
-  (-> (jq "#myTab a:first") (.tab "show"))) ; activate 1st tab
+  (if js/window.location.hash
+    (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
+    (-> (jq "#myTab a:first") (.tab "show")))) ; activate 1st tab
 
 (.ready (jq js/document) ready)
