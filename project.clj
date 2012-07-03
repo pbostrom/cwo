@@ -15,11 +15,11 @@
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
-                         :optimizations :whitespace
-;                         :optimizations :advanced
-                         :externs ["resources/public/js/jqconsole-2.7.js"
-                                   "resources/public/js/bootstrap.js"
-                                   "resources/public/js/jquery.js"]
-                         :pretty-print true}}]}
+;                         :optimizations :whitespace
+                         :optimizations :advanced
+                         :externs ["externs/jqconsole-2.7.js"
+                                   "externs/twitter-bootstrap.js"
+                                   "externs/jquery-1.7.externs.js"]
+                         :pretty-print false}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)
