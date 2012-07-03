@@ -69,8 +69,11 @@
 
 ; $(document).ready function
 (defn ready []
-  (if js/window.location.hash
-    (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
+  (if-let [hsh (.-hash js/window.location)]
+    (let [hdl (.substring hsh 1)
+          opts (.makeArray jq (js/jQuery "#others-list option"))]
+      (js/alert hdl)
+      (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show")))
     (-> (jq "#myTab a:first") (.tab "show")))) ; activate 1st tab
 
 (.ready (jq js/document) ready)
