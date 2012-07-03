@@ -11,15 +11,15 @@
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
   ;:plugins [[lein-cljsbuild "0.1.2"]]
-  :plugins [[lein-cljsbuild "0.2.1"]]
+  :plugins [[lein-cljsbuild "0.2.2"]]
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
-;                         :optimizations :whitespace
-                         :optimizations :advanced
+                         :optimizations :whitespace
+;                         :optimizations :advanced
                          :externs ["externs/jqconsole-2.7.js"
                                    "externs/twitter-bootstrap.js"
                                    "externs/jquery-1.7.externs.js"]
-                         :pretty-print false}}]}
+                         :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :main cwo.server)

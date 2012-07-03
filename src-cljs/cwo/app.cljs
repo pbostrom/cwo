@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:use [cwo.utils :only (jq ws-url jslog sock)])
+  (:use [cwo.utils :only [jq ws-url jslog sock others-set get-hash]])
   (:require [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -32,7 +32,7 @@
 (-> (jq "#others-tab")
   (.on "click" "#others-list" (fn [evt] 
                                (-> (jq "#others-list option:selected") (.removeAttr "selected"))
-                               (-> (jq evt.target) (.attr "selected" "selected")))))
+                               (-> (jq (.-target evt)) (.attr "selected" "selected")))))
 
 ; connect button
 (-> (jq "#others-tab") (.on "click" "#connect" repl/connect))
@@ -69,11 +69,8 @@
 
 ; $(document).ready function
 (defn ready []
-  (if-let [hsh (.-hash js/window.location)]
-    (let [hdl (.substring hsh 1)
-          opts (.makeArray jq (js/jQuery "#others-list option"))]
-      (js/alert hdl)
-      (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show")))
-    (-> (jq "#myTab a:first") (.tab "show")))) ; activate 1st tab
+  (if (get-hash)
+    (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
+    (-> (jq "#myTab a:first") (.tab "show"))))
 
 (.ready (jq js/document) ready)

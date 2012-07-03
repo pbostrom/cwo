@@ -1,5 +1,5 @@
 (ns cwo.repl
-  (:use [cwo.utils :only (jq jslog sock srv-cmd)])
+  (:use [cwo.utils :only [jq jslog sock srv-cmd]])
   (:require [crate.core :as crate]
             [cwo.widgets :as widgets]))
 
@@ -41,6 +41,7 @@
     (jslog (pr-str indent-vec))
     (+ (first (second indent-vec)) 2 offset)))
 
+(declare prompt)
 (defn eval-hdlr [expr repl]
   (if-not (empty? (.trim expr)) 
     (srv-cmd :eval-clj [expr repl])

@@ -34,11 +34,24 @@
 (def sesh-id->cc (atom {}))
 
 ; map to lookup session id from handle
-(def handle->sesh-id (atom {}))
+(def handle->sesh-id (atom (sorted-map)))
 
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
+
+(defn recycle!
+  "Remove the channel controller map for the specified session id"
+  [sesh-id]
+  (println "Recycling" sesh-id)
+  (declare disconnect client-cmd)
+  (let [cc (@sesh-id->cc sesh-id)]
+    (when-let [sub-hdl (get-in cc [:sub :hdl])]
+      (disconnect sesh-id sub-hdl))
+    (when-let [hdl (:handle cc)]
+      (swap! handle->sesh-id dissoc hdl)
+      (client-cmd handle-ch [:rmhandle hdl])) 
+    (swap! sesh-id->cc dissoc sesh-id)))
 ;;
 ;; helper functions
 ;;
@@ -67,10 +80,10 @@
     (let [[msg-obj] (seq (safe-read-str msg))]
       (contains? rt-set (key msg-obj)))))
 
-(declare cmd-set)
 
 (defn cmd? 
   ([msg]
+   (declare cmd-set)
    (let [msg-obj (safe-read-str msg)]
      (and (vector? msg-obj) (contains? cmd-set (symbol (name (first msg-obj)))))))
   ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
@@ -116,7 +129,7 @@
         sesh-id (session/get "sesh-id")]
     (swap! handle->sesh-id assoc handle sesh-id)
     (swap! sesh-id->cc assoc-in [sesh-id :handle] handle)
-    (client-cmd handle-ch [:addhandles [handle]])))
+    (client-cmd handle-ch [:addhandle handle])))
 
 (defn end-broadcast []
   (let [handle (session/get "handle")
@@ -126,11 +139,13 @@
     (client-cmd handle-ch [:rmhandle handle])))
 
 (defn socket-handler [webch handshake]
-  (let [cc (get-cc)]
+  (let [cc (get-cc)
+        sesh-id (session/get "sesh-id")]
     (when (session/get "handle") (broadcast))
     (lamina/siphon webch (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) webch)
-    (client-cmd (cc :cl-ch) [:addhandles (keys @handle->sesh-id)])))
+    (lamina/on-closed webch #(recycle! sesh-id))
+    (client-cmd (cc :cl-ch) [:inithandles (keys @handle->sesh-id)])))
 
 ;;
 ;; socket ctrl commands below
