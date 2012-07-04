@@ -7,8 +7,7 @@
             [noir.server :as noir]
             [noir.session :as session]
             [cwo.chmgr :as chmgr]
-            [cwo.monitor :as monitor]
-            )
+            [cwo.wastemgt :as wastemgt])
   (:gen-class))
 
 ; Need user.dir for Java policy file
@@ -34,4 +33,4 @@
     (aleph/start-http-server 
       (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
     (println "server started on port" port)
-    (monitor/start)))
+    (wastemgt/start)))

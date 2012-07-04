@@ -9,6 +9,18 @@
    form of [:command arg]."
   [cmd arg]
   (.send @sock (pr-str [cmd arg])))
+ 
+(defn get-hash
+  "Get the hash value of the url if it exists"
+  []
+  (let [hsh (.-hash js/window.location)]
+    (when-not (empty? hsh) (.substring hsh 1))))
+
+(defn others-set
+  "Sorted set of all signed in users"
+  []
+  (into (sorted-set) (map #(.-value %) 
+                          (js->clj (.makeArray jq (jq "#others-list option"))))))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
