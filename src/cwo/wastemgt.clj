@@ -1,4 +1,4 @@
-(ns cwo.monitor
+(ns cwo.wastemgt
   (:require [cwo.chmgr :as chmgr])
   (:import (java.util.concurrent Executors TimeUnit)))
 
