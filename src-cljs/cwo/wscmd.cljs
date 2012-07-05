@@ -1,21 +1,23 @@
 (ns cwo.wscmd
-  (:use [cwo.utils :only [jq others-set get-hash]])
+  (:use [cwo.utils :only [jq jslog others-set get-hash]])
   (:require [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
 
-; Do a bit of JS reflection to call method passed in as websocket msg
-; Optionally specify a specific repl to run command on.
-; Note that we abuse JS lack of arity checking to pass along optional argument
-(defn call-wscmd [[cmd arg & opts]]
-  (.log js/console (name cmd) ":" (pr-str arg) "-" (pr-str opts))
-  (apply (.-value (js/Object.getOwnPropertyDescriptor cwo.wscmd (name cmd))) arg opts))
-
-(defn qry-list [list-id opt-val]
+(defn- qry-list [list-id opt-val]
   (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
 
-(defn inithandles [handles]
+(defn- rmoption [list-id opt-val]
+  (-> (qry-list list-id opt-val)
+    (.remove)))
+
+; multimethod for dispatching cmds recv'd via websocket
+(defmulti wscmd 
+  (fn [cmd arg] cmd))
+
+(defmethod wscmd :inithandles
+  [_ handles]
   (dorun
     (map #(-> (jq "#others-list")
             (.append
@@ -27,46 +29,50 @@
         (repl/connect))
       (js/alert (str hdl " is not available")))))
 
-(defn addhandle [handle]
-  (let [all-hdls (conj (others-set) handle)]
+(defmethod wscmd :addhandle
+  [_ arg]
+  (let [all-hdls (conj (others-set) arg)]
     (-> (js/jQuery "#others-list option") (.remove))
     (dorun
       (map #(-> (jq "#others-list")
               (.append
                 (crate/html [:option %]))) all-hdls))))
 
-; remove an option from a select list
-(defn- rmoption [list-id opt-val]
-  (-> (qry-list list-id opt-val)
-    (.remove)))
+(defmethod wscmd :rmhandle
+  [_ handle]
+  (rmoption "#others-list" handle))
 
-(defn addsub [handle]
+(defmethod wscmd :addsub 
+  [_ handle]
   (rmoption "#sub-list" handle)
   (-> (jq "#sub-list")
     (.append
       (crate/html [:option handle]))))
 
-(defn rmsub [handle]
+(defmethod wscmd :rmsub 
+  [_ handle]
   (rmoption "#sub-list" handle))
 
-(defn rmhandle [handle]
-  (rmoption "#others-list" handle))
-
-(defn transfer [handle]
+(defmethod wscmd :transfer 
+  [_ _]
   (repl/set-repl-mode :oth :active))
 
-(defn endtransfer [_]
+(defmethod wscmd :endtransfer
+  [_ _]
   (repl/set-repl-mode :oth :sub))
 
-(defn reclaim [_]
+(defmethod wscmd :reclaim 
+  [_ _]
   (.append (jq "#widgets") (jq "#tr-box"))
   (repl/set-repl-mode :you :active))
 
-(defn result [rslt]
+(defmethod wscmd :result 
+  [_ rslt]
   (let [[repl rslt] (reader/read-string rslt)]
     (repl/console-write repl rslt)))
 
-(defn hist [hist-pair & {:keys [repl-key] :or {repl-key :oth}}]
+(defmethod wscmd :hist 
+  [_ hist-pair & {:keys [repl-key] :or {repl-key :oth}}]
   (let [[expr rslt] (reader/read-string hist-pair)
         repl (repl-key repl/repls)]
     (.SetPromptText repl (str expr))
@@ -76,7 +82,8 @@
       (.Write repl (str rslt "\n") "jqconsole-output"))
     (.Prompt repl true (fn [] nil))))
 
-(defn chctrl [handle & {:keys [repl-key] :or {repl-key :oth}}]
+(defmethod wscmd :chctrl 
+  [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
   (if (= repl-key :oth)
     (do 
       (.remove (jq "#chctrl"))
@@ -84,22 +91,30 @@
                (crate/html [:tr#chctrl [:td "Controlled by:"] [:td handle]]))))
   (.Write (repl-key repl/repls) (str "REPL transferred to " handle "\n") "jqconsole-info"))
 
-(defn trepl [cmd-vec]
-  (call-wscmd (conj cmd-vec :repl-key :you)))
+(defmethod wscmd :trepl 
+  [_ cmd-vec]
+  (apply wscmd (conj cmd-vec :repl-key :you)))
 
-(defn ts [offset]
+(defmethod wscmd :ts 
+  [_ offset]
   (let [now (.getTime (js/Date.))
         t (js/Date. (- now offset))
         date (.toDateString t)
         t-str (.toLocaleTimeString t)]
     (.text (jq "#last-act") t-str)))
 
-(defn othchat [[handle txt]]
+(defmethod wscmd :othchat 
+  [_ [handle txt]]
   (let [chat (jq "#oth-chat-box > pre")]
     (.append chat (str handle ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 
-(defn youchat [[handle txt]]
+(defmethod wscmd :youchat 
+  [_ [handle txt]]
   (let [chat (jq "#you-chat-box > pre")]
     (.append chat (str handle ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
+
+(defmethod wscmd :default
+  [cmd _] 
+  (throw (js/Error. (str "Command " cmd " not implemented" ))))

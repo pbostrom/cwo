@@ -78,7 +78,7 @@
     (println "Unsupported route filter!"))
   (fn [msg]
     (let [[msg-obj] (seq (safe-read-str msg))]
-      (contains? rt-set (key msg-obj)))))
+      (contains? rt-set (keyword msg-obj)))))
 
 
 (defn cmd? 

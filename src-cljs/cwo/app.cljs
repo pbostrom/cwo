@@ -16,7 +16,7 @@
 
 (defn msg-hdlr [msg]
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
-    (cond (vector? msg-obj) (wscmd/call-wscmd msg-obj)
+    (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
 
 (set! (.-onmessage @sock) msg-hdlr)
