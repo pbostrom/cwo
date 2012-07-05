@@ -39,6 +39,11 @@
 ; channel to update handle list
 (def handle-ch (lamina/channel* :permanent? true))
 
+(defn recycle-all!
+  "For development use only! Clears out all application state."
+  []
+  (reset! sesh-id->cc {})
+  (reset! handle->sesh-id {}))
 
 (defn recycle!
   "Remove the channel controller map for the specified session id"
@@ -119,29 +124,33 @@
 (defn client-cmd [ch cmdvec]
   (lamina/enqueue ch (pr-str cmdvec)))
 
-; add handle of subscriber to publisher's list
-(defn add-sub [pub-hdl sub-hdl]
-  (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
-    (client-cmd cl-ch [:addsub sub-hdl])))
-
-(defn broadcast []
+(defn login []
   (let [handle (session/get "handle")
         sesh-id (session/get "sesh-id")]
     (swap! handle->sesh-id assoc handle sesh-id)
     (swap! sesh-id->cc assoc-in [sesh-id :handle] handle)
-    (client-cmd handle-ch [:addhandle handle])))
+    (client-cmd handle-ch [:addhandle handle])
+    (println handle "signed in")
+    (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
+      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+        (client-cmd cl-ch [:rmanonsub nil])
+        (client-cmd cl-ch [:addsub handle])))))
 
-(defn end-broadcast []
+(defn logout []
   (let [handle (session/get "handle")
         sesh-id (@handle->sesh-id handle)]
     (swap! handle->sesh-id dissoc handle)
     (swap! sesh-id->cc update-in [sesh-id] dissoc :handle)
-    (client-cmd handle-ch [:rmhandle handle])))
+    (client-cmd handle-ch [:rmhandle handle])
+    (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
+      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+        (client-cmd cl-ch [:rmsub handle])
+        (client-cmd cl-ch [:addanonsub nil])))))
 
 (defn socket-handler [webch handshake]
   (let [cc (get-cc)
         sesh-id (session/get "sesh-id")]
-    (when (session/get "handle") (broadcast))
+    (when (session/get "handle") (login))
     (lamina/siphon webch (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) webch)
     (lamina/on-closed webch #(recycle! sesh-id))
@@ -156,7 +165,9 @@
         {{old-sub :sub subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
-    (when pr-hdl (client-cmd cl-ch [:addsub pr-hdl]))
+    (if pr-hdl 
+      (client-cmd cl-ch [:addsub pr-hdl])
+      (client-cmd cl-ch [:addanonsub]))
     (when old-sub (lamina/close (:vlv old-sub)))
     (swap! sesh-id->cc assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
@@ -222,7 +233,10 @@
       (client-cmd (:hist (get-in @sesh-id->cc [pub-sesh-id :you])) [:chctrl handle]))
     (lamina/close (:vlv sub))
     (swap! sesh-id->cc assoc-in [sesh-id :sub] nil)
-    (when sub-hdl (client-cmd cl-ch [:rmsub sub-hdl]))))
+    (if sub-hdl 
+      (client-cmd cl-ch [:rmsub sub-hdl])
+      (client-cmd cl-ch [:rmanonsub nil])
+      )))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]

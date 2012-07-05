@@ -13,16 +13,15 @@
   (session/put! "sesh-id" (cookies/get "ring-session"))
   (enlive/layout (session/get "handle")))
 
-(defpage [:post "/login"] {:keys [handle other]}
+(defpage [:post "/login"] {:keys [handle]}
   (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
       (session/put! "handle" handle)
-      (when-not (empty? other) (chmgr/add-sub other handle))
-      (chmgr/broadcast)
+      (chmgr/login)
       (pr-str (fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
-  (chmgr/end-broadcast)
+  (chmgr/logout)
   (session/remove! "handle")
   (pr-str (fmap (enlive/default-content) enlive/render-snippet)))

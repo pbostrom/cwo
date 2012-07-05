@@ -32,7 +32,7 @@
 (defmethod wscmd :addhandle
   [_ arg]
   (let [all-hdls (conj (others-set) arg)]
-    (-> (js/jQuery "#others-list option") (.remove))
+    (-> (jq "#others-list option") (.remove))
     (dorun
       (map #(-> (jq "#others-list")
               (.append
@@ -52,6 +52,23 @@
 (defmethod wscmd :rmsub 
   [_ handle]
   (rmoption "#sub-list" handle))
+
+(defmethod wscmd :addanonsub
+  [_ _]
+  (if-let [anon-val (.val (jq "#anonsub"))]
+    (let [cnt (inc (reader/read-string (let [[n] (.split anon-val " ")] n)))]
+      (.text (jq "#anonsub") (str cnt " anonymous")))
+    (-> (jq "#sub-list")
+      (.append
+        (crate/html [:option#anonsub (str 1 " anonymous")])))))
+
+(defmethod wscmd :rmanonsub
+  [_ _]
+  (when-let [anon-val (.val (jq "#anonsub"))]
+    (let [cnt (dec (reader/read-string (let [[n] (.split anon-val " ")] n)))]
+      (if (> cnt 0)
+        (.text (jq "#anonsub") (str cnt " anonymous")) 
+        (.remove (jq "#anonsub"))))))
 
 (defmethod wscmd :transfer 
   [_ _]
