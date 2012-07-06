@@ -32,6 +32,7 @@
   <div class="span12">
     <ul id="myTab" class="nav nav-tabs">
       <li><a href="#your-tab" data-toggle="tab">You</a></li>
+      <li><a href="#gist-tab" data-toggle="tab">Gist</a></li>
       <li><a href="#others-tab" data-toggle="tab">Others</a></li>
     </ul>
 
@@ -84,6 +85,12 @@
         <!-- /row -->
       </div>
       <!-- /others -->
+
+      <div id="gist-tab" class="tab-pane">
+        <button id="gitauth">Connect to github:gist</button>
+        <a href="https://github.com/login/oauth/authorize?client_id=462bb4a4d01b06852938">github auth</a>
+        <div id="git-dialog"></div>
+      </div>
     </div>
     <!-- /tab-content -->
   </div>

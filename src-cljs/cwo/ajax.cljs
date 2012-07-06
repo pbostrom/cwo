@@ -37,6 +37,15 @@
                                    (.append (jq "#status-you") (jq "#default-text"))
                                    (.append (jq "#widgets") (jq "#statusbox-you"))))})))
 
+(defn gitauth []
+  (.ajax jq (map->js {:url "https://github.com/login/oauth/authorize"
+                      :type "GET"
+                      :data (map->js {:client_id "462bb4a4d01b06852938"})
+                      :error (fn [a b c] (js/alert "error"))
+                      :success (fn [resp]
+                                 (if (.-redirect resp) js/alert "redirect!")
+                                 (re-html "#git-dialog" resp))})))
+
 (defn sync-ajax [code]
   (.log js/console
         (.ajax jq (map->js {:url "/eval-clj"
