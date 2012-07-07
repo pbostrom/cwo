@@ -72,6 +72,7 @@
 ; $(document).ready function
 (defn ready []
   (if (get-hash)
+    (js/alert js/window.location.search)
     (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
     (-> (jq "#myTab a:first") (.tab "show"))))
 
