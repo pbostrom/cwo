@@ -16,7 +16,7 @@
   (-> (jq sel)
     (.html html)))
 
-(defn login [user other]
+(defn login [user]
   (.ajax jq (map->js {:url "/login"
                       :type "POST"
                       :data (map->js {:handle user})

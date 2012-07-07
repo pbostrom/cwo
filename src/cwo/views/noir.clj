@@ -9,7 +9,8 @@
   (into {} (for [[k v] m] [k (f v)])))
 
 ;; enlive rendered routes
-(defpage "/" []
+(defpage "/" {:keys [code]}
+  (if code (println "code is" code))
   (session/put! "sesh-id" (cookies/get "ring-session"))
   (enlive/layout (session/get "handle")))
 
