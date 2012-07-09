@@ -8,6 +8,7 @@
                  [enlive "1.0.0"]
                  [crate "0.1.0-alpha2"]
                  [clojail "0.6.0"]
+                 [clj-http "0.4.3"]
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
   ;:plugins [[lein-cljsbuild "0.1.2"]]

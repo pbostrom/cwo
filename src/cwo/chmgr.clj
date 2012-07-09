@@ -12,6 +12,12 @@
 ;  :handle    Optional, anonymous users permitted
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
+;  GitHub auth
+;  :gh { 
+;       :status    Set to 'auth' when redirecting to github
+;       :token     GitHub access token
+;      }
+;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
 ;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
@@ -22,7 +28,9 @@
 ;  :you Repl Your primary code evaluation environment
 ;  :oth Repl Optional, if someone transfers their repl to you
 ; }
+;
 
+; Repl
 ; {
 ;  :hist      Channel to send history commands to connected users
 ;  :sb        Evalutation sandbox
@@ -153,7 +161,8 @@
     (when (session/get "handle") (login))
     (lamina/siphon webch (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) webch)
-    (lamina/on-closed webch #(recycle! sesh-id))
+;    (lamina/on-closed webch #(when-not (= (get-in sesh-id->cc [sesh-id :status]) "gh")
+;                               (recycle! sesh-id)))
     (client-cmd (cc :cl-ch) [:inithandles (keys @handle->sesh-id)])))
 
 ;;

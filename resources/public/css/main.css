@@ -22,6 +22,10 @@ html, body {
 .userbox .btn {
   margin-left: -5px; }
 
+#user-container span {
+  margin-left: 10px;
+  margin-right: 10px; }
+
 .container > .span12 {
   margin-left: 0px; }
 

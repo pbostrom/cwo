@@ -59,9 +59,6 @@
 ; chat input listeners
 (-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
 
-; gist button listener
-(-> (jq "#gist-tab") (.on "click" "#gitauth" ajax/gitauth))
-
 ; tab listener
 (-> (jq "#myTab")
   (.on "click" "a" (fn [e]
@@ -72,7 +69,6 @@
 ; $(document).ready function
 (defn ready []
   (if (get-hash)
-    (js/alert js/window.location.search)
     (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
     (-> (jq "#myTab a:first") (.tab "show"))))
 

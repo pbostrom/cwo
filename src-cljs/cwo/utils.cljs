@@ -3,6 +3,7 @@
 (def jq js/jQuery)
 (def ws-url (str "ws://" js/window.location.host "/socket"))
 (def sock (atom nil))
+(def ghcode (atom nil))
 
 (defn srv-cmd
   "Send a command to be executed on the server in the
@@ -21,6 +22,14 @@
   []
   (into (sorted-set) (map #(.-value %) 
                           (js->clj (.makeArray jq (jq "#others-list option"))))))
+
+(defn parseqy
+  "Parse a query string into a map with keywords"
+  [qry]
+  (reduce 
+    (fn [m param]
+      (let [[k v] (js->clj (.split param "="))]
+        (conj m [(keyword k) v]))) {} (js->clj (.split qry "&"))))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,

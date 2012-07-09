@@ -16,12 +16,16 @@
 <body>
 <div class="container">
   <!-- header -->
-  <div class="header span7 offset4">
+  <div class="header span8 offset3">
     <div class="row">
-      <div class="span3"><h3>cwo</h3></div>
-      <div id="user-container" class="span4">
+      <div class="span1 logo"><h3>cwo</h3></div>
+      <div id="user-container" class="span6 pull-right">
         <div id="loginbox" class="userbox input-append pull-right">
-          <input id="login-input" type="text" class="span3" placeholder="handle">
+          <span>Sign in with</span>
+          <button id="ghbtn" class="btn" href="/ghauth"><img class="icon" src="img/github_logo.png" height="27" width="60">
+          </img></button>
+          <span> - OR  -</span>
+          <input id="login-input" type="text" class="span2" placeholder="handle">
           <button id="login" class="btn" href="#">Sign In</button>
         </div>
       </div>

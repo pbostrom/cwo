@@ -22,7 +22,6 @@
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
-;  (GET "/socket/:handle" [handle] wrapped-socket-handler)
   (GET "/socket" [] wrapped-socket-handler)
   noir-handler
   (route/resources "/"))
