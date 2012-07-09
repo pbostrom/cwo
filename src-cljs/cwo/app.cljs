@@ -1,6 +1,6 @@
 (ns cwo.app
-  (:use [cwo.utils :only [jq ws-url jslog sock others-set get-hash]])
-  (:require [cwo.ajax :as ajax]
+  (:require [cwo.utils :refer [jq ws-url jslog sock others-set get-hash]]
+            [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
 

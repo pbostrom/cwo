@@ -1,6 +1,6 @@
 (ns cwo.server
-  (:use [compojure.core :only (defroutes GET)])
-  (:require [compojure.route :as route]
+  (:require [compojure.core :refer [defroutes GET]]
+            [compojure.route :as route]
             [ring.middleware.file :as ring-file]
             [ring.middleware.reload :as reload]
             [aleph.http :as aleph]

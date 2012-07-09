@@ -1,6 +1,6 @@
 (ns cwo.ajax
-  (:require [cljs.reader :as reader])
-  (:use [cwo.utils :only [jq map->js]]))
+  (:require [cljs.reader :as reader]
+            [cwo.utils :refer [jq map->js]]))
 
 (defn eval-clojure [code sb]
   (let [data (atom "")]

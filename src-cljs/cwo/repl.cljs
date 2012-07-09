@@ -1,6 +1,6 @@
 (ns cwo.repl
-  (:use [cwo.utils :only [jq jslog sock srv-cmd]])
-  (:require [crate.core :as crate]
+  (:require [cwo.utils :refer [jq jslog sock srv-cmd]]
+            [crate.core :as crate]
             [cwo.widgets :as widgets]))
 
 (def publish-console? (atom {:you true :oth false}))

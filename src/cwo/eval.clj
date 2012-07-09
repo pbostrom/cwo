@@ -1,5 +1,5 @@
 (ns cwo.eval
-  (:use [clojure.stacktrace :only [root-cause]])
+  (:require [clojure.stacktrace :refer [root-cause]])
   (:import java.io.StringWriter
 	   java.util.concurrent.TimeoutException))
 

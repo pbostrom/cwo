@@ -11,8 +11,7 @@
                  [clj-http "0.4.3"]
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
-  ;:plugins [[lein-cljsbuild "0.1.2"]]
-  :plugins [[lein-cljsbuild "0.2.2"]]
+  :plugins [[lein-cljsbuild "0.2.4"]]
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
@@ -23,4 +22,5 @@
                                    "externs/jquery-1.7.externs.js"]
                          :pretty-print true}}]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
+  :vimclojure-opts {:repl true}
   :main cwo.server)

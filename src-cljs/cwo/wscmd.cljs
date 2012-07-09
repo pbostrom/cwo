@@ -1,6 +1,6 @@
 (ns cwo.wscmd
-  (:use [cwo.utils :only [jq jslog others-set get-hash]])
-  (:require [crate.core :as crate]
+  (:require [cwo.utils :refer [jq jslog others-set get-hash]]
+            [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
 
