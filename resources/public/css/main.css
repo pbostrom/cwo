@@ -29,9 +29,6 @@ html, body {
 .container > .span12 {
   margin-left: 0px; }
 
-.tab-pane {
-  margin-top: 10px; }
-
 .console {
   position: relative;
   height: 624px; }
@@ -81,36 +78,14 @@ img.icon {
   font-size: 15px;
   margin-right: 10px; }
 
-.tab-content {
+.main {
   border-radius: 4px;
   box-shadow: 0 0 8px 0px #888;
   position: relative;
-  z-index: 2; }
-
-.nav-tabs {
-  margin-bottom: 0px;
-  margin-left: 9px;
-  border-bottom: 0px; }
-
-.nav-tabs > li.active {
-  position: relative;
-  z-index: 3; }
-
-.nav-tabs > li:hover {
-  position: relative;
-  z-index: 3; }
-
-.nav-tabs > li > a:hover {
-  background-color: #93a1a1; }
-
-.nav-tabs > li > a {
+  margin-top: 10px;
   background-color: #eee8d5;
   color: #586e75;
-  border-color: #eee8d5 #eee8d5 #dddddd; }
-
-.tab-content, .nav-tabs > .active > a, .nav-tabs > .active > a:hover {
-  background-color: #eee8d5;
-  color: #586e75; }
+  z-index: 2; }
 
 .jqconsole-header {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }

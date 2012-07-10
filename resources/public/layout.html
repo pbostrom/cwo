@@ -33,143 +33,112 @@
   </div>
   <!-- /header -->
 
-  <div class="row-fluid">
+  <div class="row-fluid main">
     <div class="span16">
-      <ul id="myTab" class="nav nav-tabs">
-        <li><a href="#your-tab" data-toggle="tab">You</a></li>
-        <li><a href="#gist-tab" data-toggle="tab">Gist</a></li>
-        <li><a href="#others-tab" data-toggle="tab">Others</a></li>
-      </ul>
-
-      <div class="tab-content">
-        <div id="your-tab" class="tab-pane">
-          <div id="your-text">
+      <div class="row-fluid">
+        <div class="span7">
+          <div id="your-repl" class="console">
           </div>
-          <div class="row-fluid">
-            <div class="span7">
-              <div id="your-repl" class="console">
-              </div>
-            </div>
-            <div class="span9" id="panel-box">
-              <div id="your-panel">
-                <div class="row-fluid">
-                  <div class="span6">
-                    <div class="accordion" id="main-menu">
+        </div>
+        <div class="span9" id="panel-box">
+          <div id="your-panel">
+            <div class="row-fluid">
+              <div class="span6">
+                <div class="accordion" id="main-menu">
 
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#gist">
-                            Gist
-                          </a>
-                        </div>
-                        <div id="gist" class="accordion-body collapse" style="height: 0px; ">
-                          <div class="accordion-inner">
-                            Gist menu goes here
-                    <input type="text" placeholder="gist"></input>
-                    <input type="text" placeholder="gist"></input>
-                    <input type="text" placeholder="gist"></input>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#broadcast">
-                            Broadcast
-                          </a>
-                        </div>
-                        <div id="broadcast" class="accordion-body collapse" style="height: 0px; ">
-                          <div class="accordion-inner">
-                            Broadcast menu
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#watch">
-                            Watch
-                          </a>
-                        </div>
-                        <div id="watch" class="accordion-body collapse">
-                          <div class="accordion-inner">
-                            Watch menu
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="accordion-group">
-                        <div class="accordion-heading">
-                          <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#chat">
-                            Chat
-                          </a>
-                        </div>
-                        <div id="chat" class="accordion-body collapse">
-                          <div class="accordion-inner">
-                            Chat menu
-                          </div>
-                        </div>
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#gist">
+                        Gist
+                      </a>
+                    </div>
+                    <div id="gist" class="accordion-body collapse" style="height: 0px; ">
+                      <div class="accordion-inner">
+                        Gist menu goes here
+                        <input type="text" placeholder="gist"></input>
+                        <input type="text" placeholder="gist"></input>
+                        <input type="text" placeholder="gist"></input>
                       </div>
                     </div>
                   </div>
-                  <div id="your-status" class="span3">
-                    <p id="signedin-text">Connected users will be displayed in the list.
-                    Use the "Transfer" button to transfer control of your REPL to another user.</p>
+
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#broadcast">
+                        Broadcast
+                      </a>
+                    </div>
+                    <div id="broadcast" class="accordion-body collapse" style="height: 0px; ">
+                      <div class="accordion-inner">
+                        Broadcast menu
+                      </div>
+                    </div>
                   </div>
-                  <div id="sub-box" class="list-box span3">
-                    <select id="sub-list" multiple="multiple">
-                    </select>
-                    <button id="transfer" class="btn">Transfer</button>
+
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#watch">
+                        Watch
+                      </a>
+                    </div>
+                    <div id="watch" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        Watch menu
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="accordion-group">
+                    <div class="accordion-heading">
+                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#chat">
+                        Chat
+                      </a>
+                    </div>
+                    <div id="chat" class="accordion-body collapse">
+                      <div class="accordion-inner">
+                        Chat menu
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div id="you-chat-box" class="chat row-fluid">
-                  <div id="peers" class="list-box span6">
-                    <select id="chat-list" multiple="multiple">
-                    </select>
-                  </div>
-                  <div class="span10 chatwin">
-                    <pre></pre>
-                    <input id="you-chat" type="text" placeholder="chat"></input>
-                  </div>
-                </div>
+              </div>
+              <div id="your-status" class="span3">
+                <p id="signedin-text">Connected users will be displayed in the list.
+                Use the "Transfer" button to transfer control of your REPL to another user.</p>
+              </div>
+              <div id="sub-box" class="list-box span3">
+                <select id="sub-list" multiple="multiple">
+                </select>
+                <button id="transfer" class="btn">Transfer</button>
+              </div>
+            </div>
+            <div id="you-chat-box" class="chat row-fluid">
+              <div id="peers" class="list-box span6">
+                <select id="chat-list" multiple="multiple">
+                </select>
+              </div>
+              <div class="span10 chatwin">
+                <pre></pre>
+                <input id="you-chat" type="text" placeholder="chat"></input>
               </div>
             </div>
           </div>
         </div>
-        <!-- /your-tab -->
-
-        <div id="others-tab" class="tab-pane">
-          <div class="row-fluid">
-            <div class="span6">
-              <div id="others-repl" class="console"></div>
-            </div>
-            <!-- /span6 -->
-            <div id="disconnected" class="list-box span3 offset1">
-              <p>Select a REPL session from the list.</p>
-              <select id="others-list" multiple="multiple">
-              </select>
-              <button id="connect" class="btn">Connect</button>
-            </div>
-            <!-- /span3 -->
-          </div>
-          <!-- /row -->
-        </div>
-        <!-- /others -->
-
-        <div id="gist-tab" class="tab-pane">
-          <button id="gitauth">Connect to github:gist</button>
-          <a href="https://github.com/login/oauth/authorize?client_id=462bb4a4d01b06852938">github auth</a>
-          <div id="git-dialog"></div>
-        </div>
       </div>
-      <!-- /tab-content -->
-    </div><!-- /span16 -->
-  </div><!-- /row-fluid -->
+    </div>
+
+  </div><!-- /span16 -->
+</div><!-- /row-fluid -->
 </div>
 <div style="display:none;">
-  <div id="widgets">
-    Widgets go here
+<div id="widgets">
+  Widgets go here
+  <div class="row-fluid">
+    <div class="span6">
+      <div id="others-repl" class="console"></div>
+    </div>
   </div>
+</div>
 </div>
 <!-- /container -->
 <script type="text/javascript"> 
