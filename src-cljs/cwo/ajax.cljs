@@ -1,6 +1,7 @@
 (ns cwo.ajax
   (:require [cljs.reader :as reader]
-            [cwo.utils :refer [jq map->js]]))
+            [crate.core :as crate]
+            [cwo.utils :refer [jq map->js jslog]]))
 
 (defn eval-clojure [code sb]
   (let [data (atom "")]
@@ -10,11 +11,22 @@
                         :async false
                         :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
-
+avatar_url
 ;refresh html of selector
 (defn re-html [sel html]
   (-> (jq sel)
     (.html html)))
+
+(defn gh-profile [token]
+  (.ajax jq (map->js 
+              {:url "https://api.github.com/user"
+               :type "GET"
+               :data (map->js {:access_token token})
+               :success (fn [resp]
+                          (let [user-map (js->clj resp)]
+                            (.prepend (jq "#logoutbox") 
+                                     (crate/html [:img#avatar {:src (user-map "avatar_url")}]))
+                            (.append (jq "#handle") (user-map "login"))))})))
 
 (defn login [user]
   (.ajax jq (map->js {:url "/login"

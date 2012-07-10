@@ -68,6 +68,8 @@
 
 ; $(document).ready function
 (defn ready []
+  (when-let [token (.attr (jq "#token") "value")]
+    (ajax/gh-profile token))
   (if (get-hash)
     (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
     (-> (jq "#myTab a:first") (.tab "show"))))

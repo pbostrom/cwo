@@ -10,8 +10,9 @@
 
 (html/defsnippet default-text (str pub "snippets.html") [:#default-text] [])
 
-(html/defsnippet logoutbox (str pub "snippets.html") [:#logoutbox] [username]
-  [:span#handle] (html/content username))
+(html/defsnippet logoutbox (str pub "snippets.html") [:#logoutbox] [token]
+  [:#handle] (html/content "")
+  [:#token] (html/set-attr :value token))
 
 (html/defsnippet signedin-text (str pub "snippets.html") [:#signedin-text] [])
 
@@ -21,15 +22,15 @@
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
 
-(defn si-content [username]
-  {:userbox (logoutbox username) :text (signedin-text)})
+(defn si-content [token]
+  {:userbox (logoutbox token) :text (signedin-text)})
 
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
 (html/deftemplate signedin-layout (str pub "layout.html")
-  [handle]
-  [:div#user-container] (html/content (logoutbox handle))
+  [token]
+  [:div#user-container] (html/content (logoutbox token))
   [:div#widgets] (html/content (connect-status) (transfer-text) (default-text)))
  
 (html/deftemplate signedout-layout (str pub "layout.html")
@@ -38,8 +39,8 @@
   [:div#panel-box] (html/content (default-text))
   [:div#widgets] (html/content (connect-status) (transfer-text) (your-panel)))
 
-(defn layout [handle]
-  (if handle
-    (signedin-layout handle)
+(defn layout [token]
+  (if token
+    (signedin-layout token)
     (signedout-layout)))
     

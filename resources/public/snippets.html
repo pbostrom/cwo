@@ -19,7 +19,7 @@
     <div id="loginbox" class="userbox input-append pull-right">
       <span>Sign in with</span>
       <a href="/ghauth">
-        <button id="ghbtn" class="btn"><img class="icon" src="img/github_logo.png" height="27" width="60">
+        <button id="ghbtn" class="btn"><img class="icon" src="img/github_logo.png">
         </img></button>
       </a>
       <span> - OR  -</span>
@@ -31,6 +31,7 @@
   <div class="row">
     <div id="logoutbox" class="userbox pull-right">
       <span id="handle"> Somehandle </span>
+      <input id="token" type="hidden" value="auth-token"></input>
       <button id="logout" class="btn" href="#">Sign Out</button>
     </div>
   </div>

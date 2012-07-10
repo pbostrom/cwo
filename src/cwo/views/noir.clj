@@ -6,6 +6,7 @@
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
             [noir.session :as session]
+            [cwo.config :as cfg]
             [noir.cookies :as cookies]))
 
 (defn fmap [m f]
@@ -33,27 +34,20 @@
 
 ;; enlive rendered routes
 (defpage "/" {:keys [code]}
-  (session/put! "sesh-id" (cookies/get "ring-session"))
-  (if code
-    (let [sesh-id (session/get "sesh-id")]
-      (println "sesh-id:" sesh-id "code:" code)
-      (when-not (= (get-in @chmgr/sesh-id->cc [sesh-id :status]) "gh")
-        (println "warning: no github marker"))
-      (when-let [token (fetch-token code)]
-         (swap! chmgr/sesh-id->cc update-in [sesh-id :gh]
-             #(assoc %1 :token %2 :status "auth") token))
-      (resp/redirect "/"))
-  (enlive/layout (session/get "handle"))))
+  (let [sesh-id (cookies/get "ring-session")]
+    (session/put! "sesh-id" sesh-id)
+    (if code
+      (do
+        (when-let [token (fetch-token code)]
+          (swap! chmgr/sesh-id->cc update-in [sesh-id :gh]
+                 #(assoc %1 :token %2 :status "auth") token)) 
+        (resp/redirect "/")) 
+      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :gh :token])))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
-    (swap! assoc-in chmgr/sesh-id->cc [sesh-id :status] "gh"))
-  (resp/redirect "https://github.com/login/oauth/authorize?client_id=462bb4a4d01b06852938"))
-
-(defpage "/redir" {:keys [v]}
-  (if v
-    (resp/redirect "/redir?foo=bar")
-    "Hi"))
+    (swap! chmgr/sesh-id->cc assoc-in [sesh-id :status] "gh"))
+  (resp/redirect (cfg/auth-url)))
 
 (defpage [:post "/login"] {:keys [handle]}
   (let [handle (sanitize handle)])
