@@ -27,3 +27,8 @@
 (defn websocket
   "Returns a websocket"
   [aleph-conn])
+(defn channel [ws k])
+(defn register-channel [ws k])
+(defn onclose [ws f])
+(defn onmessage [ws f])
+(defn send [ws msg])

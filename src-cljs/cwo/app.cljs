@@ -59,7 +59,8 @@
 ; chat input listeners
 (-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
 
-; tab listener
+; bootstrap UI widgets
+; tabs
 (-> (jq "#myTab")
   (.on "click" "a" (fn [e]
                      (.preventDefault e)

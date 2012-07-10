@@ -97,7 +97,7 @@ img.icon {
   background-color: $base2;
 }
 
-.chat > pre {
+.chat pre {
   height: 310px;
   border: 1px solid #CCC;
   border: 1px solid rgba(0, 0, 0, 0.15);
@@ -106,8 +106,8 @@ img.icon {
   overflow: auto;
 }
 
-.chat > input {
-  width: 418px;
+.chat input {
+  width: 100%;
   margin-bottom: 0px;
 /*  background-color: $base3;*/
   border-radius: 3px;

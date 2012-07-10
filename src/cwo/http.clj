@@ -10,6 +10,3 @@
 
 (defn get-user [token]
   (client/get (str "https://api.github.com/user?access_token=" token)))
-
-(def tk (get-in @cwo.chmgr/sesh-id->cc ["2d5b3bf0-9963-4b42-b341-d1a04f3cc13d" :gh :token]))
-(get-user tk)
