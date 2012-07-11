@@ -1,6 +1,7 @@
 (defproject cwo "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.4.0"]
+                 [org.clojure/core.logic "0.7.5"]
                  [aleph "0.3.0-alpha2"]
                  [noir "1.3.0-beta4"]
                  [compojure "1.0.1"]

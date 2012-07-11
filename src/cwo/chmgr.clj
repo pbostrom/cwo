@@ -133,35 +133,11 @@
 (defn client-cmd [ch cmdvec]
   (lamina/enqueue ch (pr-str cmdvec)))
 
-(defn login []
-  (let [handle (session/get "handle")
-        sesh-id (session/get "sesh-id")]
-    (swap! handle->sesh-id assoc handle sesh-id)
-    (swap! sesh-id->cc assoc-in [sesh-id :user :handle] handle)
-    (client-cmd handle-ch [:addhandle handle])
-    (println handle "signed in")
-    (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
-      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
-        (client-cmd cl-ch [:rmanonsub nil])
-        (client-cmd cl-ch [:addsub handle])))))
-
-(defn logout []
-  (let [handle (session/get "handle")
-        sesh-id (@handle->sesh-id handle)]
-    (swap! handle->sesh-id dissoc handle)
-    (println "logout handle")
-    (swap! sesh-id->cc update-in [sesh-id] dissoc :user)
-    (pr-str @sesh-id->cc)
-    (client-cmd handle-ch [:rmhandle handle])
-    (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
-      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
-        (client-cmd cl-ch [:rmsub handle])
-        (client-cmd cl-ch [:addanonsub nil])))))
-
 (defn socket-handler [webch handshake]
+  (declare login)
   (let [cc (get-cc)
         sesh-id (session/get "sesh-id")]
-    (when (session/get "handle") (login))
+    (when-let [handle (session/get "handle")] (login sesh-id handle))
     (lamina/siphon webch (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) webch)
 ;    (lamina/on-closed webch #(when-not (= (get-in sesh-id->cc [sesh-id :status]) "gh")
@@ -171,6 +147,32 @@
 ;;
 ;; socket ctrl commands below
 ;;
+
+(defn login [sesh-id handle]
+  (swap! handle->sesh-id assoc handle sesh-id)
+  (swap! sesh-id->cc assoc-in [sesh-id :user :handle] handle)
+  (println handle "signed in")
+  (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
+    (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+      (client-cmd cl-ch [:rmanonsub nil])
+      (client-cmd cl-ch [:addsub handle]))))
+
+(defn logout [sesh-id _]
+  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])]
+    (swap! handle->sesh-id dissoc handle)
+    (println "logout handle" handle)
+    (swap! sesh-id->cc update-in [sesh-id] dissoc :user)
+    (pr-str @sesh-id->cc)
+    (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
+      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+        (client-cmd cl-ch [:rmsub handle])
+        (client-cmd cl-ch [:addanonsub nil])))))
+
+(defn broadcast [sesh-id action]
+  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])
+        actions {:on #(client-cmd handle-ch [:addhandle handle])
+                 :off #(client-cmd handle-ch [:rmhandle handle])}]
+   ((action actions))))
 
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher

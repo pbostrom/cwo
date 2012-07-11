@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:require [cwo.utils :refer [jq ws-url jslog sock others-set get-hash]]
+  (:require [cwo.utils :refer [jq ws-url jslog sock others-set get-hash srv-cmd]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -60,12 +60,26 @@
 (-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
 
 ; bootstrap UI widgets
-; tabs
-(-> (jq "#myTab")
-  (.on "click" "a" (fn [e]
-                     (.preventDefault e)
-                     (this-as ta (-> (jq ta)
-                                   (.tab "show"))))))
+; main accordion menu
+(-> (jq ".accordion-body")
+  (.on "show" (fn [] (this-as ta 
+                              (let [icon (jq "i" (.parent (jq ta)))]
+                                (.removeClass icon "icon-chevron-right")
+                                (.addClass icon "icon-chevron-down")))))
+  (.on "hide" (fn [] (this-as ta 
+                              (let [icon (jq "i" (.parent (jq ta)))]
+                                (.removeClass icon "icon-chevron-down")
+                                (.addClass icon "icon-chevron-right"))))))
+
+; broadcast radio buttons
+; need to manage button state ourselves
+(def bc (atom :off))
+(-> (jq "#bc-radio button")
+  (.click (fn [] (this-as ta
+                          (let [value (keyword (.val (jq ta)))]
+                            (when-not (= @bc value)
+                              (reset! bc value)
+                              (srv-cmd :broadcast value)))))))
 
 ; $(document).ready function
 (defn ready []

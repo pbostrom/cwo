@@ -17,7 +17,6 @@ $cyan:      #2aa198;
 $green:     #859900;
 
 html, body {
-  background-color: #ededed;
   color: $base01;
 }
 
@@ -121,11 +120,12 @@ img.icon {
 }
 
 .accordion-group {
-  background-color: $base3;
+  border: 0px;
 }
 
-.accordion-heading .accordion-toggle {
-  display: inline-block;
+.accordion-body {
+ /* border: 1px solid #E5E5E5;*/
+  background-color: $base3;
 }
 
 .jqconsole-header {

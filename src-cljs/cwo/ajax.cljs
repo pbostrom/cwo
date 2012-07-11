@@ -1,7 +1,7 @@
 (ns cwo.ajax
   (:require [cljs.reader :as reader]
             [crate.core :as crate]
-            [cwo.utils :refer [jq map->js jslog]]))
+            [cwo.utils :refer [jq map->js jslog srv-cmd]]))
 
 (defn eval-clojure [code sb]
   (let [data (atom "")]
@@ -11,7 +11,7 @@
                         :async false
                         :success (fn [res] (reset! data res))}))
     (reader/read-string @data)))
-avatar_url
+
 ;refresh html of selector
 (defn re-html [sel html]
   (-> (jq sel)
@@ -23,10 +23,13 @@ avatar_url
                :type "GET"
                :data (map->js {:access_token token})
                :success (fn [resp]
-                          (let [user-map (js->clj resp)]
+                          (let [user-map (js->clj resp)
+                                handle (user-map "login")
+                                ]
                             (.prepend (jq "#logoutbox") 
                                      (crate/html [:img#avatar {:src (user-map "avatar_url")}]))
-                            (.append (jq "#handle") (user-map "login"))))})))
+                            (.append (jq "#handle") handle)
+                            (srv-cmd :login handle)))})))
 
 (defn login [user]
   (.ajax jq (map->js {:url "/login"

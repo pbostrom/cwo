@@ -1,6 +1,5 @@
 /* solarized colors */
 html, body {
-  background-color: #ededed;
   color: #586e75; }
 
 .navbar-inner {
@@ -83,10 +82,11 @@ img.icon {
   z-index: 2; }
 
 .accordion-group {
-  background-color: #fdf6e3; }
+  border: 0px; }
 
-.accordion-heading .accordion-toggle {
-  display: inline-block; }
+.accordion-body {
+  /* border: 1px solid #E5E5E5;*/
+  background-color: #fdf6e3; }
 
 .jqconsole-header {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }

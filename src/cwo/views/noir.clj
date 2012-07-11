@@ -55,11 +55,11 @@
   (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
       (session/put! "handle" handle)
-      (chmgr/login)
+      (chmgr/login (session/get "sesh-id") handle)
       (pr-str (fmap (enlive/si-content handle) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
-  (chmgr/logout)
+  (chmgr/logout (session/get "sesh-id") nil)
   (session/remove! "handle")
   (pr-str (fmap (enlive/default-content) enlive/render-snippet)))
