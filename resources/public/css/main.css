@@ -3,17 +3,12 @@ html, body {
   background-color: #ededed;
   color: #586e75; }
 
-.header {
-  background-color: #eee8d5;
-  margin-top: 10px;
-  margin-bottom: -20px;
-  padding: 5px;
-  position: relative;
-  border-radius: 4px;
-  box-shadow: 0 0 8px 0px #888; }
+.navbar-inner {
+  padding-top: 5px; }
 
 .userbox {
-  margin-bottom: 0px; }
+  margin-bottom: 0px;
+  margin-right: 5px; }
 
 .status td {
   border-top: 1px solid #CCC;
@@ -79,13 +74,13 @@ img.icon {
   margin-right: 10px; }
 
 .main {
-  border-radius: 4px;
-  box-shadow: 0 0 8px 0px #888;
   position: relative;
-  margin-top: 10px;
-  background-color: #eee8d5;
+  padding-top: 10px;
   color: #586e75;
   z-index: 2; }
+
+.accordion-group {
+  background-color: #eee8d5; }
 
 .jqconsole-header {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }

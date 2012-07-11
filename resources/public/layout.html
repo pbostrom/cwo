@@ -25,6 +25,7 @@ body {
 
 <body>
 
+<!-- boring twitter black navbar
 <div class="navbar navbar-fixed-top">
   <div class="navbar-inner">
     <div class="container-fluid">
@@ -42,27 +43,28 @@ body {
     </div>
   </div>
 </div>
+-->
 
-<div class="container-fluid">
-  <!-- header -->
-  <div class="header span10 offset3">
-    <div class="row">
-      <div class="span1 logo"><h3>cwo</h3></div>
-      <div id="user-container" class="span8 pull-right">
-        <div id="loginbox" class="userbox input-append pull-right">
-          <span>Sign in with</span>
-          <button id="ghbtn" class="btn" href="/ghauth"><img class="icon" src="img/github_logo.png">
-          </img></button>
-          <span> - OR  -</span>
-          <input id="login-input" type="text" maxlength="18" class="span2" placeholder="handle">
-          <button id="login" class="btn" href="#">Sign In</button>
-        </div>
+<!-- header -->
+<div class="navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="span3 offset3 logo"><h3>code with others</h3></div>
+    <div id="user-container" class="pull-right">
+      <div id="loginbox" class="userbox input-append pull-right">
+        <span>Sign in with</span>
+        <button id="ghbtn" class="btn" href="/ghauth"><img class="icon" src="img/github_logo.png">
+        </img></button>
+        <span> - OR  -</span>
+        <input id="login-input" type="text" maxlength="18" class="span3" placeholder="handle">
+        <button id="login" class="btn" href="#">Sign In</button>
       </div>
     </div>
   </div>
-  <!-- /header -->
+</div>
+<!-- /header -->
 
-  <div class="row-fluid main">
+<div class="container-fluid main">
+  <div class="row-fluid">
     <div class="span16">
       <div class="row-fluid">
         <div class="span7">
@@ -134,7 +136,6 @@ body {
               <div id="sub-box" class="list-box span3">
                 <select id="sub-list" multiple="multiple">
                 </select>
-                <button id="transfer" class="btn">Transfer</button>
               </div>
             </div>
             <div id="you-chat-box" class="chat row-fluid">

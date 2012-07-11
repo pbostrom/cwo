@@ -24,18 +24,13 @@ html, body {
 .container {
 }
 
-.header {
-  background-color: $base2;
-  margin-top: 10px;
-  margin-bottom: -20px;
-  padding: 5px;
-  position: relative;
-  border-radius: 4px;
-  box-shadow: 0 0 8px 0px #888;
+.navbar-inner {
+  padding-top: 5px;
 }
 
 .userbox {
   margin-bottom: 0px;
+  margin-right: 5px;
 }
 
 .status td {
@@ -115,13 +110,14 @@ img.icon {
 }
 
 .main {
-  border-radius: 4px;
-  box-shadow: 0 0 8px 0px #888;
   position: relative;
-  margin-top: 10px;
-  background-color: $base2;
+  padding-top: 10px;
   color: $base01;
   z-index: 2;
+}
+
+.accordion-group {
+  background-color: $base2;
 }
 
 .jqconsole-header {

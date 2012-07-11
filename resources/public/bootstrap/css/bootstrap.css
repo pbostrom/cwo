@@ -148,7 +148,7 @@ a:hover {
   text-decoration: underline;
 }
 .row {
-  margin-left: -15;
+  margin-left: -15px;
   *zoom: 1;
 }
 .row:before,
@@ -265,7 +265,7 @@ a:hover {
   margin-left: 75px;
 }
 .row-fluid {
-  width: 99%;
+  width: 100%;
   *zoom: 1;
 }
 .row-fluid:before,
