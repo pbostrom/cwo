@@ -7,13 +7,42 @@
 <meta name="description" content="">
 <meta name="author" content="">
 
-<!-- Le styles -->
 <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+
+<style type="text/css">
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+.sidebar-nav {
+  padding: 9px 0;
+}
+</style>
+
 <link href="css/main.css" rel="stylesheet">
 <link href="css/ansi.css" rel="stylesheet">
 </head>
 
 <body>
+
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <div class="brand">code with others</div>
+      <div class="pull-right">
+        <div id="loginbox" class="userbox input-append">
+          <span>Sign in with</span>
+          <button id="ghbtn" class="btn" href="/ghauth"><img class="icon" src="img/github_logo.png">
+          </img></button>
+          <span> - OR  -</span>
+          <input id="login-input" type="text" maxlength="18" class="span2" placeholder="handle">
+          <button id="login" class="btn" href="#">Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid">
   <!-- header -->
   <div class="header span10 offset3">
@@ -101,10 +130,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-              <div id="your-status" class="span3">
-                <p id="signedin-text">Connected users will be displayed in the list.
-                Use the "Transfer" button to transfer control of your REPL to another user.</p>
               </div>
               <div id="sub-box" class="list-box span3">
                 <select id="sub-list" multiple="multiple">
