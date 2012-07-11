@@ -29,6 +29,7 @@
 
 (defn fetch-token [code]
   ; TODO: do this in another thread?
+  ; TODO: start a thread to fetch github handle
   (when-let [body (:body (http/post-access-code code))]
     (:access_token (parseqry body))))
 
@@ -39,14 +40,14 @@
     (if code
       (do
         (when-let [token (fetch-token code)]
-          (swap! chmgr/sesh-id->cc update-in [sesh-id :gh]
+          (swap! chmgr/sesh-id->cc update-in [sesh-id :user]
                  #(assoc %1 :token %2 :status "auth") token)) 
         (resp/redirect "/")) 
-      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :gh :token])))))
+      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :user :token])))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
-    (swap! chmgr/sesh-id->cc assoc-in [sesh-id :status] "gh"))
+    (swap! chmgr/sesh-id->cc assoc-in [sesh-id :user :status] "gh"))
   (resp/redirect (cfg/auth-url)))
 
 (defpage [:post "/login"] {:keys [handle]}

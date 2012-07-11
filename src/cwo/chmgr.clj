@@ -12,11 +12,12 @@
 ;  :handle    Optional, anonymous users permitted
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
-;  GitHub auth
-;  :gh { 
-;       :status    Set to 'auth' when redirecting to github
-;       :token     GitHub access token
-;      }
+;  :user 
+;    {
+;     :handle
+;     :status    [default, gh, auth]
+;     :token     GitHub access token
+;    }
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
@@ -61,7 +62,7 @@
   (let [cc (@sesh-id->cc sesh-id)]
     (when-let [sub-hdl (get-in cc [:sub :hdl])]
       (disconnect sesh-id sub-hdl))
-    (when-let [hdl (:handle cc)]
+    (when-let [hdl (get-in cc [:user :handle])]
       (swap! handle->sesh-id dissoc hdl)
       (client-cmd handle-ch [:rmhandle hdl])) 
     (swap! sesh-id->cc dissoc sesh-id)))
@@ -136,7 +137,7 @@
   (let [handle (session/get "handle")
         sesh-id (session/get "sesh-id")]
     (swap! handle->sesh-id assoc handle sesh-id)
-    (swap! sesh-id->cc assoc-in [sesh-id :handle] handle)
+    (swap! sesh-id->cc assoc-in [sesh-id :user :handle] handle)
     (client-cmd handle-ch [:addhandle handle])
     (println handle "signed in")
     (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
@@ -148,7 +149,9 @@
   (let [handle (session/get "handle")
         sesh-id (@handle->sesh-id handle)]
     (swap! handle->sesh-id dissoc handle)
-    (swap! sesh-id->cc update-in [sesh-id] dissoc :handle)
+    (println "logout handle")
+    (swap! sesh-id->cc update-in [sesh-id] dissoc :user)
+    (pr-str @sesh-id->cc)
     (client-cmd handle-ch [:rmhandle handle])
     (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
       (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
@@ -171,11 +174,11 @@
 
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
-        {{old-sub :sub subclch :cl-ch pr-hdl :handle} sesh-id} @sesh-id->cc ;subscriber
+        {{old-sub :sub subclch :cl-ch user :user} sesh-id} @sesh-id->cc ;subscriber
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
-    (if pr-hdl 
-      (client-cmd cl-ch [:addsub pr-hdl])
+    (if user 
+      (client-cmd cl-ch [:addsub (:handle user)])
       (client-cmd cl-ch [:addanonsub]))
     (when old-sub (lamina/close (:vlv old-sub)))
     (swap! sesh-id->cc assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
@@ -185,7 +188,7 @@
 
 (defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {pv :pt-vlv tv :tsub-vlv cl :cl-ch owner-handle :handle} (@sesh-id->cc sesh-id)]
+        {pv :pt-vlv tv :tsub-vlv cl :cl-ch} (@sesh-id->cc sesh-id)]
     (lamina/close pv)
     (lamina/close tv)
     (swap! sesh-id->cc
@@ -201,7 +204,7 @@
 (defn transfer [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
         {tr-cl :cl-ch tr-srv :srv-ch sub :sub} (@sesh-id->cc hdl-sesh-id) ;transferee
-        {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-hdl :handle 
+        {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-user :user 
          old-pv :pt-vlv old-tv :tsub-vlv trans :transfer} (@sesh-id->cc sesh-id) ;owner
         pv (lamina/channel)
         tv (lamina/channel)
@@ -215,7 +218,7 @@
                          (pr-str {:t prompt-txt})))]
     (when trans
       (end-transfer sesh-id trans)
-      (subscribe (@handle->sesh-id trans) owner-hdl))
+      (subscribe (@handle->sesh-id trans) (:handle owner-user)))
     (client-cmd (:hist target-repl) [:chctrl handle])
     (lamina/close (:vlv sub)) ; close subscription created by (connect ...)
     (lamina/siphon 
@@ -235,7 +238,8 @@
   (println "disconnect" handle)
   (let [pub-sesh-id (@handle->sesh-id handle)
         {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-id->cc ;publisher
-        {{sub :sub sub-hdl :handle} sesh-id} @sesh-id->cc] ;subscriber
+        {{sub :sub sub-user :user} sesh-id} @sesh-id->cc ;subscriber
+        sub-hdl (:handle sub-user)] 
     (when (and sub-hdl (= sub-hdl transfer))
       (end-transfer pub-sesh-id sub-hdl)
       (client-cmd (get-in @sesh-id->cc [pub-sesh-id :cl-ch]) [:reclaim :_])
@@ -244,13 +248,13 @@
     (swap! sesh-id->cc assoc-in [sesh-id :sub] nil)
     (if sub-hdl 
       (client-cmd cl-ch [:rmsub sub-hdl])
-      (client-cmd cl-ch [:rmanonsub nil])
-      )))
+      (client-cmd cl-ch [:rmanonsub nil]))))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]
   (let [hdl-sesh-id (@handle->sesh-id handle)
-        {owner-handle :handle cl :cl-ch repl :you} (@sesh-id->cc sesh-id)]
+        {owner-user :user cl :cl-ch repl :you} (@sesh-id->cc sesh-id)
+        owner-handle (:handle owner-user)]
     (end-transfer sesh-id handle)
     (client-cmd cl [:reclaim :_]) 
     (client-cmd (:hist repl) [:chctrl owner-handle])

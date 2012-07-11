@@ -85,7 +85,7 @@ img.icon {
   margin-bottom: 10px;
   margin-right: 10px;
   margin-top: 39px;
-  background-color: $base2;
+  background-color: $base01;
 }
 
 .chat pre {
@@ -104,6 +104,10 @@ img.icon {
   border-radius: 3px;
 }
 
+#chat-list {
+  width: 100%;
+}
+
 #handle {
   font-size: 15px;
   margin-right: 10px;
@@ -117,7 +121,11 @@ img.icon {
 }
 
 .accordion-group {
-  background-color: $base2;
+  background-color: $base3;
+}
+
+.accordion-heading .accordion-toggle {
+  display: inline-block;
 }
 
 .jqconsole-header {

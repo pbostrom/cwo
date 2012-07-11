@@ -35,9 +35,7 @@ avatar_url
                       :success (fn [resp]
                                  (if-not (empty? resp)
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
-                                     (re-html "#user-container" userbox)
-                                     (.append (jq "#widgets") (jq "#default-text"))
-                                     (.append (jq "#panel-box") (jq "#your-panel")))
+                                     (re-html "#user-container" userbox))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []
