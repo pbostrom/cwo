@@ -2,6 +2,7 @@
   (:require [lamina.core :as lamina]
             [noir.session :as session]
             [cwo.sandbox :as sb]
+            [cwo.models.user :as user]
             [cwo.eval :as evl]))
 
 ; Channel mgmt architecture
@@ -12,19 +13,10 @@
 ;  :handle    Optional, anonymous users permitted
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
-;  :user 
-;    {
-;     :handle
-;     :status    [default, gh, auth]
-;     :token     GitHub access token
-;     :bc        Boolean indicating whether REPL broadcast is active
-;    }
-;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
 ;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
 ;  :tsub-vlv          Optional, a subscription to your transfered REPL session
-;  
 ;
 ;  evaluation sandboxes
 ;  :you Repl Your primary code evaluation environment
@@ -39,7 +31,6 @@
 ;  :ts        Timestamp of last activity
 ; }
 (defrecord Repl [hist sb ts])
-
 
 ; handle -> User -> cc
 ; Every web session has an associated channel controller
@@ -65,9 +56,9 @@
   (let [cc (@sesh-id->cc sesh-id)]
     (when-let [sub-hdl (get-in cc [:sub :hdl])]
       (disconnect sesh-id sub-hdl))
-    (when-let [hdl (get-in cc [:user :handle])]
-      (swap! handle->sesh-id dissoc hdl)
-      (client-cmd handle-ch [:rmhandle hdl])) 
+    (when-let [hdl (user/get-handle sesh-id)]
+      (client-cmd handle-ch [:rmhandle hdl]))
+    (user/rm-user! sesh-id)
     (swap! sesh-id->cc dissoc sesh-id)))
 ;;
 ;; helper functions
@@ -78,7 +69,7 @@
   (binding [*read-eval* false] (read-string st)))
 
 (defn cc-from-handle [handle]
-  (@sesh-id->cc (@handle->sesh-id handle)))
+  (@sesh-id->cc (user/get-session handle)))
 
 ; higher order function to filter routes
 (defn route-old? [dst]
@@ -140,26 +131,30 @@
   (declare login)
   (let [cc (get-cc)
         sesh-id (session/get "sesh-id")]
-    (when-let [handle (session/get "handle")] (login sesh-id handle))
+    (when-let [handle (user/get-handle sesh-id)] 
+      (login sesh-id handle))
     (lamina/siphon webch (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) webch)
 ;    (lamina/on-closed webch #(when-not (= (get-in sesh-id->cc [sesh-id :status]) "gh")
 ;                               (recycle! sesh-id)))
-    (client-cmd (cc :cl-ch) [:inithandles (keys @handle->sesh-id)])))
+    (client-cmd (cc :cl-ch) [:inithandles (user/get-broadcasters)])))
 
 ;;
 ;; socket ctrl commands below
 ;;
 
 (defn broadcast [sesh-id action]
-  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])
-        actions {:on #(client-cmd handle-ch [:addhandle handle])
-                 :off #(client-cmd handle-ch [:rmhandle handle])}]
+  (let [handle (user/get-handle sesh-id)
+        actions {:on (fn []
+                       (client-cmd handle-ch [:addhandle handle])
+                       (user/set-user! sesh-id {:bc true}))
+                 :off (fn []
+                        (client-cmd handle-ch [:rmhandle handle])
+                        (user/set-user! sesh-id {:bc false}))}]
    ((action actions))))
 
 (defn login [sesh-id handle]
-  (swap! handle->sesh-id assoc handle sesh-id)
-  (swap! sesh-id->cc assoc-in [sesh-id :user :handle] handle)
+  (user/set-user! sesh-id {:handle handle})
   (println handle "signed in")
   (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
     (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
@@ -167,18 +162,17 @@
       (client-cmd cl-ch [:addsub handle]))))
 
 (defn logout [sesh-id _]
-  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])]
-    (swap! handle->sesh-id dissoc handle)
+  (let [handle (user/get-handle sesh-id)]
     (println "logout handle" handle)
-    (broadcast sesh-id :off)
-    (swap! sesh-id->cc update-in [sesh-id] dissoc :user)
+    (client-cmd handle-ch [:rmhandle handle])
+    (user/rm-user! sesh-id)
     (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
       (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
         (client-cmd cl-ch [:rmsub handle])
         (client-cmd cl-ch [:addanonsub nil])))))
 
 (defn subscribe [sesh-id handle]
-  (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher
+  (let [{{:keys [cl-ch srv-ch you]} (user/get-session handle)} @sesh-id->cc ;publisher
         {{old-sub :sub subclch :cl-ch user :user} sesh-id} @sesh-id->cc ;subscriber
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
@@ -192,7 +186,7 @@
     (client-cmd srv-ch [:ts (ms-since @(:ts you))])))
 
 (defn end-transfer [sesh-id handle]
-  (let [hdl-sesh-id (@handle->sesh-id handle)
+  (let [hdl-sesh-id (user/get-session handle)
         {pv :pt-vlv tv :tsub-vlv cl :cl-ch} (@sesh-id->cc sesh-id)]
     (lamina/close pv)
     (lamina/close tv)
@@ -207,7 +201,7 @@
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [sesh-id handle]
-  (let [hdl-sesh-id (@handle->sesh-id handle)
+  (let [hdl-sesh-id (user/get-session handle)
         {tr-cl :cl-ch tr-srv :srv-ch sub :sub} (@sesh-id->cc hdl-sesh-id) ;transferee
         {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-user :user 
          old-pv :pt-vlv old-tv :tsub-vlv trans :transfer} (@sesh-id->cc sesh-id) ;owner
@@ -223,7 +217,7 @@
                          (pr-str {:t prompt-txt})))]
     (when trans
       (end-transfer sesh-id trans)
-      (subscribe (@handle->sesh-id trans) (:handle owner-user)))
+      (subscribe (user/get-session trans) (:handle owner-user)))
     (client-cmd (:hist target-repl) [:chctrl handle])
     (lamina/close (:vlv sub)) ; close subscription created by (connect ...)
     (lamina/siphon 
@@ -241,7 +235,7 @@
 
 (defn disconnect [sesh-id handle]
   (println "disconnect" handle)
-  (let [pub-sesh-id (@handle->sesh-id handle)
+  (let [pub-sesh-id (user/get-session handle)
         {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-id->cc ;publisher
         {{sub :sub sub-user :user} sesh-id} @sesh-id->cc ;subscriber
         sub-hdl (:handle sub-user)] 
@@ -257,7 +251,7 @@
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]
-  (let [hdl-sesh-id (@handle->sesh-id handle)
+  (let [hdl-sesh-id (user/get-session handle)
         {owner-user :user cl :cl-ch repl :you} (@sesh-id->cc sesh-id)
         owner-handle (:handle owner-user)]
     (end-transfer sesh-id handle)

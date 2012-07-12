@@ -1,6 +1,7 @@
-(ns cwo.monger 
-  (:require [monger.core :as mg])
-  (:import [com.mongodb MongoOptions ServerAddress]))
+(ns cwo.mongo
+  (:require [monger.core :as mg]
+            [monger.operators :refer [$set $unset]]
+            [monger.collection :as mc]))
 
 (defn connect! []
   (mg/connect!)

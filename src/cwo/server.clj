@@ -7,6 +7,7 @@
             [noir.server :as noir]
             [noir.session :as session]
             [cwo.chmgr :as chmgr]
+            [cwo.mongo :as mg]
             [cwo.wastemgt :as wastemgt])
   (:gen-class))
 
@@ -32,4 +33,5 @@
     (aleph/start-http-server 
       (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
     (println "server started on port" port)
+    (mg/connect!)
     (wastemgt/start)))

@@ -1,6 +1,7 @@
 (ns cwo.views.noir
   (:require [noir.core :refer [defpage]]
             [cwo.chmgr :as chmgr]
+            [cwo.models.user :as user]
             [cwo.views.enlive :as enlive]
             [cwo.http :as http]
             [ring.util.response :as resp]
@@ -40,26 +41,23 @@
     (if code
       (do
         (when-let [token (fetch-token code)]
-          (swap! chmgr/sesh-id->cc update-in [sesh-id :user]
-                 #(assoc %1 :token %2 :status "auth") token)) 
+          (user/set-user! sesh-id {:token token :status "auth"})) 
         (resp/redirect "/"))
-      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :user])))))
+      (enlive/layout (user/get-user sesh-id)))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
-    (swap! chmgr/sesh-id->cc assoc-in [sesh-id :user :status] "gh"))
+    (user/set-user! sesh-id {:token token :status "gh"}))
   (resp/redirect (cfg/auth-url)))
 
 (defpage [:post "/login"] {:keys [handle]}
   (let [handle (sanitize handle)])
   (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
-      (session/put! "handle" handle)
       (chmgr/login (session/get "sesh-id") handle)
       (pr-str (fmap (enlive/si-content {:handle handle}) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}
   (chmgr/logout (session/get "sesh-id") nil)
-  (session/remove! "handle")
   (pr-str (fmap (enlive/default-content) enlive/render-snippet)))
