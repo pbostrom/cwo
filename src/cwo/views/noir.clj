@@ -42,8 +42,8 @@
         (when-let [token (fetch-token code)]
           (swap! chmgr/sesh-id->cc update-in [sesh-id :user]
                  #(assoc %1 :token %2 :status "auth") token)) 
-        (resp/redirect "/")) 
-      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :user :token])))))
+        (resp/redirect "/"))
+      (enlive/layout (get-in @chmgr/sesh-id->cc [sesh-id :user])))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
@@ -56,7 +56,7 @@
     (do
       (session/put! "handle" handle)
       (chmgr/login (session/get "sesh-id") handle)
-      (pr-str (fmap (enlive/si-content handle) enlive/render-snippet)))
+      (pr-str (fmap (enlive/si-content {:handle handle}) enlive/render-snippet)))
     ""))
 
 (defpage [:post "/logout"] {:keys [user]}

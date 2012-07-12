@@ -38,7 +38,9 @@
                       :success (fn [resp]
                                  (if-not (empty? resp)
                                    (let [{:keys [userbox text]} (reader/read-string resp)]
-                                     (re-html "#user-container" userbox))
+                                     (re-html "#user-container" userbox)
+                                     (.removeClass (jq "#bc-radio > button") "disabled")
+                                     (.removeClass (jq "#bc-radio > button") "active"))
                                    (js/alert (str "Handle " user " is taken"))))})))
 
 (defn logout []
@@ -47,6 +49,7 @@
                       :success (fn [resp]
                                  (let [{:keys [userbox text]} (reader/read-string resp)]
                                    (re-html "#user-container" userbox)
+                                   (.addClass (jq "#bc-radio > button") "disabled")
                                    (.append (jq "#status-you") (jq "#default-text"))
                                    (.append (jq "#widgets") (jq "#statusbox-you"))))})))
 

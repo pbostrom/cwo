@@ -17,6 +17,7 @@
 ;     :handle
 ;     :status    [default, gh, auth]
 ;     :token     GitHub access token
+;     :bc        Boolean indicating whether REPL broadcast is active
 ;    }
 ;
 ;   valves are closable channels that route traffic between permanent channels
@@ -39,6 +40,8 @@
 ; }
 (defrecord Repl [hist sb ts])
 
+
+; handle -> User -> cc
 ; Every web session has an associated channel controller
 (def sesh-id->cc (atom {}))
 
@@ -148,6 +151,12 @@
 ;; socket ctrl commands below
 ;;
 
+(defn broadcast [sesh-id action]
+  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])
+        actions {:on #(client-cmd handle-ch [:addhandle handle])
+                 :off #(client-cmd handle-ch [:rmhandle handle])}]
+   ((action actions))))
+
 (defn login [sesh-id handle]
   (swap! handle->sesh-id assoc handle sesh-id)
   (swap! sesh-id->cc assoc-in [sesh-id :user :handle] handle)
@@ -161,18 +170,12 @@
   (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])]
     (swap! handle->sesh-id dissoc handle)
     (println "logout handle" handle)
+    (broadcast sesh-id :off)
     (swap! sesh-id->cc update-in [sesh-id] dissoc :user)
-    (pr-str @sesh-id->cc)
     (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
       (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
         (client-cmd cl-ch [:rmsub handle])
         (client-cmd cl-ch [:addanonsub nil])))))
-
-(defn broadcast [sesh-id action]
-  (let [handle (get-in @sesh-id->cc [sesh-id :user :handle])
-        actions {:on #(client-cmd handle-ch [:addhandle handle])
-                 :off #(client-cmd handle-ch [:rmhandle handle])}]
-   ((action actions))))
 
 (defn subscribe [sesh-id handle]
   (let [{{:keys [cl-ch srv-ch you]} (@handle->sesh-id handle)} @sesh-id->cc ;publisher

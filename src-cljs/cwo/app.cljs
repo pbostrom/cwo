@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:require [cwo.utils :refer [jq ws-url jslog sock others-set get-hash srv-cmd]]
+  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock others-set get-hash srv-cmd]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -73,18 +73,32 @@
 
 ; broadcast radio buttons
 ; need to manage button state ourselves
-(def bc (atom :off))
 (-> (jq "#bc-radio button")
   (.click (fn [] (this-as ta
-                          (let [value (keyword (.val (jq ta)))]
-                            (when-not (= @bc value)
-                              (reset! bc value)
-                              (srv-cmd :broadcast value)))))))
+                          (let [btn (jq ta) ]
+                            (when-not (or (.hasClass btn "disabled") (.hasClass btn "active"))
+                                  (let [parent (.parent btn)]
+                                    (-> parent 
+                                      (.find ".active")
+                                      (.removeClass "active"))
+                                    (.addClass btn "active")
+                                    (.trigger parent "change"))))))))
+
+
+(-> (jq "#bc-radio")
+  (.change (fn [] (this-as ta
+                           (let [active-btn (jq ".active" ta)
+                                 value (keyword (.val active-btn))]
+                             (srv-cmd :broadcast value))))))
 
 ; $(document).ready function
 (defn ready []
   (when-let [token (.attr (jq "#token") "value")]
     (ajax/gh-profile token))
+  (when (= 0 (.size (jq "#user-container > #logoutbox")))
+    (.removeAttr (jq "#bc-radio") "data-toggle")
+    (.addClass (jq "#bc-radio > button") "disabled"))
+  
   (if (get-hash)
     (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
     (-> (jq "#myTab a:first") (.tab "show"))))
