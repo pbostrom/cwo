@@ -43,11 +43,11 @@
         (when-let [token (fetch-token code)]
           (user/set-user! sesh-id {:token token :status "auth"})) 
         (resp/redirect "/"))
-      (enlive/layout (user/get-user sesh-id)))))
+      (enlive/layout (and sesh-id (user/get-user sesh-id))))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
-    (user/set-user! sesh-id {:token token :status "gh"}))
+    (user/set-user! sesh-id {:status "gh"}))
   (resp/redirect (cfg/auth-url)))
 
 (defpage [:post "/login"] {:keys [handle]}

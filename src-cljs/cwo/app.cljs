@@ -29,13 +29,14 @@
 ; ui listeners
 
 ; prevent muli-selects
-(-> (jq "#others-tab")
-  (.on "click" "#others-list" (fn [evt] 
-                               (-> (jq "#others-list option:selected") (.removeAttr "selected"))
-                               (-> (jq (.-target evt)) (.attr "selected" "selected")))))
+(-> (jq "#others-list")
+  (.on "click" (fn [evt] 
+                 (-> (jq "#others-list option:selected") (.removeAttr "selected"))
+                 (-> (jq (.-target evt)) (.attr "selected" "selected"))
+                 (.collapse (jq "#join") "show"))))
 
 ; connect button
-(-> (jq "#others-tab") (.on "click" "#connect" repl/connect))
+(-> (jq "#join") (.on "click" "#join-btn" repl/join))
 ; disconnect button
 (-> (jq "#others-tab") (.on "click" "#discon" repl/disconnect))
 
@@ -73,6 +74,8 @@
 
 ; broadcast radio buttons
 ; need to manage button state ourselves
+
+; click listener to check for valid toggle states
 (-> (jq "#bc-radio button")
   (.click (fn [] (this-as ta
                           (let [btn (jq ta) ]
@@ -84,12 +87,32 @@
                                     (.addClass btn "active")
                                     (.trigger parent "change"))))))))
 
+(defn set-bc-menu-badge [value]
+  ((value {:on (fn [] 
+                 (.append (jq "#widgets") (jq "#bdg-off"))
+                 (.append (.first (jq "button.broadcast")) (jq "#bdg-on"))) 
+           :off (fn [] 
+                  (.append (jq "button.broadcast") (jq "#bdg-off"))
+                  (.append (jq "#widgets") (jq "#bdg-on")))})))
 
+; listen on the radio groups 'change' event
 (-> (jq "#bc-radio")
   (.change (fn [] (this-as ta
                            (let [active-btn (jq ".active" ta)
                                  value (keyword (.val active-btn))]
-                             (srv-cmd :broadcast value))))))
+                             (srv-cmd :broadcast value)
+                             (set-bc-menu-badge value))))))
+
+; animate main menu
+(.on (jq "#join") "shown" 
+     (fn [] 
+       (.animate (jq "#join") (utils/map->js {:width "156%"}) 400 
+                 (fn [] (.append (jq "#join .accordion-inner") (jq "#join-btn"))))))
+
+(.on (jq "#join") "hide" 
+     (fn []
+       (.animate (jq "#join") (utils/map->js {:width "100%"}) 300
+                 (fn [] (.append (jq "#widgets") (jq "#join-btn"))))))
 
 ; $(document).ready function
 (defn ready []

@@ -45,8 +45,8 @@ img.icon {
   vertical-align: top; }
 
 .chat {
-  border: 1px solid #CCC;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 2px solid #002b36;
+  border: 2px solid rgba(0, 43, 54, 0.15);
   border-radius: 4px;
   padding: 10px;
   margin-bottom: 10px;
@@ -87,6 +87,10 @@ img.icon {
 .accordion-body {
   /* border: 1px solid #E5E5E5;*/
   background-color: #fdf6e3; }
+
+/* accordion menus */
+#join.in {
+  width: 156%; }
 
 .jqconsole-header {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }

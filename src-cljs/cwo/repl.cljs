@@ -80,7 +80,7 @@
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
     (modef repl)))
 
-(defn connect []
+(defn join []
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
     (.append (jq "#widgets") (jq "#disconnected"))

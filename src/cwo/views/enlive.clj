@@ -1,6 +1,6 @@
 (ns cwo.views.enlive
   (:require [net.cgrand.enlive-html :as html]
-            [cwo.user :as user]))
+            [cwo.models.user :as user]))
 
 (defn render-snippet [s]
   (apply str (html/emit* s)))
@@ -25,16 +25,31 @@
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
 
+(html/defsnippet bc-on (str pub "layout.html") [:#bdg-on] [])
+
+(html/defsnippet bc-off (str pub "layout.html") [:#bdg-off] [])
+
+
 (defn si-content [user]
   {:userbox (logoutbox user)})
 
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
+(defn badge [user state]
+  (let [on (bc-on)
+        off (bc-off)]
+    (if (user/broadcasting? user)
+      (state {:visible on  :hidden off})
+      (state {:visible off  :hidden on}))))
+
+
 (html/deftemplate signedin-layout (str pub "layout.html")
   [user]
   [:div#user-container] (html/content (logoutbox user))
-  [:div#widgets] (html/content (connect-status) (transfer-text) (others-repl)))
+  [:span#badge-sp] (html/content (badge user :visible))
+  [:div#widgets] (html/content 
+                   (connect-status) (transfer-text) (others-repl) (badge user :hidden)))
  
 (html/deftemplate signedout-layout (str pub "layout.html")
   []
@@ -50,3 +65,4 @@
   (if (user/signed-in? user)
     (signedin-layout user)
     (signedout-layout)))
+    
