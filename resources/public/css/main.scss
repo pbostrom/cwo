@@ -53,6 +53,7 @@ html, body {
 .console {
   position: relative;
   height: 624px;
+  margin: 10px;
 }
 
 .list-box > select {
@@ -77,14 +78,14 @@ img.icon {
 }
 
 .chat {
-  border: 2px solid $base03;
-  border: 2px solid rgba(0, 43, 54, 0.15);
+  border: 1px solid $base03;
+  border: 1px solid rgba(0, 43, 54, 0.15);
   border-radius: 4px;
   padding: 10px;
   margin-bottom: 10px;
   margin-right: 10px;
   margin-top: 39px;
-  background-color: $base01;
+  background-color: $base2;
 }
 
 .chat pre {
@@ -112,6 +113,44 @@ img.icon {
   margin-right: 10px;
 }
 
+.tab-content {
+  border-radius: 4px;
+  box-shadow: 0 0 8px 0px #888;
+  position: relative;
+  z-index: 2;
+}
+
+.nav-tabs {
+  margin-bottom: 0px;
+  margin-left: 9px;
+  border-bottom: 0px;
+}
+
+.nav-tabs > li.active {
+  position: relative;
+  z-index: 3;
+}
+
+.nav-tabs > li:hover {
+  position: relative;
+  z-index: 3;
+}
+
+.nav-tabs > li > a:hover {
+  background-color: $base1;
+}
+
+.nav-tabs > li > a {
+  background-color: $base2;
+  color: $base01;
+  border-color: $base2 $base2 #dddddd;
+}
+
+.tab-content, .nav-tabs > .active > a, .nav-tabs > .active > a:hover {
+  background-color: $base2;
+  color: $base01;
+}
+
 .main {
   position: relative;
   padding-top: 10px;
@@ -120,12 +159,17 @@ img.icon {
 }
 
 .accordion-group {
-  border: 0px;
+/*  border: 0px;*/
 }
 
 .accordion-body {
  /* border: 1px solid #E5E5E5;*/
+
   background-color: $base3;
+}
+
+a:hover {
+  text-decoration: none;
 }
 
 /* accordion menus */
@@ -137,10 +181,17 @@ img.icon {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+/*
 .console {
   margin-left: 10px;
   margin-bottom: 10px;
+}*/
+
+.console .btn.pull-right {
+  position: relative;
+  z-index: 1;
 }
+
 pre.jqconsole {
   background-color: $base3;
 }

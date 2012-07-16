@@ -19,9 +19,7 @@
 
 (html/defsnippet your-panel (str pub "layout.html") [:#your-panel] [])
 
-(html/defsnippet others-repl (str pub "layout.html") [:#others-repl] [])
-
-(html/defsnippet connect-status (str pub "snippets.html") [:#connected] [])
+(html/defsnippet status (str pub "snippets.html") [:#status] [])
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
 
@@ -48,21 +46,15 @@
   [user]
   [:div#user-container] (html/content (logoutbox user))
   [:span#badge-sp] (html/content (badge user :visible))
-  [:div#widgets] (html/content 
-                   (connect-status) (transfer-text) (others-repl) (badge user :hidden)))
+  [:div#widgets] (html/content (status) (transfer-text) (badge user :hidden)))
  
 (html/deftemplate signedout-layout (str pub "layout.html")
   []
   [:div#user-container] (html/content (loginbox))
-  [:div#widgets] (html/content (connect-status) (transfer-text) (others-repl)))
- 
-(html/deftemplate signedout-layout (str pub "layout.html")
-  []
-  [:div#user-container] (html/content (loginbox))
-  [:div#widgets] (html/content (connect-status) (transfer-text) (others-repl)))
+  [:div#widgets] (html/content (status) (transfer-text)))
 
 (defn layout [user]
   (if (user/signed-in? user)
     (signedin-layout user)
     (signedout-layout)))
-    
+     

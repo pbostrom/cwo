@@ -16,6 +16,7 @@
 
 (defn msg-hdlr [msg]
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
+    (jslog (pr-str msg-obj))
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
 
@@ -33,12 +34,12 @@
   (.on "click" (fn [evt] 
                  (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                  (-> (jq (.-target evt)) (.attr "selected" "selected"))
-                 (.collapse (jq "#join") "show"))))
+                 (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show")))))
 
 ; connect button
-(-> (jq "#join") (.on "click" "#join-btn" repl/join))
+(-> (jq "#join-btn") (.on "click" repl/join))
 ; disconnect button
-(-> (jq "#others-tab") (.on "click" "#discon" repl/disconnect))
+(-> (jq "#peers") (.on "click" "#discon" repl/disconnect))
 
 ; transfer button
 (-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
@@ -72,6 +73,12 @@
                                 (.removeClass icon "icon-chevron-down")
                                 (.addClass icon "icon-chevron-right"))))))
 
+; repl tabs
+(-> (jq "#repl-tabs a")
+  (.on "click" (fn [e]
+                 (.preventDefault e)
+                 (this-as ta (.tab (jq ta) "show")))))
+
 ; broadcast radio buttons
 ; need to manage button state ourselves
 
@@ -103,16 +110,16 @@
                              (srv-cmd :broadcast value)
                              (set-bc-menu-badge value))))))
 
-; animate main menu
-(.on (jq "#join") "shown" 
+; set up status table based on active repl
+(.on (jq "#repl-tabs a[href=\"#peer\"]") "show" 
      (fn [] 
-       (.animate (jq "#join") (utils/map->js {:width "156%"}) 400 
-                 (fn [] (.append (jq "#join .accordion-inner") (jq "#join-btn"))))))
+       (.append (jq "#widgets") (jq "#home-status-box"))
+       (.prepend (jq "#peers") (jq "#peer-status-box"))))
 
-(.on (jq "#join") "hide" 
-     (fn []
-       (.animate (jq "#join") (utils/map->js {:width "100%"}) 300
-                 (fn [] (.append (jq "#widgets") (jq "#join-btn"))))))
+(.on (jq "#repl-tabs a[href=\"#home\"]") "show" 
+     (fn [] 
+       (.append (jq "#widgets") (jq "#peer-status-box"))
+       (.prepend (jq "#peers") (jq "#home-status-box"))))
 
 ; $(document).ready function
 (defn ready []
@@ -123,7 +130,7 @@
     (.addClass (jq "#bc-radio > button") "disabled"))
   
   (if (get-hash)
-    (-> (jq "#myTab a[href=\"#others-tab\"]") (.tab "show"))
-    (-> (jq "#myTab a:first") (.tab "show"))))
+    (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
+    (-> (jq "#repl-tabs a:first") (.tab "show"))))
 
 (.ready (jq js/document) ready)

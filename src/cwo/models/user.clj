@@ -43,7 +43,7 @@
   []
   (reduce 
     (fn [v {:keys [handle]}] (conj v handle)) []
-    (mc/find-maps "users" {:bc true} [:handle])))
+    (mc/find-maps "users" {} [:handle])))
 
 (defn signed-in? [user]
   (or ((comp not nil?) (:token user))((comp not nil?) (:handle user))))

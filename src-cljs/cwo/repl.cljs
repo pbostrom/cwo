@@ -83,17 +83,14 @@
 (defn join []
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
-    (.append (jq "#widgets") (jq "#disconnected"))
     (.text (jq "#owner") handle)
     (.attr (jq "#discon") "handle" handle)
-    (.append (jq "#others-tab > .row") (jq "#connected"))
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
   (set-repl-mode :oth :sub)
-  (.append (jq "#widgets") (jq "#connected"))
+  (.append (jq "#widgets") (jq "#peer-status-box"))
   (.html (jq "#oth-chat-box > pre") nil)
-  (.append (jq "#others-tab > .row") (jq "#disconnected"))
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
 

@@ -25,26 +25,6 @@ body {
 
 <body>
 
-<!-- boring twitter black navbar
-<div class="navbar navbar-fixed-top">
-  <div class="navbar-inner">
-    <div class="container-fluid">
-      <div class="brand">code with others</div>
-      <div class="pull-right">
-        <div id="loginbox" class="userbox input-append">
-          <span>Sign in with</span>
-          <button id="ghbtn" class="btn" href="/ghauth"><img class="icon" src="img/github_logo.png">
-          </img></button>
-          <span> - OR  -</span>
-          <input id="login-input" type="text" maxlength="18" class="span2" placeholder="handle">
-          <button id="login" class="btn" href="#">Sign In</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-
 <!-- header -->
 <div class="navbar-fixed-top">
   <div class="navbar-inner">
@@ -69,83 +49,33 @@ body {
   <div class="row-fluid">
     <div class="span16">
       <div class="row-fluid">
-        <div class="span7">
-          <div id="your-repl" class="console">
+        <div id="console-block" class="span8">
+          <ul class="nav nav-tabs" id="repl-tabs">
+            <li><a href="#home" data-toggle="tab">Home REPL</a></li>
+            <li><a href="#peer" data-toggle="tab">Peer REPL</a></li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane" id="home">
+              <div id="your-repl" class="console">
+                <button class="btn pull-right">github:gist</button>
+              </div>
+            </div>
+            <div class="tab-pane" id="peer">
+              <div id="others-repl" class="console"></div>
+            </div>
           </div>
         </div>
-        <div class="span9" id="panel-box">
+        <div class="span8" id="panel-box">
           <div id="your-panel">
             <div class="row-fluid">
               <div class="span6">
-                <div class="accordion" id="main-menu">
-
-                  <div class="accordion-group">
-                    <div class="accordion-heading">
-                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#gist">
-                        <button class="btn"><i class="icon-chevron-right"></i> github:gist</button>
-                      </a>
-                    </div>
-                    <div id="gist" class="accordion-body collapse" style="height: 0px; ">
-                      <div class="accordion-inner">
-                        Gist menu goes here
-                        <input type="text" placeholder="gist"></input>
-                        <input type="text" placeholder="gist"></input>
-                        <input type="text" placeholder="gist"></input>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="accordion-group">
-                    <div class="accordion-heading">
-                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#broadcast">
-                        <button class="btn broadcast">
-                          <i class="icon-chevron-right"></i> Broadcast <span id="badge-sp"><span id="bdg-off" class="label">Off</span></span>
-                        </button>
-                      </a>
-                    </div>
-                    <div id="broadcast" class="accordion-body collapse" style="height: 0px; ">
-                      <div class="accordion-inner">
-                        Turn on REPL sharing
-                        <div id="bc-radio" class="btn-group">
-                          <button value="off" class="btn">Off</button>
-                          <button value="on" class="btn">On</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="accordion-group">
-                    <div class="accordion-heading">
-                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#join">
-                        <button class="btn"><i class="icon-chevron-right"></i> Join</button>
-                      </a>
-                    </div>
-                    <div id="join" class="accordion-body collapse">
-                      <div class="accordion-inner">
-                        Join a REPL broadcast
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="accordion-group">
-                    <div class="accordion-heading">
-                      <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#chat">
-                        <button class="btn"><i class="icon-chevron-right"></i> Chat</button>
-                      </a>
-                    </div>
-                    <div id="chat" class="accordion-body collapse">
-                      <div class="accordion-inner">
-                        Chat menu
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <p>Some general text goes here.</p>
               </div>
               <div class="span3 empty">
               </div>
               <div id="others-box" class="list-box span3">
                 <select id="others-list" multiple="multiple">
-                </select>
+                </select><button id="join-btn" class="btn">Join</button>
               </div>
             </div>
             <div id="you-chat-box" class="chat row-fluid">
@@ -167,17 +97,13 @@ body {
 </div><!-- /row-fluid -->
 </div>
 <div style="display:none;">
-<div id="initial-widgets">
-  <button id="join-btn" class="btn pull-right">Join <i class="icon-plus"></i></button>
-</div>
 <div id="widgets">
   Widgets go here
   <div class="row-fluid">
     <div class="span6">
-      <div id="others-repl" class="console"></div>
     </div>
   </div>
-   <span id="bdg-on" class="badge badge-success">0</span>
+  <span id="bdg-on" class="badge badge-success">0</span>
 </div>
 </div>
 <!-- /container -->

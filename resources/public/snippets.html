@@ -51,18 +51,32 @@
     </div>
   </div>
 
+  <div id="status">
+    <div id="peer-status-box">
+      <button id="discon" handle="bob" class="btn btn-small"><i class="icon-off"></i> Disconnect</button>
+      <table class="status table table-condensed">
+        <tbody>
+        <tr><td>Owner:</td><td id="owner">bob</td></tr>
+        <tr><td>Last Activity:</td><td id="last-act">17:14<br>10-Jun-12</td></tr>
+        <tr><td>Group Size:</td><td id="last-act">12</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="home-status-box">
+      <table class="status table table-condensed">
+        <tbody>
+        <tr><td>Group Size:</td><td id="last-act">12</td></tr>
+        </tbody>
+      </table>
+      <button id="transfer" class="btn btn-small">Transfer <i class="icon-share-alt"></i></button>
+    </div>
+  </div>
+
   <div class="row">
     <div id="connected" class="span6 panel">
       <div class="row">
-        <div id="status-box" class="span3">
-          <table class="status table table-condensed">
-            <tbody>
-            <tr><td>Owner:</td><td id="owner">bob</td></tr>
-            <tr><td>Last Activity:</td><td id="last-act">17:14 10-Jun-12</td></tr>
-            </tbody>
-          </table>
-          <button id="discon" handle="bob" class="btn btn-small"><i class="icon-off"></i> Disconnect</button>
-        </div>
+
         <div id="peers" class="list-box span3">
           <p>Connected users:</p>
           <select multiple="multiple"></select>
@@ -73,6 +87,25 @@
         <input id="oth-chat" type="text" placeholder="chat">
       </div>
       <!-- /row -->
+    </div>
+  </div>
+
+  <div class="accordion" id="main-menu">
+    <div id="bc-accordion" class="accordion-group">
+      <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#main-menu" href="#broadcast">
+          <i class="icon-chevron-right"></i> Broadcast <span id="badge-sp"><span id="bdg-off" class="label">Off</span></span>
+        </a>
+      </div>
+      <div id="broadcast" class="accordion-body collapse" style="height: 0px; ">
+        <div class="accordion-inner">
+          Turn on REPL sharing
+          <div id="bc-radio" class="btn-group">
+            <button value="off" class="btn">Off</button>
+            <button value="on" class="btn">On</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

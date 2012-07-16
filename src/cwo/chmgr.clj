@@ -155,7 +155,8 @@
 
 (defn login [sesh-id handle]
   (user/set-user! sesh-id {:handle handle})
-  (println handle "signed in")
+  (println handle "@" sesh-id "signed in")
+  (client-cmd handle-ch [:addhandle handle])
   (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
     (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
       (client-cmd cl-ch [:rmanonsub nil])
