@@ -91,8 +91,8 @@
 (defn cmd? 
   ([msg]
    (declare cmd-set)
-   (let [[cmdname :as msg-obj] (safe-read-str msg)]
-     (and (vector? msg-obj) (contains? cmd-set (symbol (name cmdname))))))
+   (let [msg-obj (safe-read-str msg)]
+     (and (vector? msg-obj) (contains? cmd-set (symbol (name (first msg-obj)))))))
   ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 ; return the number of milliseconds since the specified time
@@ -187,7 +187,7 @@
     (println sesh-id "subscribe to" handle)
     (if user 
       (let [handle (:handle user)]
-        (client-cmd cl-ch [:addsub handle]) 
+        (client-cmd cl-ch [:adduser ["#home-peer-list" handle]]) 
         (user/add-peer! publish-sesh-id handle)) 
       (do 
         (client-cmd cl-ch [:addanonsub])
@@ -197,7 +197,7 @@
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
     (client-cmd subclch [:ts (ms-since @(:ts you))])
-    (client-cmd subclch [:sublist (user/get-peers publish-sesh-id)])))
+    (client-cmd subclch [:initpeers (user/get-peers publish-sesh-id)])))
 
 (defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)

@@ -54,6 +54,15 @@
     (doseq [h all-hdls]
       (-> (jq "#sub-peer-list") (.append (crate/html [:option h]))))))
 
+(defmethod wscmd :adduser
+  [_ [list-id handle]]
+  (if handle
+    (let [all-hdls (conj (select-set list-id) handle)]
+      (-> (jq (str list-id " option")) (.remove))
+      (doseq [h all-hdls]
+        (-> (jq list-id) (.append (crate/html [:option h])))))
+    :anonymous-case))
+
 (defmethod wscmd :addsub 
   [_ handle]
   (rmoption "#sub-list" handle)
@@ -70,7 +79,7 @@
   (if-let [anon-val (.val (jq "#anonsub"))]
     (let [cnt (inc (reader/read-string (let [[n] (.split anon-val " ")] n)))]
       (.text (jq "#anonsub") (str cnt " anonymous")))
-    (-> (jq "#sub-list")
+    (-> (jq "#home-peer-list")
       (.append
         (crate/html [:option#anonsub (str 1 " anonymous")])))))
 

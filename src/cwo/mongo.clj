@@ -6,3 +6,6 @@
 (defn connect! []
   (mg/connect!)
   (mg/set-db! (mg/get-db "cwo")))
+
+(defn reset-db! []
+  (mc/remove "users"))

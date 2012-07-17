@@ -34,4 +34,6 @@
       (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
     (println "server started on port" port)
     (mg/connect!)
+    ;TODO: remove for production
+    (mg/reset-db!)
     (wastemgt/start)))
