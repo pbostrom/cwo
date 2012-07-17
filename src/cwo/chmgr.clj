@@ -88,12 +88,11 @@
     (let [[msg-obj] (seq (safe-read-str msg))]
       (contains? rt-set (keyword msg-obj)))))
 
-
 (defn cmd? 
   ([msg]
    (declare cmd-set)
-   (let [msg-obj (safe-read-str msg)]
-     (and (vector? msg-obj) (contains? cmd-set (symbol (name (first msg-obj)))))))
+   (let [[cmdname :as msg-obj] (safe-read-str msg)]
+     (and (vector? msg-obj) (contains? cmd-set (symbol (name cmdname))))))
   ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 ; return the number of milliseconds since the specified time
@@ -139,6 +138,7 @@
 ;                               (recycle! sesh-id)))
     (client-cmd (cc :cl-ch) [:inithandles (user/get-broadcasters)])))
 
+
 ;;
 ;; socket ctrl commands below
 ;;
@@ -160,7 +160,10 @@
   (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
     (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
       (client-cmd cl-ch [:rmanonsub nil])
-      (client-cmd cl-ch [:addsub handle]))))
+      (client-cmd cl-ch [:addsub handle]))
+    (let [pub-si (user/get-session pub-hdl)] 
+      (user/add-peer! pub-si handle) 
+      (user/rm-anon-peer! pub-si))))
 
 (defn logout [sesh-id _]
   (let [handle (user/get-handle sesh-id)]
@@ -168,23 +171,33 @@
     (client-cmd handle-ch [:rmhandle handle])
     (user/rm-user! sesh-id)
     (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
-      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)]
         (client-cmd cl-ch [:rmsub handle])
-        (client-cmd cl-ch [:addanonsub nil])))))
+        (client-cmd cl-ch [:addanonsub nil]))
+      (let [pub-si (user/get-session pub-hdl)]  
+        (user/rm-peer! pub-si handle) 
+        (user/add-anon-peer! pub-si)))))
 
 (defn subscribe [sesh-id handle]
-  (let [{{:keys [cl-ch srv-ch you]} (user/get-session handle)} @sesh-id->cc ;publisher
-        {{old-sub :sub subclch :cl-ch user :user} sesh-id} @sesh-id->cc ;subscriber
+  (let [publish-sesh-id  (user/get-session handle)
+        {{:keys [cl-ch srv-ch you]} publish-sesh-id} @sesh-id->cc ;publisher
+        {{old-sub :sub subclch :cl-ch} sesh-id} @sesh-id->cc ;subscriber
+        user (user/get-user sesh-id)
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (if user 
-      (client-cmd cl-ch [:addsub (:handle user)])
-      (client-cmd cl-ch [:addanonsub]))
+      (let [handle (:handle user)]
+        (client-cmd cl-ch [:addsub handle]) 
+        (user/add-peer! publish-sesh-id handle)) 
+      (do 
+        (client-cmd cl-ch [:addanonsub])
+        (user/add-anon-peer! publish-sesh-id)))
     (when old-sub (lamina/close (:vlv old-sub)))
     (swap! sesh-id->cc assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-    (client-cmd srv-ch [:ts (ms-since @(:ts you))])))
+    (client-cmd subclch [:ts (ms-since @(:ts you))])
+    (client-cmd subclch [:sublist (user/get-peers publish-sesh-id)])))
 
 (defn end-transfer [sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
@@ -246,9 +259,13 @@
       (client-cmd (:hist (get-in @sesh-id->cc [pub-sesh-id :you])) [:chctrl handle]))
     (lamina/close (:vlv sub))
     (swap! sesh-id->cc assoc-in [sesh-id :sub] nil)
-    (if sub-hdl 
-      (client-cmd cl-ch [:rmsub sub-hdl])
-      (client-cmd cl-ch [:rmanonsub nil]))))
+    (if sub-hdl
+      (do
+        (user/rm-peer! pub-sesh-id handle) 
+        (client-cmd cl-ch [:rmsub sub-hdl])) 
+      (do
+        (client-cmd cl-ch [:rmanonsub nil])
+        (user/rm-anon-peer! pub-sesh-id)))))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn reclaim [sesh-id handle]

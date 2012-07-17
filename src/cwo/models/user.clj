@@ -4,8 +4,9 @@
     :handle   Registered handle of user
     :status   Authentication status [default, gh, auth]
     :token    GitHub access token
+    :peers    List of peers connected to a REPL
     :bc       Boolean indicating whether REPL broadcast is active"
-  (:require [monger.operators :refer [$set $unset]]
+  (:require [monger.operators :refer [$set $unset $addToSet $pull $inc]]
             [monger.collection :as mc]))
 
 (defn set-user!
@@ -39,11 +40,36 @@
   (:_id (mc/find-one-as-map "users" {:handle handle})))
 
 (defn get-broadcasters
-  "Gets all users by handle that are broadcasting a REPL"
+  "Returns handles of all users that are broadcasting a REPL"
   []
   (reduce 
     (fn [v {:keys [handle]}] (conj v handle)) []
     (mc/find-maps "users" {} [:handle])))
+
+(defn get-peers
+  "Returns list of peers (including anonymous count) connected to a REPL"
+  [session]
+  (:peers (mc/find-map-by-id "users" session)))
+
+(defn add-peer!
+  "Update list of peers connected to a REPL"
+  [session peer]
+  (:peers (mc/update "users" {:_id session} {$addToSet {:peers peer}})))
+
+(defn add-anon-peer!
+  "Update count of anonymous peers connected to a REPL"
+  [session]
+  (:peers (mc/update "users" {:_id session} {$inc {:anon 1}})))
+
+(defn rm-anon-peer!
+  "Update count of anonymous peers connected to a REPL"
+  [session]
+  (:peers (mc/update "users" {:_id session} {$inc {:anon -1}})))
+
+(defn rm-peer!
+  "Update list of peers (including anonymous count) connected to a REPL"
+  [session peer]
+  (:peers (mc/update "users" {:_id session} {$pull {:peers peer}})))
 
 (defn signed-in? [user]
   (or ((comp not nil?) (:token user))((comp not nil?) (:handle user))))

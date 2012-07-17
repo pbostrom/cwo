@@ -17,11 +17,12 @@
   (let [hsh (.-hash js/window.location)]
     (when-not (empty? hsh) (.substring hsh 1))))
 
-(defn others-set
-  "Sorted set of all signed in users"
-  []
-  (into (sorted-set) (map #(.-value %) 
-                          (js->clj (.makeArray jq (jq "#others-list option"))))))
+(defn select-set
+  "Returns sorted set of all handles in the select list"
+  [sel-list]
+  (into (sorted-set) (for [o (js->clj 
+                               (.makeArray jq (jq (str sel-list " option"))))]
+                       (.-value o))))
 
 (defn clj->js
   "Recursively transforms ClojureScript maps into Javascript objects,
@@ -40,13 +41,6 @@
   (let [out (js-obj)]
     (doseq [[k v] m]
       (aset out (name k) v))
-    out))
-
-(defn make-js-map
-  "makes a javascript map from a clojure one"
-  [cljmap]
-  (let [out (js-obj)]
-    (doall (map #(aset out (name (first %)) (second %)) cljmap))
     out))
 
 (defn jslog [out]

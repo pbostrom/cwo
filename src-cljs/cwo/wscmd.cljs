@@ -1,5 +1,5 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog others-set get-hash]]
+  (:require [cwo.utils :refer [jq jslog select-set get-hash]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
@@ -31,7 +31,7 @@
 
 (defmethod wscmd :addhandle
   [_ arg]
-  (let [all-hdls (conj (others-set) arg)]
+  (let [all-hdls (conj (select-set "#others-list") arg)]
     (-> (jq "#others-list option") (.remove))
     (dorun
       (map #(-> (jq "#others-list")
@@ -41,6 +41,18 @@
 (defmethod wscmd :rmhandle
   [_ handle]
   (rmoption "#others-list" handle))
+
+(defmethod wscmd :initpeers
+  [_ handles]
+  (doseq [h handles] 
+    (.append (jq "#others-list") (crate/html [:option %]))))
+
+(defmethod wscmd :addpeer ;TODO: abstract this for home-peer-list
+  [_ handle]
+  (let [all-hdls (conj (select-set "#sub-peer-list") handle)]
+    (-> (jq "#sub-peer-list option") (.remove))
+    (doseq [h all-hdls]
+      (-> (jq "#sub-peer-list") (.append (crate/html [:option h]))))))
 
 (defmethod wscmd :addsub 
   [_ handle]
