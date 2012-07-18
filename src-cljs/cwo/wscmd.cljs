@@ -55,6 +55,7 @@
       (-> (jq "#sub-peer-list") (.append (crate/html [:option h]))))))
 
 (defmethod wscmd :adduser
+  "Add the user to the specified select list"
   [_ [list-id handle]]
   (if handle
     (let [all-hdls (conj (select-set list-id) handle)]

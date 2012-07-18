@@ -16,7 +16,6 @@
 
 (defn msg-hdlr [msg]
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
-    (jslog (pr-str msg-obj))
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
 

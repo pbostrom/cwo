@@ -158,9 +158,11 @@
   (println handle "@" sesh-id "signed in")
   (client-cmd handle-ch [:addhandle handle])
   (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
-    (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)] 
+    (let [{:keys [cl-ch srv-ch]} (cc-from-handle pub-hdl)] 
       (client-cmd cl-ch [:rmanonsub nil])
-      (client-cmd cl-ch [:addsub handle]))
+      (client-cmd cl-ch [:addsub handle])
+      (client-cmd srv-ch [:adduser ["#sub-peer-list"]])
+      )
     (let [pub-si (user/get-session pub-hdl)] 
       (user/add-peer! pub-si handle) 
       (user/rm-anon-peer! pub-si))))

@@ -49,6 +49,7 @@ body {
   <div class="row-fluid">
     <div class="span16">
       <div class="row-fluid">
+
         <div id="console-block" class="span8">
           <ul class="nav nav-tabs" id="repl-tabs">
             <li><a href="#home" data-toggle="tab">Home REPL</a></li>
@@ -65,11 +66,12 @@ body {
             </div>
           </div>
         </div>
+
         <div class="span8" id="panel-box">
-          <div id="your-panel">
+          <div id="home-panel">
             <div class="row-fluid">
               <div class="span6">
-                <p>Some general text goes here.</p>
+                <p>This is the home tab.</p>
               </div>
               <div class="span3 empty">
               </div>
@@ -79,7 +81,7 @@ body {
               </div>
             </div>
             <div id="you-chat-box" class="chat row-fluid">
-              <div id="peers" class="list-box span6">
+              <div id="home-peers" class="list-box span6">
                 <select id="home-peer-list" multiple="multiple">
                 </select>
               </div>
@@ -90,13 +92,42 @@ body {
             </div>
           </div>
         </div>
+
       </div>
     </div>
-
   </div><!-- /span16 -->
 </div><!-- /row-fluid -->
 </div>
 <div style="display:none;">
+  <div id="default-widgets">
+
+    <div class="span8" id="panel-box">
+      <div id="peer-panel">
+        <div class="row-fluid">
+          <div class="span6">
+            <p>This is the home tab.</p>
+          </div>
+          <div class="span3 empty">
+          </div>
+          <div id="others-box" class="list-box span3">
+            <select id="others-list" multiple="multiple">
+            </select><button id="join-btn" class="btn">Join</button>
+          </div>
+        </div>
+        <div id="peer-chat-box" class="chat row-fluid">
+          <div id="peers" class="list-box span6">
+            <select id="peer-list" multiple="multiple">
+            </select>
+          </div>
+          <div class="span10 chatwin">
+            <pre></pre>
+            <input id="you-chat" type="text" placeholder="chat"></input>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 <div id="widgets">
   Widgets go here
   <div class="row-fluid">

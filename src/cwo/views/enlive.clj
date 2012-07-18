@@ -17,16 +17,11 @@
 
 (html/defsnippet signedin-text (str pub "snippets.html") [:#signedin-text] [])
 
-(html/defsnippet your-panel (str pub "layout.html") [:#your-panel] [])
+(html/defsnippet home-panel (str pub "layout.html") [:#home-panel] [])
 
 (html/defsnippet status (str pub "snippets.html") [:#status] [])
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
-
-(html/defsnippet bc-on (str pub "layout.html") [:#bdg-on] [])
-
-(html/defsnippet bc-off (str pub "layout.html") [:#bdg-off] [])
-
 
 (defn si-content [user]
   {:userbox (logoutbox user)})
