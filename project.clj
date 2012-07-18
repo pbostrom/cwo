@@ -17,7 +17,7 @@
   :cljsbuild {
     :builds [{:source-path "src-cljs"
               :compiler {:output-to "resources/public/js/cljs-compiled.js"
-                         :optimizations :whitespace
+                         ;:optimizations :whitespace
 ;                         :optimizations :advanced
                          :externs ["externs/jqconsole-2.7.js"
                                    "externs/twitter-bootstrap.js"
