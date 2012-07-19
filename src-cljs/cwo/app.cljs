@@ -112,22 +112,25 @@
 ; set up status table based on active repl
 (.on (jq "#repl-tabs a[href=\"#peer\"]") "show" 
      (fn [] 
-       (.append (jq "#widgets") (jq "#home-status-box"))
-       (.prepend (jq "#peers") (jq "#peer-status-box"))))
+       (.append (jq "#widgets") (jq "#home-panel"))
+       (.after (jq "#peer-panel div.span3.empty") (jq "#others-box"))
+       (.prepend (jq "#panel-box") (jq "#peer-panel"))))
 
 (.on (jq "#repl-tabs a[href=\"#home\"]") "show" 
      (fn [] 
-       (.append (jq "#widgets") (jq "#peer-status-box"))
-       (.prepend (jq "#peers") (jq "#home-status-box"))))
+       (.append (jq "#widgets") (jq "#peer-panel"))
+       (.after (jq "#home-panel div.span3.empty") (jq "#others-box"))
+       (.prepend (jq "#panel-box") (jq "#home-panel"))))
 
 ; $(document).ready function
 (defn ready []
-  (when-let [token (.attr (jq "#token") "value")]
-    (ajax/gh-profile token))
+  (let [token (.attr (jq "#token") "value")]
+    (when (and token ((comp not empty?) token) 
+               (ajax/gh-profile token))))
   (when (= 0 (.size (jq "#user-container > #logoutbox")))
     (.removeAttr (jq "#bc-radio") "data-toggle")
     (.addClass (jq "#bc-radio > button") "disabled"))
-  
+
   (if (get-hash)
     (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
     (-> (jq "#repl-tabs a:first") (.tab "show"))))

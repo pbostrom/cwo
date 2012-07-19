@@ -44,8 +44,9 @@
 
 (defmethod wscmd :initpeers
   [_ handles]
-  (doseq [h handles] 
-    (.append (jq "#others-list") (crate/html [:option h]))))
+  (.remove (jq "#peer-list > option"))
+  (doseq [h handles]
+    (.append (jq "#peer-list") (crate/html [:option h]))))
 
 (defmethod wscmd :addpeer ;TODO: abstract this for home-peer-list
   [_ handle]

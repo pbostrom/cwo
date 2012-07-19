@@ -29,19 +29,10 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(defn badge [user state]
-  (let [on (bc-on)
-        off (bc-off)]
-    (if (user/broadcasting? user)
-      (state {:visible on  :hidden off})
-      (state {:visible off  :hidden on}))))
-
-
 (html/deftemplate signedin-layout (str pub "layout.html")
   [user]
   [:div#user-container] (html/content (logoutbox user))
-  [:span#badge-sp] (html/content (badge user :visible))
-  [:div#widgets] (html/content (status) (transfer-text) (badge user :hidden)))
+  [:div#widgets] (html/content (status) (transfer-text)))
  
 (html/deftemplate signedout-layout (str pub "layout.html")
   []
@@ -52,4 +43,4 @@
   (if (user/signed-in? user)
     (signedin-layout user)
     (signedout-layout)))
-  
+    

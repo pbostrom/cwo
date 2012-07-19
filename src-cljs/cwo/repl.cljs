@@ -81,6 +81,7 @@
     (modef repl)))
 
 (defn join []
+  (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
   (set-repl-mode :oth :sub)
   (let [handle (-> (jq "#others-list option:selected") (.val))]
     (.text (jq "#owner") handle)

@@ -156,13 +156,13 @@
 (defn login [sesh-id handle]
   (user/set-user! sesh-id {:handle handle})
   (println handle "@" sesh-id "signed in")
-  (client-cmd handle-ch [:addhandle handle])
+;  (client-cmd handle-ch [:addhandle handle])
+  (client-cmd handle-ch [:adduser ["#others-list" handle]])
   (when-let [pub-hdl (get-in @sesh-id->cc [sesh-id :sub :hdl])]
     (let [{:keys [cl-ch srv-ch]} (cc-from-handle pub-hdl)] 
       (client-cmd cl-ch [:rmanonsub nil])
       (client-cmd cl-ch [:addsub handle])
-      (client-cmd srv-ch [:adduser ["#sub-peer-list"]])
-      )
+      (client-cmd srv-ch [:adduser ["#sub-peer-list" handle]]))
     (let [pub-si (user/get-session pub-hdl)] 
       (user/add-peer! pub-si handle) 
       (user/rm-anon-peer! pub-si))))
