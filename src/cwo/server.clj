@@ -19,7 +19,8 @@
 (def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
 ; wrap socket handler twice to conform to ring and include noir session info
-(def wrapped-socket-handler (session/wrap-noir-session (aleph/wrap-aleph-handler chmgr/socket-handler)))
+(def wrapped-socket-handler (session/wrap-noir-session 
+                              (aleph/wrap-aleph-handler (chmgr/get-handler))))
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
