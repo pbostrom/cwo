@@ -9,6 +9,7 @@
   "Send a command to be executed on the server in the
    form of [:command arg]."
   [cmd arg]
+;  (if (not (.-ready @sock))) ; TODO: make sure socket is open
   (.send @sock (pr-str [cmd arg])))
  
 (defn get-hash
