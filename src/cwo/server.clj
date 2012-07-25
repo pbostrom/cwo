@@ -18,9 +18,16 @@
 (noir/load-views-ns 'cwo.views.noir)
 (def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
+(defn get-handler []
+  "Returns a websocket handler with a session store atom."
+  (let [session-store (atom {})]
+    ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
+    (fn [webch handshake]
+      (chmgr/init-socket (session/get "sesh-id") session-store))))
+
 ; wrap socket handler twice to conform to ring and include noir session info
 (def wrapped-socket-handler (session/wrap-noir-session 
-                              (aleph/wrap-aleph-handler (chmgr/get-handler))))
+                              (aleph/wrap-aleph-handler (get-handler))))
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler

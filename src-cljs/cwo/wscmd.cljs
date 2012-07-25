@@ -16,7 +16,7 @@
 (defmulti wscmd 
   (fn [cmd arg] cmd))
 
-(defmethod wscmd :inithandles
+(defmethod wscmd :inithandles-dep
   [_ handles]
   (dorun
     (map #(-> (jq "#others-list")
@@ -29,7 +29,7 @@
         (repl/connect))
       (js/alert (str hdl " is not available")))))
 
-(defmethod wscmd :addhandle
+(defmethod wscmd :addhandle-dep
   [_ arg]
   (let [all-hdls (conj (select-set "#others-list") arg)]
     (-> (jq "#others-list option") (.remove))
@@ -38,17 +38,17 @@
               (.append
                 (crate/html [:option %]))) all-hdls))))
 
-(defmethod wscmd :rmhandle
+(defmethod wscmd :rmhandle-dep
   [_ handle]
   (rmoption "#others-list" handle))
 
-(defmethod wscmd :initpeers
+(defmethod wscmd :initpeers-dep
   [_ handles]
   (.remove (jq "#peer-list > option"))
   (doseq [h handles]
     (.append (jq "#peer-list") (crate/html [:option h]))))
 
-(defmethod wscmd :addpeer ;TODO: abstract this for home-peer-list
+(defmethod wscmd :addpeer-dep ;TODO: abstract this for home-peer-list
   [_ handle]
   (let [all-hdls (conj (select-set "#sub-peer-list") handle)]
     (-> (jq "#sub-peer-list option") (.remove))
@@ -64,18 +64,18 @@
         (-> (jq list-id) (.append (crate/html [:option h])))))
     :anonymous-case))
 
-(defmethod wscmd :addsub 
+(defmethod wscmd :addsub-dep
   [_ handle]
   (rmoption "#sub-list" handle)
   (-> (jq "#sub-list")
     (.append
       (crate/html [:option handle]))))
 
-(defmethod wscmd :rmsub 
+(defmethod wscmd :rmsub-dep 
   [_ handle]
   (rmoption "#sub-list" handle))
 
-(defmethod wscmd :addanonsub
+(defmethod wscmd :addanonsub ;TODO consider abstracting next 2 fns
   [_ _]
   (if-let [anon-val (.val (jq "#anonsub"))]
     (let [cnt (inc (reader/read-string (let [[n] (.split anon-val " ")] n)))]

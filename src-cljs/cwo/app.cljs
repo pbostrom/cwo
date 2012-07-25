@@ -78,37 +78,6 @@
                  (.preventDefault e)
                  (this-as ta (.tab (jq ta) "show")))))
 
-; broadcast radio buttons
-; need to manage button state ourselves
-
-; click listener to check for valid toggle states
-(-> (jq "#bc-radio button")
-  (.click (fn [] (this-as ta
-                          (let [btn (jq ta) ]
-                            (when-not (or (.hasClass btn "disabled") (.hasClass btn "active"))
-                                  (let [parent (.parent btn)]
-                                    (-> parent 
-                                      (.find ".active")
-                                      (.removeClass "active"))
-                                    (.addClass btn "active")
-                                    (.trigger parent "change"))))))))
-
-(defn set-bc-menu-badge [value]
-  ((value {:on (fn [] 
-                 (.append (jq "#widgets") (jq "#bdg-off"))
-                 (.append (.first (jq "button.broadcast")) (jq "#bdg-on"))) 
-           :off (fn [] 
-                  (.append (jq "button.broadcast") (jq "#bdg-off"))
-                  (.append (jq "#widgets") (jq "#bdg-on")))})))
-
-; listen on the radio groups 'change' event
-(-> (jq "#bc-radio")
-  (.change (fn [] (this-as ta
-                           (let [active-btn (jq ".active" ta)
-                                 value (keyword (.val active-btn))]
-                             (srv-cmd :broadcast value)
-                             (set-bc-menu-badge value))))))
-
 ; set up status table based on active repl
 (.on (jq "#repl-tabs a[href=\"#peer\"]") "show" 
      (fn [] 
