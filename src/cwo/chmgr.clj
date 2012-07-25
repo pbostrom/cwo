@@ -100,31 +100,42 @@
   (- (System/currentTimeMillis) t))
 
 ; Handle commands send via srv-ch
-(defn cmd-hdlr [sesh-id cmd-str]
+(defn cmd-hdlr [sesh-id sesh-store cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
+    (execute cmd sesh-id sesh-store arg) ; execute is defined in a protocol
     ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
 
 ; create a send/receive channel pair, swap map structure
-(defn init-cc! [sesh-id]
+(defn init-cc! [sesh-store sesh-id]
   (println "init-cc!" sesh-id)
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
                :you (Repl. (lamina/permanent-channel)
                            (sb/make-sandbox)
                            (atom (System/currentTimeMillis)))}]
-    (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-id %))
+    (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-store sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
-    (swap! sesh-id->cc assoc sesh-id newcc)
+    (swap! sesh-store assoc sesh-id newcc)
     newcc))
-
-;get the channel controller of the current session, initializing if needed
-(defn get-cc []
-  (let [sesh-id (session/get "sesh-id")]
-    (or (@sesh-id->cc sesh-id) (init-cc! sesh-id))))
 
 ; send a command to a websocket client
 (defn client-cmd [ch cmdvec]
   (lamina/enqueue ch (pr-str cmdvec)))
+
+;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
+(defn get-handler []
+  (let [session-store (atom {})]
+    (fn [webch handshake]
+      (declare login)
+      (let [sesh-id (session/get "sesh-id")
+            cc (or (@session-store sesh-id) (init-cc! session-store sesh-id))]
+        (when-let [handle (user/get-handle sesh-id)] 
+          (login sesh-id handle))
+        (lamina/siphon webch (cc :srv-ch))
+        (lamina/siphon (cc :cl-ch) webch)
+        ;    (lamina/on-closed webch #(when-not (= (get-in sesh-id->cc [sesh-id :status]) "gh")
+        ;                               (recycle! sesh-id)))
+        (client-cmd (cc :cl-ch) [:inithandles (user/get-broadcasters)])))))
 
 (defn socket-handler [webch handshake]
   (declare login)
