@@ -23,7 +23,7 @@
   (let [session-store (atom {})]
     ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
     (fn [webch handshake]
-      (chmgr/init-socket (session/get "sesh-id") session-store))))
+      (chmgr/init-socket (session/get "sesh-id") session-store webch))))
 
 ; wrap socket handler twice to conform to ring and include noir session info
 (def wrapped-socket-handler (session/wrap-noir-session 
