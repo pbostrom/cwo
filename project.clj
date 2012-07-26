@@ -13,6 +13,7 @@
                  [com.novemberain/monger "1.1.0"]
 ;                 [org.python/jython-standalone "2.5.2"]
                  [ring "1.1.0-RC1"]]
+  :dev-dependencies [[midje "1.4.0"]]
   :plugins [[lein-cljsbuild "0.2.4"]]
   :cljsbuild {
     :builds [{:source-path "src-cljs"

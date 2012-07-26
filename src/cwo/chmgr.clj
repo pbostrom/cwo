@@ -202,6 +202,7 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
+  (println "DEBUG:" @sesh-store)
   (let [{{:keys [cl-ch srv-ch] repl sb-key} sesh-id} @sesh-store
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -266,8 +267,7 @@
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-id sesh-store cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
-    (execute cmd sesh-store sesh-id arg)
-    ((ns-resolve 'cwo.chmgr (symbol (name cmd))) sesh-id arg)))
+    (execute cmd sesh-store sesh-id arg)))
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-store sesh-id]
