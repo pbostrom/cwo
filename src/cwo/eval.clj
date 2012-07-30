@@ -1,12 +1,15 @@
 (ns cwo.eval
   (:require [clojure.stacktrace :refer [root-cause]])
+  (:require [cwo.utils :refer [safe-read-str]])
   (:import java.io.StringWriter
 	   java.util.concurrent.TimeoutException))
 
-(defn eval-expr [expr sb]
+(defn eval-expr
+  "Read an expression, then evaluate in the specified repl, i.e. :you|oth"
+  [expr sb]
   (try
     (with-open [out (StringWriter.)]
-      (let [expr (binding [*read-eval* false] (read-string expr))
+      (let [expr (safe-read-str expr)
             result (sb expr {#'*out* out})]
         {:expr expr
          :result [out result]}))

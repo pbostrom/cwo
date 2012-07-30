@@ -2,6 +2,7 @@
   (:require [lamina.core :as lamina]
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
+            [cwo.utils :refer [safe-read-str]]
             [cwo.models.user :as user]))
 
 ; Channel mgmt architecture
@@ -42,10 +43,6 @@
 ; send a command to a websocket client
 (defn client-cmd [ch cmdvec]
   (lamina/enqueue ch (pr-str cmdvec)))
-
-; avoid eval injections via websocket msgs
-(defn safe-read-str [st]
-  (binding [*read-eval* false] (read-string st)))
 
 (defn cmd? 
   ([msg]
@@ -265,7 +262,8 @@
     (swap! sesh-store dissoc sesh-id)))
 
 ; Handle commands send via srv-ch
-(defn cmd-hdlr [sesh-id sesh-store cmd-str]
+(defn cmd-hdlr [sesh-store sesh-id cmd-str]
+  (println "cmd:" sesh-id @sesh-store cmd-str)
   (let [[cmd arg] (safe-read-str cmd-str)]
     (execute cmd sesh-store sesh-id arg)))
 
@@ -285,7 +283,7 @@
 (defn init-socket [sesh-id sesh-store sock]
   (let [cc (or (@sesh-store sesh-id) (init-cc! sesh-store sesh-id))]
     (when-let [handle (user/get-handle sesh-id)] 
-      (login sesh-id handle))
+      (login sesh-store sesh-id handle))
     (lamina/siphon sock (cc :srv-ch))
     (lamina/siphon (cc :cl-ch) sock)
     ;    (lamina/on-closed webch #(when-not (= (get-in sesh-store [sesh-id :status]) "gh")
