@@ -1,19 +1,17 @@
 (ns cwo.test.server
-  (:require [midje.sweet :refer [fact background]]
+  (:require [midje.sweet :refer [fact]]
             [cwo.server :as server]
-            [lamina.core :as lamina]
+            [lamina.core :as lamina :refer [receive filter* channel?]]
+            [lamina.viz :as lv]
             [noir.session :as session :refer [*noir-session*]]
             [cwo.mongo :as mg]
+            [cwo.models.user :as user]
             [cwo.chmgr :as chmgr]))
-
-
-;(background (around :facts (with-redefs [*noir-session* (atom {"sesh-id" mock-sesh-id})] ?form)))
-(fact "socket handler" (fn? (server/get-handler)) => true)
 
 (defn srv-cmd 
   "Sends a command to the websocket handler"
   [socket cmd]
-  (lamina/enqueue (:srv socket) (pr-str cmd)))
+  (lamina/enqueue (:cl socket) (pr-str cmd)))
 
 (defn init-client [id handler]
   (let [client (apply assoc {:id id} (interleave [:srv :cl] (lamina/channel-pair)))]
@@ -25,15 +23,22 @@
 (mg/connect!)
 (mg/reset-db!)
 
-(let [handler (server/get-handler)
-      client1 (init-client "777" handler)
-      client2 (init-client "888" handler)]
-  
-  (srv-cmd client1 [:login "joe"])
+(def handler (server/get-handler)) 
+(def client1 (init-client "777" handler)) 
+(def client2 (init-client "888" handler)) 
+(def hdl2 "joe")  
 
-  (srv-cmd client2 [:eval-clj ["(range 10)" :you]])
-  (take 3 (lamina/lazy-channel-seq (:cl client2))))
+(fact "client1 websocket uplink exists" 
+  (channel? (:srv client1)) => true)
+(srv-cmd client2 [:login hdl2])
+(fact "client2 handle is registered" 
+  (user/get-handle (:id client2)) => hdl2)
+(srv-cmd client1 [:subscribe "joe"])
 
-;  
-;  (lamina/enqueue (:ch client2) (pr-str [:login "joe"]))
-;  (lamina/enqueue (:ch client1) (pr-str [:subscribe "joe"]))
+(defn get-msg [ch filt]
+  (receive (filter* #(chmgr/cmd? % filt) ch) (fn [msg] msg)))
+
+(srv-cmd client2 [:eval-clj ["(range 10)" :you]])
+(let [hist-msg (get-msg (:cl client1) :hist)] 
+  (fact "Subscribe eval history"
+    (read-string (second (read-string hist-msg))) => ["(range 10)" "(0 1 2 3 4 5 6 7 8 9)"]))

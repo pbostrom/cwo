@@ -49,7 +49,8 @@
    (declare fn-map)
    (let [msg-obj (safe-read-str msg)]
      (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
-  ([msg cmd] (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
+  ([msg cmd] 
+   (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [sesh-store handle]
   (@sesh-store (user/get-session handle)))
@@ -199,7 +200,6 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
-  (println "DEBUG:" @sesh-store)
   (let [{{:keys [cl-ch srv-ch] repl sb-key} sesh-id} @sesh-store
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -263,7 +263,6 @@
 
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-store sesh-id cmd-str]
-  (println "cmd:" sesh-id @sesh-store cmd-str)
   (let [[cmd arg] (safe-read-str cmd-str)]
     (execute cmd sesh-store sesh-id arg)))
 
