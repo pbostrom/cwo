@@ -79,13 +79,29 @@
   (println handle "@" sesh-id "signed in")
   (client-cmd handle-ch [:adduser ["#others-list" handle]])
   (when-let [pub-hdl (get-in @sesh-store [sesh-id :sub :hdl])]
-    (let [{:keys [cl-ch srv-ch]} (cc-from-handle pub-hdl)] 
+    (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)] 
       (client-cmd cl-ch [:rmanonsub nil])
       (client-cmd cl-ch [:addsub handle])
       (client-cmd srv-ch [:adduser ["#sub-peer-list" handle]]))
     (let [pub-si (user/get-session pub-hdl)] 
       (user/add-peer! pub-si handle) 
       (user/rm-anon-peer! pub-si))))
+
+;(con)
+;
+
+(defn- login-stm [sesh-store sesh-id handle]
+  (dosync ;TODO: lock granularity
+    (user/set-user! sesh-id {:handle handle})
+    (send-off (:cl-agent sesh-store) #(client-cmd handle-ch [:adduser ["#others-list" handle]]))
+    (when-let [pub-hdl (get-in (ensure sesh-store) [sesh-id :sub :hdl])]
+      (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)] 
+        (client-cmd cl-ch [:rmanonsub nil])
+        (client-cmd cl-ch [:addsub handle])
+        (client-cmd srv-ch [:adduser ["#sub-peer-list" handle]]))
+      (let [pub-si (user/get-session pub-hdl)] 
+        (user/add-peer! pub-si handle) 
+        (user/rm-anon-peer! pub-si)))(ensure))) 
 
 (defn- logout [sesh-store sesh-id _]
   (let [handle (user/get-handle sesh-id)]

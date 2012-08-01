@@ -26,19 +26,34 @@
 (def handler (server/get-handler)) 
 (def client1 (init-client "777" handler)) 
 (def client2 (init-client "888" handler)) 
-(def hdl2 "joe")  
+(def hdl1 "bob")
+(def hdl2 "joe")
+(def expr "(range 10)")
+(def result (pr-str (range 10)))
 
 (fact "client1 websocket uplink exists" 
   (channel? (:srv client1)) => true)
 (srv-cmd client2 [:login hdl2])
 (fact "client2 handle is registered" 
   (user/get-handle (:id client2)) => hdl2)
-(srv-cmd client1 [:subscribe "joe"])
+
+; subscribe to hdl2's REPL
+(srv-cmd client1 [:subscribe hdl2])
 
 (defn get-msg [ch filt]
   (receive (filter* #(chmgr/cmd? % filt) ch) (fn [msg] msg)))
 
-(srv-cmd client2 [:eval-clj ["(range 10)" :you]])
+; send an expr to :you repl for evaluation
+(srv-cmd client2 [:eval-clj [expr :you]])
+
+(let [[_ result-msg] (read-string (get-msg (:cl client2) :result))] 
+  (fact "Eval result from :you REPL is received on channel"
+    (read-string result-msg) => [:you result]))
+
 (let [hist-msg (get-msg (:cl client1) :hist)] 
-  (fact "Subscribe eval history"
-    (read-string (second (read-string hist-msg))) => ["(range 10)" "(0 1 2 3 4 5 6 7 8 9)"]))
+  (fact "Verify expr/result history pair from subscribed REPL"
+    (read-string (second (read-string hist-msg))) => [expr result]))
+
+(srv-cmd client1 [:login hdl1])
+
+;(let [hist-msg (get-msg (:cl client2) :)])
