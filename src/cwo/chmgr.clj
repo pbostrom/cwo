@@ -10,7 +10,7 @@
 ; {
 ;  :srv-ch    Required, permanent channel to send commands to server
 ;  :cl-ch     Required, permanent channel to send commands to client
-;  :handle    Optional, anonymous users permitted
+;  :handle    A ref to coordinate transactions between users
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
@@ -285,10 +285,10 @@
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-store sesh-id]
-  ;TODO create 1 ref per user 
   (println "init-cc!" sesh-id)
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
+               :handle (ref nil)
                :you (Repl. (lamina/permanent-channel)
                            (sb/make-sandbox)
                            (atom (System/currentTimeMillis)))}]
