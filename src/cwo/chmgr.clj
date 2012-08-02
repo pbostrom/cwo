@@ -91,11 +91,12 @@
 ;
 
 (defn- login-stm [sesh-store sesh-id handle]
-  (dosync ;TODO: lock granularity
+  (dosync 
+    ;TODO: ref granularity - one ref per user
     (user/set-user! sesh-id {:handle handle})
     (send-off (:cl-agent sesh-store) #(client-cmd handle-ch [:adduser ["#others-list" handle]]))
-    (when-let [pub-hdl (get-in (ensure sesh-store) [sesh-id :sub :hdl])]
-      (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)] 
+    (when-let [pub-hdl (get-in (ensure sesh-store) [sesh-id :sub :hdl])] ;TODO ensure on user ref
+      (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)] ;TODO ensure on user ref
         (client-cmd cl-ch [:rmanonsub nil])
         (client-cmd cl-ch [:addsub handle])
         (client-cmd srv-ch [:adduser ["#sub-peer-list" handle]]))
@@ -284,6 +285,7 @@
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-store sesh-id]
+  ;TODO create 1 ref per user 
   (println "init-cc!" sesh-id)
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
