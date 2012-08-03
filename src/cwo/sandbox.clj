@@ -15,3 +15,26 @@
 (defn chmgr
   []
   (atom {}))
+
+
+(def x (ref 0))
+(def y (ref 0))
+(def a (agent nil))
+
+(defn alter-and-send-side-effects
+  "Alters refs then sends println actions to agent with new values"
+  []
+ (dosync 
+   (let [newx (alter x inc)]) 
+   (send a (fn [_] (println "x is" newx)))))
+
+; Multiple threads will call be calling
+(alter-and-send-side-effects)
+
+; Expected output
+x is 1
+x is 2
+
+; do not want
+x is 2
+x is 1
