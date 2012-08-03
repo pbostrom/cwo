@@ -50,7 +50,7 @@
     (user/set-user! sesh-id {:status "gh"}))
   (resp/redirect (cfg/auth-url)))
 
-(defpage [:post "/login"] {:keys [handle]}
+(defpage [:post "/login-http"] {:keys [handle]}
   (let [handle (sanitize handle)])
   (if-not (contains? @chmgr/handle->sesh-id handle)
     (do
@@ -58,6 +58,6 @@
       (pr-str (fmap (enlive/si-content {:handle handle}) enlive/render-snippet)))
     ""))
 
-(defpage [:post "/logout"] {:keys [user]}
+(defpage [:post "/logout-http"] {:keys [user]}
   (chmgr/logout (session/get "sesh-id") nil)
   (pr-str (fmap (enlive/default-content) enlive/render-snippet)))
