@@ -31,10 +31,6 @@
 ; Multiple threads will call be calling
 (alter-and-send-side-effects)
 
-; Expected output
-x is 1
-x is 2
+(def z (ref [:a :c]))
 
-; do not want
-x is 2
-x is 1
+(dosync (alter z into [:b :c]))
