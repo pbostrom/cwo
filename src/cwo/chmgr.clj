@@ -11,6 +11,7 @@
 ;  :srv-ch    Required, permanent channel to send commands to server
 ;  :cl-ch     Required, permanent channel to send commands to client
 ;  :handle    A ref to coordinate transactions between users
+;  :msgq      A ref to coordinate messages sent to client
 ;  :transfer  Optional, handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
@@ -91,22 +92,24 @@
 ;
 
 (defn- login-stm [sesh-store sesh-id handle]
-  (dosync 
-    (let [hdl-ref (get-in sesh-store [sesh-id :handle])
-          queue (:msg-queue sesh-store)
-          cmds []]
-      (when-not @hdl-ref
-        (conj cmds #(user/set-user! sesh-id {:handle handle})) 
-        (conj cmds #(client-cmd handle-ch [:adduser ["#others-list" handle]])) 
-        (when-let [pub-hdl (ensure (get-in sesh-store [sesh-id :sub :hdl]))]
-          (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)]
-            (conj cmds #(client-cmd cl-ch [:rmanonsub nil]))
-            (conj cmds #(client-cmd cl-ch [:addsub handle]))
-            (conj cmds #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])))
-          (let [pub-si (user/get-session pub-hdl)] 
-            (conj cmds #(user/add-peer! pub-si handle)) 
-            (conj cmds #(user/rm-anon-peer! pub-si))))
-        (alter queue into cmds)))))
+  (when (dosync 
+          (let [hdl-ref (get-in sesh-store [sesh-id :handle])
+                msgq (get-in sesh-store [sesh-id :msgq])
+                cmds [#(user/set-user! sesh-id {:handle handle})
+                      #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
+            (when-not @hdl-ref
+              (alter msgq into cmds)
+              (ref-set hld-ref handle))))
+    (dosync 
+      (when-let [pub-hdl (ensure (get-in sesh-store [sesh-id :sub :hdl]))]
+        (let [{:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
+              pub-si (user/get-session pub-hdl)
+              cmds [#(client-cmd cl-ch [:rmanonsub nil])i
+                    #(client-cmd cl-ch [:addsub handle])
+                    #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
+                    #(user/add-peer! pub-si handle)
+                    #(user/rm-anon-peer! pub-si)]]
+          (alter msgq into cmds))))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
