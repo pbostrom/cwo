@@ -112,18 +112,18 @@
                      (alter msgq into cmds)
                      msgq)))]
     (deliver-queue! q)
-    (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]) 
-    (let [q (dosync 
-              (let [pub-hdl (and pub-ref (ensure pub-ref))] )
-              (let [{:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
-                    pub-si (user/get-session pub-hdl)
-                    cmds [#(client-cmd cl-ch [:rmanonsub nil])
-                          #(client-cmd cl-ch [:addsub handle])
-                          #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
-                          #(user/add-peer! pub-si handle)
-                          #(user/rm-anon-peer! pub-si)]]
-                (alter msgq into cmds)))] 
-      (deliver-queue! q))))
+    (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]
+      (let [q (dosync 
+                (let [pub-hdl (and pub-ref (ensure pub-ref))
+                      {:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
+                      pub-si (user/get-session pub-hdl)
+                      cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                            #(client-cmd cl-ch [:addsub handle])
+                            #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
+                            #(user/add-peer! pub-si handle)
+                            #(user/rm-anon-peer! pub-si)]]
+                  (alter msgq into cmds)))] 
+        (deliver-queue! q)))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -331,7 +331,6 @@
     (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-store sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-store assoc sesh-id newcc)
-    (println (pr-str newcc))
     newcc))
 
 (defn init-socket [sesh-id sesh-store sock]
