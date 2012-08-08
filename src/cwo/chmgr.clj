@@ -75,7 +75,7 @@
 ;; RPC methods, declared private
 ;;
 
-(defn- login [sesh-store sesh-id handle]
+(defn- login-old [sesh-store sesh-id handle]
   (user/set-user! sesh-id {:handle handle})
   (println handle "@" sesh-id "signed in")
   (client-cmd handle-ch [:adduser ["#others-list" handle]])
@@ -91,25 +91,39 @@
 ;(con)
 ;
 
-(defn- login-stm [sesh-store sesh-id handle]
-  (when (dosync 
-          (let [hdl-ref (get-in sesh-store [sesh-id :handle])
-                msgq (get-in sesh-store [sesh-id :msgq])
-                cmds [#(user/set-user! sesh-id {:handle handle})
-                      #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
-            (when-not @hdl-ref
-              (alter msgq into cmds)
-              (ref-set hld-ref handle))))
-    (dosync 
-      (when-let [pub-hdl (ensure (get-in sesh-store [sesh-id :sub :hdl]))]
-        (let [{:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
-              pub-si (user/get-session pub-hdl)
-              cmds [#(client-cmd cl-ch [:rmanonsub nil])i
-                    #(client-cmd cl-ch [:addsub handle])
-                    #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
-                    #(user/add-peer! pub-si handle)
-                    #(user/rm-anon-peer! pub-si)]]
-          (alter msgq into cmds))))))
+(defn deliver-queue!
+  "Empties the msg fn queue, sending msgs to client"
+  [msgq]
+  (let [fs (dosync
+             (let [q @msgq]
+               (ref-set msgq [])
+               q))]
+    (doseq [f fs]
+      (f))))
+
+(defn- login [sesh-store sesh-id handle]
+  (when-let [q (dosync
+                 (let [hdl-ref (get-in @sesh-store [sesh-id :handle])
+                       msgq (get-in @sesh-store [sesh-id :msgq])
+                       cmds [#(user/set-user! sesh-id {:handle handle})
+                             #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
+                   (when-not @hdl-ref
+                     (ref-set hdl-ref handle)
+                     (alter msgq into cmds)
+                     msgq)))]
+    (deliver-queue! q)
+    (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]) 
+    (let [q (dosync 
+              (let [pub-hdl (and pub-ref (ensure pub-ref))] )
+              (let [{:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
+                    pub-si (user/get-session pub-hdl)
+                    cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                          #(client-cmd cl-ch [:addsub handle])
+                          #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
+                          #(user/add-peer! pub-si handle)
+                          #(user/rm-anon-peer! pub-si)]]
+                (alter msgq into cmds)))] 
+      (deliver-queue! q))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -310,12 +324,14 @@
   (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                :cl-ch (lamina/channel* :grounded? true :permanent? true)
                :handle (ref nil)
+               :msgq (ref [])
                :you (Repl. (lamina/permanent-channel)
                            (sb/make-sandbox)
                            (atom (System/currentTimeMillis)))}]
     (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-store sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-store assoc sesh-id newcc)
+    (println (pr-str newcc))
     newcc))
 
 (defn init-socket [sesh-id sesh-store sock]

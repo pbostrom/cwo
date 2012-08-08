@@ -6,6 +6,7 @@
             [noir.session :as session :refer [*noir-session*]]
             [cwo.mongo :as mg]
             [cwo.models.user :as user]
+            [monger.collection :as mgc]
             [cwo.chmgr :as chmgr]))
 
 (defn srv-cmd 
@@ -55,5 +56,7 @@
     (read-string (second (read-string hist-msg))) => [expr result]))
 
 (srv-cmd client1 [:login hdl1])
+
+(user/get-)
 
 ;(let [hist-msg (get-msg (:cl client2) :)])
