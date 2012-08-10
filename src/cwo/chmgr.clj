@@ -106,8 +106,7 @@
                  (let [cc (@sesh-store sesh-id)
                        hdl (:handle @cc)
                        msgq (:msgq @cc)
-                       cmds [#(user/set-user! sesh-id {:handle handle})
-                             #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
+                       cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
                    (when-not hdl
                      (alter cc assoc :handle handle :msgq (into msgq cmds))
                      cc)))]
@@ -156,7 +155,6 @@
   (let [publish-sesh-id  (user/get-session handle)
         {{:keys [cl-ch srv-ch you]} publish-sesh-id} @sesh-store ;publisher
         {{old-sub :sub subclch :cl-ch} sesh-id} @sesh-store ;subscriber
-        user (user/get-user sesh-id)
         sub-vlv (lamina/channel)]
     (println sesh-id "subscribe to" handle)
     (if user 
