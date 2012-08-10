@@ -92,26 +92,26 @@
 ;
 
 (defn deliver-queue!
-  "Empties the msg fn queue, sending msgs to client"
-  [msgq]
+  "Empties the msg fn queue of the cc arg, sending msgs to client"
+  [cc]
   (let [fs (dosync
-             (let [q @msgq]
-               (ref-set msgq [])
+             (let [q (:msgq @cc)]
+               (alter cc assoc :msgq [])
                q))]
     (doseq [f fs]
       (f))))
 
 (defn- login [sesh-store sesh-id handle]
   (when-let [q (dosync
-                 (let [hdl-ref (get-in @sesh-store [sesh-id :handle])
-                       msgq (get-in @sesh-store [sesh-id :msgq])
+                 (let [cc (@sesh-store sesh-id)
+                       hdl (:handle @cc)
+                       msgq (:msgq @cc)
                        cmds [#(user/set-user! sesh-id {:handle handle})
                              #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
-                   (when-not @hdl-ref
-                     (ref-set hdl-ref handle)
-                     (alter msgq into cmds)
-                     msgq)))]
-    (deliver-queue! q)
+                   (when-not hdl
+                     (alter cc assoc :handle handle :msgq (into msgq cmds))
+                     cc)))]
+    (deliver-queue! cc)
     (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]
       (let [q (dosync 
                 (let [pub-hdl (and pub-ref (ensure pub-ref))
@@ -321,13 +321,13 @@
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-store sesh-id]
   (println "init-cc!" sesh-id)
-  (let [newcc {:srv-ch (lamina/channel* :grounded? true :permanent? true)
-               :cl-ch (lamina/channel* :grounded? true :permanent? true)
-               :handle (ref nil)
-               :msgq (ref [])
-               :you (Repl. (lamina/permanent-channel)
-                           (sb/make-sandbox)
-                           (atom (System/currentTimeMillis)))}]
+  (let [newcc (ref {:srv-ch (lamina/channel* :grounded? true :permanent? true)
+                    :cl-ch (lamina/channel* :grounded? true :permanent? true)
+                    :handle nil
+                    :msgq []
+                    :you (Repl. (lamina/permanent-channel)
+                                (sb/make-sandbox)
+                                (atom (System/currentTimeMillis)))})]
     (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-store sesh-id %))
     (lamina/siphon handle-ch (newcc :cl-ch))
     (swap! sesh-store assoc sesh-id newcc)
@@ -337,8 +337,8 @@
   (let [cc (or (@sesh-store sesh-id) (init-cc! sesh-store sesh-id))]
     (when-let [handle (user/get-handle sesh-id)] 
       (login sesh-store sesh-id handle))
-    (lamina/siphon sock (cc :srv-ch))
-    (lamina/siphon (cc :cl-ch) sock)
+    (lamina/siphon sock (@cc :srv-ch))
+    (lamina/siphon (@cc :cl-ch) sock)
     ;    (lamina/on-closed webch #(when-not (= (get-in sesh-store [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
-    (client-cmd (cc :cl-ch) [:inithandles (user/get-broadcasters)])))
+    (client-cmd (@cc :cl-ch) [:inithandles (user/get-broadcasters)])))
