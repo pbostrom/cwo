@@ -102,7 +102,7 @@
       (f))))
 
 (defn- login [sesh-store sesh-id handle]
-  (when-let [q (dosync
+  (when-let [cc (dosync
                  (let [cc (@sesh-store sesh-id)
                        hdl (:handle @cc)
                        msgq (:msgq @cc)
