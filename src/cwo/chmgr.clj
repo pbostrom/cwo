@@ -162,12 +162,11 @@
           {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
           user (user/get-user sesh-id)
           sub-vlv (lamina/channel)]
-      (when (and sub-cc (:handle pub-cc))
+      (when (and pub-cc (:handle pub-cc))
         (println sesh-id "subscribe to" handle)
         (if-let [hdl (:handle sub-cc)]
           (do
-            (alter pub-cc update-in [:msgq] into )
-            (client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]) 
+            (alter pub-cc update-in [:msgq] into #(client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]))
             (user/add-peer! pub-sesh-id hdl))
           (do 
             (client-cmd cl-ch [:addanonsub])
