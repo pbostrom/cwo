@@ -10,9 +10,10 @@
 ; {
 ;  :srv-ch    Required, permanent channel to send commands to server
 ;  :cl-ch     Required, permanent channel to send commands to client
-;  :handle    A ref to coordinate transactions between users
-;  :msgq      A ref to coordinate messages sent to client
-;  :transfer  Optional, handle that your REPL has been transfered to
+;  :handle    Registered handle of this user
+;  :msgq      A message queue to pass commands to client
+;  :peers     A vector of connected peers
+;  :transfer  A handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
@@ -106,7 +107,7 @@
                  (let [cc (@sesh-store sesh-id)
                        hdl (:handle @cc)
                        msgq (:msgq @cc)
-                       cmds [#(user/set-user! sesh-id {:handle handle})
+                       cmds [#(swap! @sesh-store update-in [:handles] assoc hdl sesh-id)
                              #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
                    (when-not hdl
                      (alter cc assoc :handle handle :msgq (into msgq cmds))
@@ -153,25 +154,35 @@
         (user/add-anon-peer! pub-si)))))
 
 (defn- subscribe [sesh-store sesh-id handle]
-  (let [publish-sesh-id  (user/get-session handle)
-        {{:keys [cl-ch srv-ch you]} publish-sesh-id} @sesh-store ;publisher
-        {{old-sub :sub subclch :cl-ch} sesh-id} @sesh-store ;subscriber
-        user (user/get-user sesh-id)
-        sub-vlv (lamina/channel)]
-    (println sesh-id "subscribe to" handle)
+  (dosync
+    (let [pub-sesh-id  (get-in @sesh-store [:handles handle])
+          pub-cc (@sesh-store pub-sesh-id)
+          sub-cc (@sesh-store sesh-id)
+          {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
+          {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
+          user (user/get-user sesh-id)
+          sub-vlv (lamina/channel)]
+      (when (and sub-cc (:handle pub-cc))
+        (println sesh-id "subscribe to" handle)
+        (when-let [hdl (:handle sub-cc)]
+          (alter pub-cc update-in [:msgq] into )
+          (client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]) 
+          (user/add-peer! pub-sesh-id hdl)   
+          )
+        )
+      )
+
     (if user 
-      (let [handle (:handle user)]
-        (client-cmd cl-ch [:adduser ["#home-peer-list" handle]]) 
-        (user/add-peer! publish-sesh-id handle)) 
+
       (do 
         (client-cmd cl-ch [:addanonsub])
-        (user/add-anon-peer! publish-sesh-id)))
+        (user/add-anon-peer! pub-sesh-id)))
     (when old-sub (lamina/close (:vlv old-sub)))
     (swap! sesh-store assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
     (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
     (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
     (client-cmd subclch [:ts (ms-since @(:ts you))])
-    (client-cmd subclch [:initpeers (user/get-peers publish-sesh-id)])))
+    (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])))
 
 (defn- end-transfer [sesh-store sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)

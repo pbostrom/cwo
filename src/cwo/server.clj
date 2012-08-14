@@ -20,7 +20,7 @@
 
 (defn get-handler []
   "Returns a websocket handler with a session store atom."
-  (let [session-store (atom {})]
+  (let [session-store (atom {:handles {}})]
     ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
     (fn [webch handshake]
       (chmgr/init-socket (session/get "sesh-id") session-store webch))))
