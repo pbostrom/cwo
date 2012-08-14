@@ -164,25 +164,20 @@
           sub-vlv (lamina/channel)]
       (when (and sub-cc (:handle pub-cc))
         (println sesh-id "subscribe to" handle)
-        (when-let [hdl (:handle sub-cc)]
-          (alter pub-cc update-in [:msgq] into )
-          (client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]) 
-          (user/add-peer! pub-sesh-id hdl)   
-          )
-        )
-      )
-
-    (if user 
-
-      (do 
-        (client-cmd cl-ch [:addanonsub])
-        (user/add-anon-peer! pub-sesh-id)))
-    (when old-sub (lamina/close (:vlv old-sub)))
-    (swap! sesh-store assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
-    (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-    (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-    (client-cmd subclch [:ts (ms-since @(:ts you))])
-    (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])))
+        (if-let [hdl (:handle sub-cc)]
+          (do
+            (alter pub-cc update-in [:msgq] into )
+            (client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]) 
+            (user/add-peer! pub-sesh-id hdl))
+          (do 
+            (client-cmd cl-ch [:addanonsub])
+            (user/add-anon-peer! pub-sesh-id)))
+        (when old-sub (lamina/close (:vlv old-sub)))
+        (swap! sesh-store assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
+        (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+        (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+        (client-cmd subclch [:ts (ms-since @(:ts you))])
+        (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])))))
 
 (defn- end-transfer [sesh-store sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
