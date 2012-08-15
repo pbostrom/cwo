@@ -11,7 +11,7 @@
 ;  :srv-ch    Required, permanent channel to send commands to server
 ;  :cl-ch     Required, permanent channel to send commands to client
 ;  :handle    Registered handle of this user
-;  :msgq      A message queue to pass commands to client
+;  :sidefx    A queue of side-effects to execute outside dosync block
 ;  :peers     A vector of connected peers
 ;  :transfer  A handle that your REPL has been transfered to
 ;
@@ -72,9 +72,11 @@
     (let [[msg-obj] (seq (safe-read-str msg))]
       (contains? rt-set (keyword msg-obj)))))
 
-;;
 ;; RPC methods, declared private
-;;
+
+(defn- dump [sesh-store sesh-id _]
+  (let [cc @(@sesh-store sesh-id)]
+    (client-cmd (:cl-ch cc) [:dump (pr-str cc)])))
 
 (defn- login-old [sesh-store sesh-id handle]
   (user/set-user! sesh-id {:handle handle})
@@ -89,40 +91,38 @@
       (user/add-peer! pub-si handle) 
       (user/rm-anon-peer! pub-si))))
 
-;(con)
-;
-
-(defn deliver-queue!
-  "Empties the msg fn queue of the cc arg, sending msgs to client"
+(defn- do-sidefx!
+  "Calls the fns stored in the side fx queue of the cc"
   [cc]
   (let [fs (dosync
-             (let [q (:msgq @cc)]
-               (alter cc assoc :msgq [])
+             (let [q (:sidefx @cc)]
+               (alter cc assoc :sidefx [])
                q))]
     (doseq [f fs]
       (f))))
 
 (defn- login [sesh-store sesh-id handle]
   (when-let [cc (dosync
-                 (let [{:keys [hdl msgq] :as cc} (@sesh-store sesh-id)
-                       cmds [#(swap! @sesh-store update-in [:handles] assoc hdl sesh-id)
+                 (let [cc (@sesh-store sesh-id)
+                       {hdl :handle sidefx :sidefx} @cc
+                       cmds [#(swap! sesh-store update-in [:handles] assoc handle sesh-id)
                              #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
                    (when-not hdl
-                     (alter cc assoc :handle handle :msgq (into msgq cmds))
+                     (alter cc assoc :handle handle :sidefx (into sidefx cmds))
                      cc)))]
-    (deliver-queue! cc)
+    (do-sidefx! cc)
     (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]
       (let [cc (dosync 
                 (let [pub-hdl (and pub-ref (ensure pub-ref))
-                      {:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
+                      {:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)
                       pub-si (user/get-session pub-hdl)
                       cmds [#(client-cmd cl-ch [:rmanonsub nil])
                             #(client-cmd cl-ch [:addsub handle])
                             #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
                             #(user/add-peer! pub-si handle)
                             #(user/rm-anon-peer! pub-si)]]
-                  (alter cc assoc :msgq (into msgq cmds))))] 
-        (deliver-queue! cc)))))
+                  (alter cc update-in [:sidefx] into cmds)))] 
+        (do-sidefx! cc)))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -152,35 +152,39 @@
         (user/add-anon-peer! pub-si)))))
 
 (defn- subscribe [sesh-store sesh-id pub-hdl]
-  (dosync
-    (let [pub-sesh-id  (get-in @sesh-store [:handles pub-hdl])
-          pub-cc (@sesh-store pub-sesh-id)
-          sub-cc (@sesh-store sesh-id)
-          {:keys [cl-ch srv-ch you] :as } @pub-cc  ;publisher
-          {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
-          user (user/get-user sesh-id)
-          sub-vlv (lamina/channel)]
-      (when (and pub-cc (:handle pub-cc))
-        (println sesh-id "subscribe to" pub-hdl)
-        (if-let [sub-hdl (:handle sub-cc)]
-          (alter pub-cc 
-                 (fn [{:keys [msgq peers] :as cc}]
-                   (-> cc 
-                     (assoc :msgq (conj msgq #(client-cmd cl-ch [:adduser ["#home-peer-list" hdl]])))
-                     (assoc :peers (conj peers sub-hdl)))))
-          (alter pub-cc 
-                 (fn [{:keys [msgq anon] :as cc}]
-                   (-> cc 
-                     (assoc :msgq (conj msgq #(client-cmd cl-ch [:addanonsub])))
-                     (assoc :anon (inc anon))))))
-        (when old-sub 
-          (alter sub-cc update-in [:msgq] conj #(lamina/close (:vlv old-sub))))
-        (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
-        (let [cmds [(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-                    (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-                    (client-cmd subclch [:ts (ms-since @(:ts you))])
-                    (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])]]
-          (alter sub-cc assoc :msgq (into msgq cmds)))))))
+  (doseq 
+    [cc
+     (dosync
+       (let [pub-sesh-id  (get-in @sesh-store [:handles pub-hdl])
+             pub-cc (@sesh-store pub-sesh-id)
+             sub-cc (@sesh-store sesh-id)
+             {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
+             {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
+             user (user/get-user sesh-id)
+             sub-vlv (lamina/channel)]
+         (when (and pub-cc (:handle pub-cc))
+           (println sesh-id "subscribe to" pub-hdl)
+           (if-let [sub-hdl (:handle sub-cc)]
+             (alter pub-cc 
+                    (fn [cc]
+                      (-> cc 
+                        (update-in [:sidefx] conj #(client-cmd cl-ch [:adduser ["#home-peer-list" sub-hdl]]))
+                        (update-in [:peers] conj sub-hdl))))
+             (alter pub-cc 
+                    (fn [cc]
+                      (-> cc 
+                        (update-in [:sidefx] conj #(client-cmd cl-ch [:addanonsub]))
+                        (update-in [:anon] inc)))))
+           (when old-sub 
+             (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
+           (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
+           (let [cmds [(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+                       (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+                       (client-cmd subclch [:ts (ms-since @(:ts you))])
+                       (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])]]
+             (alter sub-cc update-in [:sidefx] into cmds)))
+         [pub-cc sub-cc]))]
+    (do-sidefx! cc)))
 
 (defn- end-transfer [sesh-store sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
@@ -333,7 +337,7 @@
   (let [newcc (ref {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                     :cl-ch (lamina/channel* :grounded? true :permanent? true)
                     :handle nil
-                    :msgq []
+                    :sidefx []
                     :you (Repl. (lamina/permanent-channel)
                                 (sb/make-sandbox)
                                 (atom (System/currentTimeMillis)))})]

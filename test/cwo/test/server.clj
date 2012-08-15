@@ -21,6 +21,9 @@
       (fact (str "Init client" id) (session/get "sesh-id") => (:id client)))
     client))
 
+(defn get-msg [ch filt]
+  (receive (filter* #(chmgr/cmd? % filt) ch) (fn [msg] msg)))
+
 (mg/connect!)
 (mg/reset-db!)
 
@@ -34,15 +37,16 @@
 
 (fact "client1 websocket uplink exists" 
   (channel? (:srv client1)) => true)
+
 (srv-cmd client2 [:login hdl2])
-(fact "client2 handle is registered" 
-  (user/get-handle (:id client2)) => hdl2)
+(get-msg (:cl client2) :dump)
+(let [[_ dump-msg] (read-string (get-msg (:cl client2) :dump))]
+  (fact "client2 handle is registered" 
+        (read-string dump-msg) => hdl2)) 
 
 ; subscribe to hdl2's REPL
 (srv-cmd client1 [:subscribe hdl2])
 
-(defn get-msg [ch filt]
-  (receive (filter* #(chmgr/cmd? % filt) ch) (fn [msg] msg)))
 
 ; send an expr to :you repl for evaluation
 (srv-cmd client2 [:eval-clj [expr :you]])

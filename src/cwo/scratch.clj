@@ -6,6 +6,12 @@
 (def flag (atom true))
 
 (def b (channel))
+(def perm (channel* :grounded? true :permanent? true))
+(siphon perm b)
+
+(close b)
+(view-graph perm)
+
 (def myat (atom {"a" {:b b :c 2} :x {:y 3 :z 4}}))
 
 (defn testat []
@@ -31,6 +37,5 @@
       (println msg ":" dst-pre)
       (.startsWith msg (str "{:" dst-pre)))))
 
-(defn get-cc [handle]
-  (@chm/sesh-id->cc (@chm/handle->sesh-id handle)))
+
 
