@@ -104,9 +104,7 @@
 
 (defn- login [sesh-store sesh-id handle]
   (when-let [cc (dosync
-                 (let [cc (@sesh-store sesh-id)
-                       hdl (:handle @cc)
-                       msgq (:msgq @cc)
+                 (let [{:keys [hdl msgq] :as cc} (@sesh-store sesh-id)
                        cmds [#(swap! @sesh-store update-in [:handles] assoc hdl sesh-id)
                              #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
                    (when-not hdl
@@ -114,7 +112,7 @@
                      cc)))]
     (deliver-queue! cc)
     (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]
-      (let [q (dosync 
+      (let [cc (dosync 
                 (let [pub-hdl (and pub-ref (ensure pub-ref))
                       {:keys [cl-ch srv-ch msgq]} (cc-from-handle sesh-store pub-hdl)
                       pub-si (user/get-session pub-hdl)
@@ -123,8 +121,8 @@
                             #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
                             #(user/add-peer! pub-si handle)
                             #(user/rm-anon-peer! pub-si)]]
-                  (alter msgq into cmds)))] 
-        (deliver-queue! q)))))
+                  (alter cc assoc :msgq (into msgq cmds))))] 
+        (deliver-queue! cc)))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -153,30 +151,36 @@
         (user/rm-peer! pub-si handle) 
         (user/add-anon-peer! pub-si)))))
 
-(defn- subscribe [sesh-store sesh-id handle]
+(defn- subscribe [sesh-store sesh-id pub-hdl]
   (dosync
-    (let [pub-sesh-id  (get-in @sesh-store [:handles handle])
+    (let [pub-sesh-id  (get-in @sesh-store [:handles pub-hdl])
           pub-cc (@sesh-store pub-sesh-id)
           sub-cc (@sesh-store sesh-id)
-          {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
+          {:keys [cl-ch srv-ch you] :as } @pub-cc  ;publisher
           {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
           user (user/get-user sesh-id)
           sub-vlv (lamina/channel)]
       (when (and pub-cc (:handle pub-cc))
-        (println sesh-id "subscribe to" handle)
-        (if-let [hdl (:handle sub-cc)]
-          (do
-            (alter pub-cc update-in [:msgq] into #(client-cmd cl-ch [:adduser ["#home-peer-list" hdl]]))
-            (user/add-peer! pub-sesh-id hdl))
-          (do 
-            (client-cmd cl-ch [:addanonsub])
-            (user/add-anon-peer! pub-sesh-id)))
-        (when old-sub (lamina/close (:vlv old-sub)))
-        (swap! sesh-store assoc-in [sesh-id :sub] {:vlv sub-vlv :hdl handle})
-        (lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-        (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-        (client-cmd subclch [:ts (ms-since @(:ts you))])
-        (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])))))
+        (println sesh-id "subscribe to" pub-hdl)
+        (if-let [sub-hdl (:handle sub-cc)]
+          (alter pub-cc 
+                 (fn [{:keys [msgq peers] :as cc}]
+                   (-> cc 
+                     (assoc :msgq (conj msgq #(client-cmd cl-ch [:adduser ["#home-peer-list" hdl]])))
+                     (assoc :peers (conj peers sub-hdl)))))
+          (alter pub-cc 
+                 (fn [{:keys [msgq anon] :as cc}]
+                   (-> cc 
+                     (assoc :msgq (conj msgq #(client-cmd cl-ch [:addanonsub])))
+                     (assoc :anon (inc anon))))))
+        (when old-sub 
+          (alter sub-cc update-in [:msgq] conj #(lamina/close (:vlv old-sub))))
+        (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
+        (let [cmds [(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+                    (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+                    (client-cmd subclch [:ts (ms-since @(:ts you))])
+                    (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])]]
+          (alter sub-cc assoc :msgq (into msgq cmds)))))))
 
 (defn- end-transfer [sesh-store sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
