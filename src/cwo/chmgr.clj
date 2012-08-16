@@ -48,6 +48,7 @@
 
 (defn cmd? 
   ([msg]
+   (println "cmd test:" msg)
    (declare fn-map)
    (let [msg-obj (safe-read-str msg)]
      (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
@@ -102,6 +103,7 @@
       (f))))
 
 (defn- login [sesh-store sesh-id handle]
+  (println "login!")
   (when-let [cc (dosync
                  (let [cc (@sesh-store sesh-id)
                        {hdl :handle sidefx :sidefx} @cc
@@ -265,7 +267,7 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
-  (let [{{:keys [cl-ch srv-ch] repl sb-key} sesh-id} @sesh-store
+  (let [{:keys [cl-ch srv-ch] repl sb-key} @(@sesh-store sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
         data (if error
@@ -273,6 +275,7 @@
                (let [[out res] result]
                  (str out (pr-str res))))]
     (reset! (:ts repl) (System/currentTimeMillis))
+    (println "DEBUG:" (pr-str @(@sesh-store sesh-id)))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])
     (client-cmd srv-ch [:ts 0])))
@@ -293,7 +296,8 @@
                                      [:othchat [handle txt]]))))}]
     (((keyword chat-id) chat-hdlr) txt)))
 
-(def fn-map {:login login
+(def fn-map {:dump dump
+             :login login
              :logout logout
              :subscribe subscribe
              :end-transfer end-transfer
@@ -328,6 +332,7 @@
 
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-store sesh-id cmd-str]
+  (println "cmd!" cmd-str)
   (let [[cmd arg] (safe-read-str cmd-str)]
     (execute cmd sesh-store sesh-id arg)))
 
@@ -341,17 +346,20 @@
                     :you (Repl. (lamina/permanent-channel)
                                 (sb/make-sandbox)
                                 (atom (System/currentTimeMillis)))})]
-    (lamina/receive-all (lamina/filter* cmd? (newcc :srv-ch)) #(cmd-hdlr sesh-store sesh-id %))
-    (lamina/siphon handle-ch (newcc :cl-ch))
+    (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(do
+                                                                  (println "callback:" %)
+                                                                  (cmd-hdlr sesh-store sesh-id %)))
+    (lamina/siphon handle-ch (:cl-ch @newcc))
     (swap! sesh-store assoc sesh-id newcc)
     newcc))
 
 (defn init-socket [sesh-id sesh-store sock]
   (let [cc (or (@sesh-store sesh-id) (init-cc! sesh-store sesh-id))]
-    (when-let [handle (user/get-handle sesh-id)] 
+    (println "cc: " (pr-str @cc))
+    (when-let [handle (:handle @(@sesh-store sesh-id))] 
       (login sesh-store sesh-id handle))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
     ;    (lamina/on-closed webch #(when-not (= (get-in sesh-store [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
-    (client-cmd (@cc :cl-ch) [:inithandles (user/get-broadcasters)])))
+    (client-cmd (@cc :cl-ch) [:inithandles nil])))
