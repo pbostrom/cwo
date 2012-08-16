@@ -13,6 +13,7 @@
 ;  :handle    Registered handle of this user
 ;  :sidefx    A queue of side-effects to execute outside dosync block
 ;  :peers     A vector of connected peers
+;  :anon      A count of connected anonymous peers
 ;  :transfer  A handle that your REPL has been transfered to
 ;
 ;   valves are closable channels that route traffic between permanent channels
@@ -48,11 +49,11 @@
 
 (defn cmd? 
   ([msg]
-   (println "cmd test:" msg)
    (declare fn-map)
    (let [msg-obj (safe-read-str msg)]
      (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
   ([msg cmd] 
+   (when (.startsWith msg (str "[" cmd " ")) (println "match!:" cmd))
    (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [sesh-store handle]
@@ -76,6 +77,7 @@
 ;; RPC methods, declared private
 
 (defn- dump [sesh-store sesh-id _]
+  (println "dump!")
   (let [cc @(@sesh-store sesh-id)]
     (client-cmd (:cl-ch cc) [:dump (pr-str cc)])))
 
@@ -162,9 +164,8 @@
              sub-cc (@sesh-store sesh-id)
              {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
              {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
-             user (user/get-user sesh-id)
              sub-vlv (lamina/channel)]
-         (when (and pub-cc (:handle pub-cc))
+         (when (and pub-cc (:handle @pub-cc))
            (println sesh-id "subscribe to" pub-hdl)
            (if-let [sub-hdl (:handle sub-cc)]
              (alter pub-cc 
@@ -180,10 +181,10 @@
            (when old-sub 
              (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
            (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
-           (let [cmds [(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-                       (lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-                       (client-cmd subclch [:ts (ms-since @(:ts you))])
-                       (client-cmd subclch [:initpeers (user/get-peers pub-sesh-id)])]]
+           (let [cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+                       #(lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+                       #(client-cmd subclch [:ts (ms-since @(:ts you))])
+                       #(client-cmd subclch [:initpeers (:peers @pub-cc)])]]
              (alter sub-cc update-in [:sidefx] into cmds)))
          [pub-cc sub-cc]))]
     (do-sidefx! cc)))
@@ -267,6 +268,7 @@
     (subscribe hdl-sesh-id owner-handle)))
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
+  (println "eval-clj!")
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@sesh-store sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -275,7 +277,6 @@
                (let [[out res] result]
                  (str out (pr-str res))))]
     (reset! (:ts repl) (System/currentTimeMillis))
-    (println "DEBUG:" (pr-str @(@sesh-store sesh-id)))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])
     (client-cmd srv-ch [:ts 0])))
@@ -332,7 +333,6 @@
 
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-store sesh-id cmd-str]
-  (println "cmd!" cmd-str)
   (let [[cmd arg] (safe-read-str cmd-str)]
     (execute cmd sesh-store sesh-id arg)))
 
@@ -343,12 +343,12 @@
                     :cl-ch (lamina/channel* :grounded? true :permanent? true)
                     :handle nil
                     :sidefx []
+                    :peers []
+                    :anon 0
                     :you (Repl. (lamina/permanent-channel)
                                 (sb/make-sandbox)
                                 (atom (System/currentTimeMillis)))})]
-    (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(do
-                                                                  (println "callback:" %)
-                                                                  (cmd-hdlr sesh-store sesh-id %)))
+    (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(cmd-hdlr sesh-store sesh-id %))
     (lamina/siphon handle-ch (:cl-ch @newcc))
     (swap! sesh-store assoc sesh-id newcc)
     newcc))
