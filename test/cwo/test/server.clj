@@ -25,6 +25,9 @@
   [client]
   (read-string (receive (:cl client) (fn [x] x))))
 
+(defn contains-all? [coll keyz]
+  (reduce #(and %1 (contains? coll %2)) true keyz))
+
 ;(mg/connect!)
 ;(mg/reset-db!)
 
@@ -59,5 +62,12 @@
 (srv-cmd client1 [:subscribe hdl2])
 (fact "client1 received eval history from hdl2"
   (contains? @msg-store1 [:hist (pr-str [expr result])]) => true)
-@msg-store1
-@msg-store2
+
+(srv-cmd client1 [:login hdl1])
+(fact "client2 received update after client1 login"
+  (contains-all? @msg-store2 [[:adduser ["#home-peer-list" "bob"]]
+                              [:adduser ["#others-list" "bob"]]
+                              [:rmanonsub nil]]) => true)
+(srv-cmd client2 [:transfer hdl1])
+;@msg-store1
+;@msg-store2

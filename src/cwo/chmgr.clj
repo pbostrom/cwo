@@ -57,7 +57,7 @@
    (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [sesh-store handle]
-  (@sesh-store (user/get-session handle)))
+  (@sesh-store (get-in @sesh-store [:handles handle])))
 
 ; return the number of milliseconds since the specified time
 (defn ms-since [t]
@@ -106,27 +106,29 @@
 
 (defn- login [sesh-store sesh-id handle]
   (println "login!")
-  (when-let [cc (dosync
-                 (let [cc (@sesh-store sesh-id)
-                       {hdl :handle sidefx :sidefx} @cc
-                       cmds [#(swap! sesh-store update-in [:handles] assoc handle sesh-id)
-                             #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
-                   (when-not hdl
-                     (alter cc assoc :handle handle :sidefx (into sidefx cmds))
-                     cc)))]
+  (let [cc (@sesh-store sesh-id) ]
+    (dosync 
+      (let [{hdl :handle sidefx :sidefx} @cc
+            cmds [#(swap! sesh-store update-in [:handles] assoc handle sesh-id)
+                  #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
+        (when-not hdl
+          (alter cc assoc :handle handle :sidefx (into sidefx cmds)))))
     (do-sidefx! cc)
-    (when-let [pub-ref (get-in @sesh-store [sesh-id :sub :hdl])]
-      (let [cc (dosync 
-                (let [pub-hdl (and pub-ref (ensure pub-ref))
-                      {:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)
-                      pub-si (user/get-session pub-hdl)
-                      cmds [#(client-cmd cl-ch [:rmanonsub nil])
-                            #(client-cmd cl-ch [:addsub handle])
-                            #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])
-                            #(user/add-peer! pub-si handle)
-                            #(user/rm-anon-peer! pub-si)]]
-                  (alter cc update-in [:sidefx] into cmds)))] 
-        (do-sidefx! cc)))))
+    (when-let [pub-cc 
+               (dosync
+                 (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                   (let [{:keys [cl-ch srv-ch]} @pub-cc
+                         cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
+                               #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
+                     (alter pub-cc 
+                            (fn [cc]
+                              (-> cc 
+                                (update-in [:sidefx] into cmds)
+                                (update-in [:anon] dec)
+                                (update-in [:peers] conj handle))))
+                     pub-cc)))]
+      (do-sidefx! pub-cc))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -159,8 +161,7 @@
   (doseq 
     [cc
      (dosync
-       (let [pub-sesh-id  (get-in @sesh-store [:handles pub-hdl])
-             pub-cc (@sesh-store pub-sesh-id)
+       (let [pub-cc (cc-from-handle sesh-store pub-hdl)
              sub-cc (@sesh-store sesh-id)
              {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
              {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber

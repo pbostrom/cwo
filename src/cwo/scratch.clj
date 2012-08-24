@@ -37,5 +37,9 @@
       (println msg ":" dst-pre)
       (.startsWith msg (str "{:" dst-pre)))))
 
-
-
+(def ar (ref 1))
+(let [da-ar ar] 
+  (dosync 
+    (alter ar inc)
+    da-ar))
+ar
