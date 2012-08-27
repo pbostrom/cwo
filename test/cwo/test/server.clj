@@ -34,6 +34,7 @@
 (def handler (server/get-handler)) 
 (def client1 (init-client "777" handler)) 
 (def client2 (init-client "888" handler)) 
+(def client3 (init-client "999" handler)) 
 (def hdl1 "bob")
 (def hdl2 "joe")
 (def expr "(range 10)")
@@ -41,9 +42,11 @@
 
 (def msg-store1 (atom #{}))
 (def msg-store2 (atom #{}))
+(def msg-store3 (atom #{}))
 
 (lamina/receive-all (:cl client1) #(swap! msg-store1 conj (read-string %)))
 (lamina/receive-all (:cl client2) #(swap! msg-store2 conj (read-string %)))
+(lamina/receive-all (:cl client3) #(swap! msg-store3 conj (read-string %)))
 
 (fact "client1 websocket uplink exists" 
   (channel? (:srv client1)) => true)
@@ -65,16 +68,21 @@
 
 (srv-cmd client1 [:login hdl1])
 (fact "client2 received update after client1 login"
-  (contains-all? @msg-store2 [[:adduser ["#home-peer-list" "bob"]]
-                              [:adduser ["#others-list" "bob"]]
+  (contains-all? @msg-store2 [[:adduser ["#home-peer-list" hdl1]]
+                              [:adduser ["#others-list" hdl1]]
                               [:rmanonsub nil]]) => true)
+
+(srv-cmd client3 [:subscribe hdl2])
 
 (srv-cmd client2 [:transfer hdl1])
 (fact "client1 received transfer msg"
   (contains? @msg-store1 [:transfer nil]) => true)
+
+(fact "client3 received chctrl msg"
+  (contains? @msg-store3 [:chctrl hdl1]) => true)
 ; bob subscribes to joe
 ; joe transfers to bob
 ; bob logs out
 ; bob unsubscribes
 ;@msg-store1
-@msg-store2
+@msg-store3

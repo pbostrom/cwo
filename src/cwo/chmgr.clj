@@ -175,18 +175,21 @@
       [pub-cc sub-cc])))
 
 (defn- end-transfer [sesh-store sesh-id handle]
-  (let [hdl-sesh-id (user/get-session handle)
-        {pv :pt-vlv tv :tsub-vlv cl :cl-ch} (@sesh-store sesh-id)]
-    (lamina/close pv)
-    (lamina/close tv)
-    (swap! sesh-store
-           (fn [m]
-             (reduce #(apply assoc-in %1 %2) m
-                     {[sesh-id :tsub-vlv] nil,
-                      [sesh-id :pt-vlv] nil,
-                      [sesh-id :transfer] nil,
-                      [hdl-sesh-id :oth] nil})));TODO: potential synchronization bug here
-    (client-cmd (get-in @sesh-store [hdl-sesh-id :cl-ch]) [:endtransfer :_])))
+  (let [owner-cc (@sesh-store sesh-id)
+        trans-cc (cc-from-handle sesh-store handle)]
+    (dosync
+      (let [{pv :pt-vlv tv :tsub-vlv cl :cl-ch} (ensure owner-cc)
+            ocmds [#(lamina/close pv)
+                   #(lamina/close tv)]
+            tcmd #(client-cmd (:cl-ch @trans-cc) [:endtransfer :_])]
+        (alter trans-cc #(-> %
+                           (update-in [:sidefx] into cmds)
+                           (into {:tsub-vlv nil
+                                  :pt-vlv nil
+                                  :transfer nil})))
+        (alter owner-cc #(-> %
+                           (update-in [:sidefx] conj tcmd)
+                           (into {:oth nil})))))))
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn- transfer [sesh-store sesh-id handle]
