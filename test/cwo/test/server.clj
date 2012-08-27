@@ -68,6 +68,13 @@
   (contains-all? @msg-store2 [[:adduser ["#home-peer-list" "bob"]]
                               [:adduser ["#others-list" "bob"]]
                               [:rmanonsub nil]]) => true)
+
 (srv-cmd client2 [:transfer hdl1])
+(fact "client1 received transfer msg"
+  (contains? @msg-store1 [:transfer nil]) => true)
+; bob subscribes to joe
+; joe transfers to bob
+; bob logs out
+; bob unsubscribes
 ;@msg-store1
-;@msg-store2
+@msg-store2

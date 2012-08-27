@@ -81,19 +81,6 @@
   (let [cc @(@sesh-store sesh-id)]
     (client-cmd (:cl-ch cc) [:dump (pr-str cc)])))
 
-(defn- login-old [sesh-store sesh-id handle]
-  (user/set-user! sesh-id {:handle handle})
-  (println handle "@" sesh-id "signed in")
-  (client-cmd handle-ch [:adduser ["#others-list" handle]])
-  (when-let [pub-hdl (get-in @sesh-store [sesh-id :sub :hdl])]
-    (let [{:keys [cl-ch srv-ch]} (cc-from-handle sesh-store pub-hdl)] 
-      (client-cmd cl-ch [:rmanonsub nil])
-      (client-cmd cl-ch [:addsub handle])
-      (client-cmd srv-ch [:adduser ["#sub-peer-list" handle]]))
-    (let [pub-si (user/get-session pub-hdl)] 
-      (user/add-peer! pub-si handle) 
-      (user/rm-anon-peer! pub-si))))
-
 (defn- do-sidefx!
   "Calls the fns stored in the side fx queue of the cc"
   [cc]
@@ -106,29 +93,27 @@
 
 (defn- login [sesh-store sesh-id handle]
   (println "login!")
-  (let [cc (@sesh-store sesh-id) ]
+  (let [cc (@sesh-store sesh-id)]
     (dosync 
       (let [{hdl :handle sidefx :sidefx} @cc
             cmds [#(swap! sesh-store update-in [:handles] assoc handle sesh-id)
                   #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
         (when-not hdl
           (alter cc assoc :handle handle :sidefx (into sidefx cmds)))))
-    (do-sidefx! cc)
-    (when-let [pub-cc 
-               (dosync
-                 (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
-                   (let [{:keys [cl-ch srv-ch]} @pub-cc
-                         cmds [#(client-cmd cl-ch [:rmanonsub nil])
-                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
-                               #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
-                     (alter pub-cc 
-                            (fn [cc]
-                              (-> cc 
-                                (update-in [:sidefx] into cmds)
-                                (update-in [:anon] dec)
-                                (update-in [:peers] conj handle))))
-                     pub-cc)))]
-      (do-sidefx! pub-cc))))
+    (into [cc] 
+          (dosync
+            (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+              (let [{:keys [cl-ch srv-ch]} @pub-cc
+                    cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                          #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
+                          #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
+                (alter pub-cc 
+                       (fn [cc]
+                         (-> cc 
+                           (update-in [:sidefx] into cmds)
+                           (update-in [:anon] dec)
+                           (update-in [:peers] conj handle))))
+                [pub-cc]))))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -158,37 +143,36 @@
         (user/add-anon-peer! pub-si)))))
 
 (defn- subscribe [sesh-store sesh-id pub-hdl]
-  (doseq 
-    [cc
-     (dosync
-       (let [pub-cc (cc-from-handle sesh-store pub-hdl)
-             sub-cc (@sesh-store sesh-id)
-             {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
-             {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
-             sub-vlv (lamina/channel)]
-         (when (and pub-cc (:handle @pub-cc))
-           (println sesh-id "subscribe to" pub-hdl)
-           (if-let [sub-hdl (:handle sub-cc)]
-             (alter pub-cc 
-                    (fn [cc]
-                      (-> cc 
-                        (update-in [:sidefx] conj #(client-cmd cl-ch [:adduser ["#home-peer-list" sub-hdl]]))
-                        (update-in [:peers] conj sub-hdl))))
-             (alter pub-cc 
-                    (fn [cc]
-                      (-> cc 
-                        (update-in [:sidefx] conj #(client-cmd cl-ch [:addanonsub]))
-                        (update-in [:anon] inc)))))
-           (when old-sub 
-             (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
-           (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
-           (let [cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
-                       #(lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
-                       #(client-cmd subclch [:ts (ms-since @(:ts you))])
-                       #(client-cmd subclch [:initpeers (:peers @pub-cc)])]]
-             (alter sub-cc update-in [:sidefx] into cmds)))
-         [pub-cc sub-cc]))]
-    (do-sidefx! cc)))
+  (dosync
+    (let [pub-cc (cc-from-handle sesh-store pub-hdl)
+          sub-cc (@sesh-store sesh-id)
+          {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
+          {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
+          sub-vlv (lamina/channel)]
+      (when (and pub-cc (:handle @pub-cc))
+        (println sesh-id "subscribe to" pub-hdl)
+        (if-let [sub-hdl (:handle sub-cc)]
+          (alter pub-cc 
+                 (fn [cc]
+                   (-> cc 
+                     (update-in [:sidefx] 
+                                conj 
+                                #(client-cmd cl-ch [:adduser ["#home-peer-list" sub-hdl]]))
+                     (update-in [:peers] conj sub-hdl))))
+          (alter pub-cc 
+                 (fn [cc]
+                   (-> cc 
+                     (update-in [:sidefx] conj #(client-cmd cl-ch [:addanonsub]))
+                     (update-in [:anon] inc)))))
+        (when old-sub 
+          (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
+        (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
+        (let [cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+                    #(lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
+                    #(client-cmd subclch [:ts (ms-since @(:ts you))])
+                    #(client-cmd subclch [:initpeers (:peers @pub-cc)])]]
+          (alter sub-cc update-in [:sidefx] into cmds)))
+      [pub-cc sub-cc])))
 
 (defn- end-transfer [sesh-store sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
@@ -206,10 +190,8 @@
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn- transfer [sesh-store sesh-id handle]
-  (let [hdl-sesh-id (user/get-session handle)
-        {tr-cl :cl-ch tr-srv :srv-ch sub :sub} (@sesh-store hdl-sesh-id) ;transferee
-        {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-user :user 
-         old-pv :pt-vlv old-tv :tsub-vlv trans :transfer} (@sesh-store sesh-id) ;owner
+  (let [owner-cc (@sesh-store sesh-id)
+        trans-cc (cc-from-handle sesh-store handle)
         pv (lamina/channel)
         tv (lamina/channel)
         parse-tprompt (fn [msg]
@@ -220,23 +202,31 @@
         route-prompt (fn [msg]
                        (let [{prompt-txt :p} (safe-read-str msg)]
                          (pr-str {:t prompt-txt})))]
-    (when trans
-      (end-transfer sesh-id trans)
-      (subscribe (user/get-session trans) (:handle owner-user)))
-    (client-cmd (:hist target-repl) [:chctrl handle])
-    (lamina/close (:vlv sub)) ; close subscription created by (connect ...)
-    (lamina/siphon 
-      (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
-      pv old-srv)
-    (lamina/siphon (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
-    (lamina/siphon (lamina/map* route-prompt (lamina/fork pv)) tv old-cl)
-    (swap! sesh-store
-           (fn [m] (reduce #(apply assoc-in %1 %2) m
-                           {[sesh-id :tsub-vlv] tv,
-                            [sesh-id :pt-vlv] pv,
-                            [sesh-id :transfer] handle,
-                            [hdl-sesh-id :oth] target-repl})))
-    (client-cmd tr-cl [:transfer handle])))
+    (dosync
+      (let [{tr-cl :cl-ch tr-srv :srv-ch sub :sub} (ensure trans-cc)
+            {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-hdl :handle 
+             trans :transfer} (ensure owner-cc)
+            ocmds [#(client-cmd (:hist target-repl) [:chctrl handle])
+                   #(lamina/siphon 
+                      (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
+                      pv old-srv)
+                   #(lamina/siphon 
+                      (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
+                   #(lamina/siphon (lamina/map* route-prompt (lamina/fork pv)) tv old-cl)]
+            tcmds [#(client-cmd tr-cl [:transfer nil])
+                   #(lamina/close (:vlv sub))]]
+        (when trans
+          (end-transfer sesh-store sesh-id trans)
+          (subscribe sesh-store (get-in @sesh-store [:handles trans]) owner-hdl))
+        (alter trans-cc #(-> %
+                           (update-in [:sidefx] into tcmds)
+                           (into {:tsub-vlv tv
+                                  :pt-vlv pv
+                                  :transfer handle})))
+        (alter owner-cc #(-> %
+                           (update-in [:sidefx] into ocmds)
+                           (into {:oth target-repl})))))
+    [owner-cc trans-cc]))
 
 (defn- disconnect [sesh-store sesh-id handle]
   (println "disconnect" handle)
@@ -280,7 +270,8 @@
     (reset! (:ts repl) (System/currentTimeMillis))
     (client-cmd cl-ch [:result (pr-str [sb-key data])])
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])
-    (client-cmd srv-ch [:ts 0])))
+    (client-cmd srv-ch [:ts 0])
+    nil))
 
 (defn- chat [sesh-store sesh-id [chat-id txt]]
   (let [{:keys [srv-ch cl-ch sub handle]} (@sesh-store sesh-id) 
@@ -335,7 +326,8 @@
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [sesh-store sesh-id cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
-    (execute cmd sesh-store sesh-id arg)))
+    (doseq [cc (execute cmd sesh-store sesh-id arg)]
+      (do-sidefx! cc))))
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [sesh-store sesh-id]
