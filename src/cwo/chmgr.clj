@@ -183,7 +183,7 @@
                    #(lamina/close tv)]
             tcmd #(client-cmd (:cl-ch @trans-cc) [:endtransfer :_])]
         (alter trans-cc #(-> %
-                           (update-in [:sidefx] into cmds)
+                           (update-in [:sidefx] into ocmds)
                            (into {:tsub-vlv nil
                                   :pt-vlv nil
                                   :transfer nil})))
