@@ -189,7 +189,8 @@
                                   :transfer nil})))
         (alter owner-cc #(-> %
                            (update-in [:sidefx] conj tcmd)
-                           (into {:oth nil})))))))
+                           (into {:oth nil})))))
+    [owner-cc trans-cc]))
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn- transfer [sesh-store sesh-id handle]
@@ -223,12 +224,12 @@
           (subscribe sesh-store (get-in @sesh-store [:handles trans]) owner-hdl))
         (alter trans-cc #(-> %
                            (update-in [:sidefx] into tcmds)
-                           (into {:tsub-vlv tv
-                                  :pt-vlv pv
-                                  :transfer handle})))
+                           (into {:oth target-repl})))
         (alter owner-cc #(-> %
                            (update-in [:sidefx] into ocmds)
-                           (into {:oth target-repl})))))
+                           (into {:tsub-vlv tv
+                                  :pt-vlv pv
+                                  :transfer handle})))))
     [owner-cc trans-cc]))
 
 (defn- disconnect [sesh-store sesh-id handle]
@@ -263,6 +264,7 @@
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
   (println "eval-clj!")
+  (println (pr-str @(@sesh-store sesh-id)))
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@sesh-store sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -351,7 +353,6 @@
 
 (defn init-socket [sesh-id sesh-store sock]
   (let [cc (or (@sesh-store sesh-id) (init-cc! sesh-store sesh-id))]
-    (println "cc: " (pr-str @cc))
     (when-let [handle (:handle @(@sesh-store sesh-id))] 
       (login sesh-store sesh-id handle))
     (lamina/siphon sock (@cc :srv-ch))

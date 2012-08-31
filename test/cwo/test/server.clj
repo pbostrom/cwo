@@ -38,7 +38,9 @@
 (def hdl1 "bob")
 (def hdl2 "joe")
 (def expr "(range 10)")
+(def expr2 "(filter odd? (range 17))")
 (def result (pr-str (range 10)))
+(def result2 (pr-str (filter odd? (range 17))))
 
 (def msg-store1 (atom #{}))
 (def msg-store2 (atom #{}))
@@ -80,9 +82,25 @@
 
 (fact "client3 received chctrl msg"
   (contains? @msg-store3 [:chctrl hdl1]) => true)
+
+
+(srv-cmd client1 [:eval-clj [expr2 :oth]])
+(fact "Transferee receives eval result" 
+  (contains? @msg-store1 [:result (pr-str [:oth result2])]) => true)
+
+(fact "subscriber receives eval result from transfer" 
+  (contains? @msg-store3 [:hist (pr-str [expr2 result2])]) => true)
+
+(fact "owner receives eval result after transfer" 
+  (contains? @msg-store2 [:trepl [:hist (pr-str [expr2 result2])]]) => true)
+
+(srv-cmd client2 [:end-transfer hdl1])
+
+(fact "transferee receives endtransfer cmd" 
+  (contains? @msg-store1 [:endtransfer :_]) => true)
 ; bob subscribes to joe
 ; joe transfers to bob
 ; bob logs out
 ; bob unsubscribes
 ;@msg-store1
-@msg-store3
+@msg-store2
