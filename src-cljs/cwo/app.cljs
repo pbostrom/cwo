@@ -47,7 +47,7 @@
 
 ; login/out buttons 
 (-> (jq "#user-container")
-  (.on "click" "#login" (fn [] (ajax/login (.val (jq "#login-input"))))))
+  (.on "click" "#login" repl/login))
 (-> (jq "#user-container")
   (.on "click" "#logout" (fn [] (ajax/logout))))
 

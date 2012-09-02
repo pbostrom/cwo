@@ -58,7 +58,11 @@
 
 (srv-cmd client2 [:login hdl2])
 (fact "Received adduser msg" 
-  (contains? @msg-store2 [:adduser ["#others-list" hdl2]]) => true)
+  (contains? @msg-store2 [:login hdl2]) => true)
+
+(srv-cmd client1 [:login hdl2])
+(fact "Login fails as handle is taken" 
+  (contains? @msg-store1 [:error "Handle taken"]) => true)
 
 (srv-cmd client2 [:eval-clj [expr :you]])
 (fact "Received eval result" 
@@ -98,6 +102,9 @@
 
 (fact "transferee receives endtransfer cmd" 
   (contains? @msg-store1 [:endtransfer :_]) => true)
+
+(srv-cmd client1 [:eval-clj [expr2 :oth]])
+
 ; bob subscribes to joe
 ; joe transfers to bob
 ; bob logs out

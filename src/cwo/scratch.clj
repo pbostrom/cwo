@@ -10,7 +10,7 @@
 (siphon perm b)
 
 (close b)
-(view-graph perm)
+;(view-graph perm)
 
 (def myat (atom {"a" {:b b :c 2} :x {:y 3 :z 4}}))
 

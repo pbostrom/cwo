@@ -16,7 +16,7 @@
 (defmulti wscmd 
   (fn [cmd arg] cmd))
 
-(defmethod wscmd :inithandles-dep
+(defmethod wscmd :inithandles
   [_ handles]
   (dorun
     (map #(-> (jq "#others-list")
@@ -64,6 +64,9 @@
         (-> (jq list-id) (.append (crate/html [:option h])))))
     :anonymous-case))
 
+(defmethod wscmd :initusers
+  [_ [list-id handle]])
+
 (defmethod wscmd :addsub-dep
   [_ handle]
   (rmoption "#sub-list" handle)
@@ -91,6 +94,10 @@
       (if (> cnt 0)
         (.text (jq "#anonsub") (str cnt " anonymous")) 
         (.remove (jq "#anonsub"))))))
+
+(defmethod wscmd :login 
+  [_ _]
+  (repl/set-repl-mode :oth :active))
 
 (defmethod wscmd :transfer 
   [_ _]

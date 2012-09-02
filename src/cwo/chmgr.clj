@@ -53,11 +53,10 @@
    (let [msg-obj (safe-read-str msg)]
      (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
   ([msg cmd] 
-   (when (.startsWith msg (str "[" cmd " ")) (println "match!:" cmd))
    (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [sesh-store handle]
-  (@sesh-store (get-in @sesh-store [:handles handle])))
+  (@sesh-store (@(:handles @sesh-store) handle)))
 
 ; return the number of milliseconds since the specified time
 (defn ms-since [t]
@@ -94,26 +93,35 @@
 (defn- login [sesh-store sesh-id handle]
   (println "login!")
   (let [cc (@sesh-store sesh-id)]
-    (dosync 
-      (let [{hdl :handle sidefx :sidefx} @cc
-            cmds [#(swap! sesh-store update-in [:handles] assoc handle sesh-id)
-                  #(client-cmd handle-ch [:adduser ["#others-list" handle]])]]
-        (when-not hdl
-          (alter cc assoc :handle handle :sidefx (into sidefx cmds)))))
-    (into [cc] 
-          (dosync
-            (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
-              (let [{:keys [cl-ch srv-ch]} @pub-cc
-                    cmds [#(client-cmd cl-ch [:rmanonsub nil])
-                          #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
-                          #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
-                (alter pub-cc 
-                       (fn [cc]
-                         (-> cc 
-                           (update-in [:sidefx] into cmds)
-                           (update-in [:anon] dec)
-                           (update-in [:peers] conj handle))))
-                [pub-cc]))))))
+    (if (dosync
+          (when-not (@(:handles @sesh-store) handle)
+            (alter (:handles @sesh-store) assoc handle sesh-id)
+            handle))
+      (dosync 
+        (let [{:keys [cl-ch sidefx] hdl :handle} @cc
+              cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
+                    #(client-cmd cl-ch [:login handle])]]
+          (when-not hdl
+            (alter cc assoc :handle handle :sidefx (into sidefx cmds))))
+        (into [cc] 
+              (dosync
+                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                  (let [{:keys [cl-ch srv-ch]} @pub-cc
+                        cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                              #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
+                              #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
+                    (alter pub-cc 
+                           (fn [cc]
+                             (-> cc 
+                               (update-in [:sidefx] into cmds)
+                               (update-in [:anon] dec)
+                               (update-in [:peers] conj handle))))
+                    [pub-cc])))))
+      (dosync
+        (let [{cl-ch :cl-ch} @cc
+              err-msg #(client-cmd cl-ch [:error "Handle taken"])]
+          (alter cc #(update-in % [:sidefx] conj err-msg))
+          [cc])))))
 
 (defn- logout-stm [sesh-store sesh-id _]
   (dosync
@@ -221,7 +229,7 @@
                    #(lamina/close (:vlv sub))]]
         (when trans
           (end-transfer sesh-store sesh-id trans)
-          (subscribe sesh-store (get-in @sesh-store [:handles trans]) owner-hdl))
+          (subscribe sesh-store (@(:handles sesh-store) trans) owner-hdl))
         (alter trans-cc #(-> %
                            (update-in [:sidefx] into tcmds)
                            (into {:oth target-repl})))
@@ -264,7 +272,6 @@
 
 (defn- eval-clj [sesh-store sesh-id [expr sb-key]]
   (println "eval-clj!")
-  (println (pr-str @(@sesh-store sesh-id)))
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@sesh-store sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -359,4 +366,4 @@
     (lamina/siphon (@cc :cl-ch) sock)
     ;    (lamina/on-closed webch #(when-not (= (get-in sesh-store [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
-    (client-cmd (@cc :cl-ch) [:inithandles nil])))
+    (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @sesh-store))])))

@@ -80,6 +80,9 @@
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
     (modef repl)))
 
+(defn login []
+  (srv-cmd :login (.val (jq "#login-input"))))
+
 (defn join []
   (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
   (set-repl-mode :oth :sub)
