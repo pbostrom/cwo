@@ -1,5 +1,7 @@
 (ns cwo.scratch
-  (:require [cwo.chmgr :as chm])
+  (:require [cwo.chmgr :as chm]
+            [cwo.views.enlive :as el]
+            [net.cgrand.enlive-html :as html])
   (:use [lamina.core]
         [lamina.viz]))
 
@@ -43,3 +45,5 @@
     (alter ar inc)
     da-ar))
 ar
+(defn fmap [m f]
+  (into {} (for [[k v] m] [k (f v)])))

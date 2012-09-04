@@ -3,6 +3,7 @@
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
             [cwo.utils :refer [safe-read-str]]
+            [cwo.views.enlive :as el]
             [cwo.models.user :as user]))
 
 ; Channel mgmt architecture
@@ -100,7 +101,7 @@
       (dosync 
         (let [{:keys [cl-ch sidefx] hdl :handle} @cc
               cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
-                    #(client-cmd cl-ch [:login handle])]]
+                    #(client-cmd cl-ch [:login (el/login-html handle)])]]
           (when-not hdl
             (alter cc assoc :handle handle :sidefx (into sidefx cmds))))
         (into [cc] 

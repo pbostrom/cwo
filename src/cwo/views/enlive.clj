@@ -26,6 +26,9 @@
 (defn si-content [user]
   {:userbox (logoutbox user)})
 
+(defn login-html [hdl]
+  (render-snippet (logoutbox hdl)))
+
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 

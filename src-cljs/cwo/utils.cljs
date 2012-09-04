@@ -46,3 +46,7 @@
 
 (defn jslog [out]
   (.log js/console out))
+
+(defn re-html [sel html]
+  (-> (jq sel)
+    (.html html)))

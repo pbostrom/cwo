@@ -1,7 +1,7 @@
 (ns cwo.ajax
   (:require [cljs.reader :as reader]
             [crate.core :as crate]
-            [cwo.utils :refer [jq map->js jslog srv-cmd]]))
+            [cwo.utils :refer [jq map->js jslog srv-cmd re-html]]))
 
 (defn eval-clojure [code sb]
   (let [data (atom "")]
@@ -13,9 +13,6 @@
     (reader/read-string @data)))
 
 ;refresh html of selector
-(defn re-html [sel html]
-  (-> (jq sel)
-    (.html html)))
 
 (defn gh-profile [token]
   (.ajax jq (map->js 

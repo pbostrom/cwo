@@ -1,5 +1,5 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog select-set get-hash]]
+  (:require [cwo.utils :refer [jq jslog select-set get-hash re-html]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
@@ -96,8 +96,8 @@
         (.remove (jq "#anonsub"))))))
 
 (defmethod wscmd :login 
-  [_ _]
-  (repl/set-repl-mode :oth :active))
+  [_ login-html]
+  (re-html "#user-container" login-html))
 
 (defmethod wscmd :transfer 
   [_ _]
