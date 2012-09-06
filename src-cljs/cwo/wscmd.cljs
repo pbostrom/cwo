@@ -161,6 +161,10 @@
     (.append chat (str handle ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 
+(defmethod wscmd :error
+  [_ errmsg]
+  (js/alert errmsg))
+
 (defmethod wscmd :default
   [cmd _] 
   (throw (js/Error. (str "Command " cmd " not implemented" ))))

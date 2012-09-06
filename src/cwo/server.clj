@@ -18,9 +18,12 @@
 (noir/load-views-ns 'cwo.views.noir)
 (def noir-handler (noir/gen-handler {:mode :dev :ns 'cwo}))
 
+(def debug-store (atom nil))
+
 (defn get-handler []
   "Returns a websocket handler with a session store atom."
-  (let [session-store (atom {:handles (ref {})})]
+  (let [session-store (atom {:handles (ref {})})] 
+    (reset! debug-store session-store)
     ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
     (fn [webch handshake]
       (chmgr/init-socket (session/get "sesh-id") session-store webch))))

@@ -86,6 +86,7 @@
   [cc]
   (let [fs (dosync
              (let [q (:sidefx @cc)]
+               (println q)
                (alter cc assoc :sidefx [])
                q))]
     (doseq [f fs]
@@ -95,18 +96,19 @@
   (println "login!")
   (let [cc (@sesh-store sesh-id)]
     (if (dosync
-          (when-not (@(:handles @sesh-store) handle)
+          (when-not 
+            (or (@(:handles @sesh-store) handle) (:handle @cc))
+            (alter cc assoc :handle handle)
             (alter (:handles @sesh-store) assoc handle sesh-id)
             handle))
       (dosync 
-        (let [{:keys [cl-ch sidefx] hdl :handle} @cc
+        (let [{:keys [cl-ch]} @cc
               cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
                     #(client-cmd cl-ch [:login (el/login-html handle)])]]
-          (when-not hdl
-            (alter cc assoc :handle handle :sidefx (into sidefx cmds))))
+          (alter cc update-in [:sidefx] into cmds))
         (into [cc] 
               (dosync
-                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                (when-let [pub-cc (cc-from-handle sesh-store (get-in @cc [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
                         cmds [#(client-cmd cl-ch [:rmanonsub nil])
                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
