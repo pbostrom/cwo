@@ -64,6 +64,10 @@
         (-> (jq list-id) (.append (crate/html [:option h])))))
     :anonymous-case))
 
+(defmethod wscmd :rmuser
+  [_ [list-id handle]]
+  (rmoption list-id handle))
+
 (defmethod wscmd :initusers
   [_ [list-id handle]])
 
@@ -95,9 +99,9 @@
         (.text (jq "#anonsub") (str cnt " anonymous")) 
         (.remove (jq "#anonsub"))))))
 
-(defmethod wscmd :login 
-  [_ login-html]
-  (re-html "#user-container" login-html))
+(defmethod wscmd :rehtml 
+  [_ [id html]]
+  (re-html id html))
 
 (defmethod wscmd :transfer 
   [_ _]

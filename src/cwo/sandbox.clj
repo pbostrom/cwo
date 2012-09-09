@@ -3,8 +3,8 @@
             [clojail.core :refer [sandbox]]))
 
 (def cwo-clojure-tester
-  (blanket secure-tester-without-def
-        "cwo" "noir" "aleph" "lamina" "ring" "clojail" "compojure"))
+  (conj secure-tester-without-def
+        (blanket "cwo" "noir" "aleph" "lamina" "ring" "clojail" "compojure")))
 
 (defn make-sandbox []
   (sandbox cwo-clojure-tester

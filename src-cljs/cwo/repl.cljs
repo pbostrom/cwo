@@ -83,6 +83,9 @@
 (defn login []
   (srv-cmd :login (.val (jq "#login-input"))))
 
+(defn logout []
+  (srv-cmd :logout nil))
+
 (defn join []
   (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
   (set-repl-mode :oth :sub)

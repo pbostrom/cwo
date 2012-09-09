@@ -20,6 +20,8 @@
 
 (def debug-store (atom nil))
 
+(defn debug-reset [] (reset! @debug-store {:handles (ref {})}))
+
 (defn get-handler []
   "Returns a websocket handler with a session store atom."
   (let [session-store (atom {:handles (ref {})})] 
@@ -27,6 +29,10 @@
     ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
     (fn [webch handshake]
       (chmgr/init-socket (session/get "sesh-id") session-store webch))))
+
+(fn [sesh-id]
+  (when-let [cc (session-store sesh-id)]
+    (:handle @cc)))
 
 ; wrap socket handler twice to conform to ring and include noir session info
 (def wrapped-socket-handler (session/wrap-noir-session 

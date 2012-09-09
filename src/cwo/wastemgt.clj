@@ -5,7 +5,7 @@
 (defn monitor 
   "Clean up inactive connections"
   []
-  (doseq [[k v] @chmgr/sesh-id->cc]
+  (doseq [[k v] nil]
     (let [{:keys [you]} v
           last-act (chmgr/ms-since @(:ts you))
           sec (mod (.toSeconds TimeUnit/MILLISECONDS last-act) 60)

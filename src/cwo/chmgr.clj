@@ -75,18 +75,11 @@
       (contains? rt-set (keyword msg-obj)))))
 
 ;; RPC methods, declared private
-
-(defn- dump [sesh-store sesh-id _]
-  (println "dump!")
-  (let [cc @(@sesh-store sesh-id)]
-    (client-cmd (:cl-ch cc) [:dump (pr-str cc)])))
-
 (defn- do-sidefx!
   "Calls the fns stored in the side fx queue of the cc"
   [cc]
   (let [fs (dosync
              (let [q (:sidefx @cc)]
-               (println q)
                (alter cc assoc :sidefx [])
                q))]
     (doseq [f fs]
@@ -97,18 +90,18 @@
   (let [cc (@sesh-store sesh-id)]
     (if (dosync
           (when-not 
-            (or (@(:handles @sesh-store) handle) (:handle @cc))
+            (or ((ensure (:handles @sesh-store)) handle) (:handle (ensure cc)))
             (alter cc assoc :handle handle)
             (alter (:handles @sesh-store) assoc handle sesh-id)
             handle))
       (dosync 
         (let [{:keys [cl-ch]} @cc
               cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
-                    #(client-cmd cl-ch [:login (el/login-html handle)])]]
+                    #(client-cmd cl-ch [:rehtml ["#user-container" (el/login-html {:handle handle})]])]]
           (alter cc update-in [:sidefx] into cmds))
         (into [cc] 
               (dosync
-                (when-let [pub-cc (cc-from-handle sesh-store (get-in @cc [:sub :hdl]))]
+                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
                         cmds [#(client-cmd cl-ch [:rmanonsub nil])
                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
@@ -126,32 +119,40 @@
           (alter cc #(update-in % [:sidefx] conj err-msg))
           [cc])))))
 
-(defn- logout-stm [sesh-store sesh-id _]
-  (dosync
-    (let [handle (user/get-handle sesh-id)]
-      (println "logout handle" handle)
-      (client-cmd handle-ch [:rmhandle handle])
-      (user/rm-user! sesh-id)
-      (when-let [pub-hdl (get-in @sesh-store [sesh-id :sub :hdl])]
-        (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)]
-          (client-cmd cl-ch [:rmsub handle])
-          (client-cmd cl-ch [:addanonsub nil]))
-        (let [pub-si (user/get-session pub-hdl)]  
-          (user/rm-peer! pub-si handle) 
-          (user/add-anon-peer! pub-si))))))
-
 (defn- logout [sesh-store sesh-id _]
-  (let [handle (user/get-handle sesh-id)]
-    (println "logout handle" handle)
-    (client-cmd handle-ch [:rmhandle handle])
-    (user/rm-user! sesh-id)
-    (when-let [pub-hdl (get-in @sesh-store [sesh-id :sub :hdl])]
-      (let [{cl-ch :cl-ch} (cc-from-handle pub-hdl)]
-        (client-cmd cl-ch [:rmsub handle])
-        (client-cmd cl-ch [:addanonsub nil]))
-      (let [pub-si (user/get-session pub-hdl)]  
-        (user/rm-peer! pub-si handle) 
-        (user/add-anon-peer! pub-si)))))
+  (println "logout")
+  (let [cc (@sesh-store sesh-id)]
+    (if-let [handle (dosync
+                      (let [handle (:handle (ensure cc))]
+                        (when
+                          (and handle ((ensure (:handles @sesh-store)) handle) )
+                          (alter cc dissoc :handle)
+                          (alter (:handles @sesh-store) dissoc handle)
+                          handle)))] 
+      (dosync 
+        (let [{:keys [cl-ch]} @cc
+              cmds [#(client-cmd handle-ch [:rmuser ["#others-list" handle]])
+                    #(client-cmd cl-ch [:rehtml ["#user-container" (el/logout-html)]])]]
+          (alter cc update-in [:sidefx] into cmds))
+        (into [cc] 
+              (dosync
+                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                  (let [{:keys [cl-ch srv-ch]} @pub-cc
+                        cmds [#(client-cmd cl-ch [:addanonsub nil])
+                              #(client-cmd cl-ch [:rmuser ["#home-peer-list" handle]])
+                              #(client-cmd srv-ch [:rmuser ["#sub-peer-list" handle]])]]
+                    (alter pub-cc 
+                           (fn [cc]
+                             (-> cc 
+                               (update-in [:sidefx] into cmds)
+                               (update-in [:anon] inc)
+                               (update-in [:peers] disj handle))))
+                    [pub-cc])))))
+      (dosync
+        (let [{cl-ch :cl-ch} @cc
+              err-msg #(client-cmd cl-ch [:error "Not logged in"])]
+          (alter cc #(update-in % [:sidefx] conj err-msg))
+          [cc])))))
 
 (defn- subscribe [sesh-store sesh-id pub-hdl]
   (dosync
@@ -304,8 +305,7 @@
                                      [:othchat [handle txt]]))))}]
     (((keyword chat-id) chat-hdlr) txt)))
 
-(def fn-map {:dump dump
-             :login login
+(def fn-map {:login login
              :logout logout
              :subscribe subscribe
              :end-transfer end-transfer
@@ -351,7 +351,7 @@
                     :cl-ch (lamina/channel* :grounded? true :permanent? true)
                     :handle nil
                     :sidefx []
-                    :peers []
+                    :peers #{}
                     :anon 0
                     :you (Repl. (lamina/permanent-channel)
                                 (sb/make-sandbox)

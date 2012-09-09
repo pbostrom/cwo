@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock others-set get-hash srv-cmd]]
+  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock others-set get-hash]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -49,7 +49,7 @@
 (-> (jq "#user-container")
   (.on "click" "#login" repl/login))
 (-> (jq "#user-container")
-  (.on "click" "#logout" (fn [] (ajax/logout))))
+  (.on "click" "#logout" (fn [] (repl/logout))))
 
 (defn chat-hdlr [e]
   (when (= (.-which e) 13)
