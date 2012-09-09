@@ -1,5 +1,6 @@
 (ns cwo.views.noir
   (:require [noir.core :refer [defpage]]
+            [compojure.core :refer [defroutes GET]]
             [cwo.chmgr :as chmgr]
             [cwo.models.user :as user]
             [cwo.views.enlive :as enlive]
@@ -35,15 +36,16 @@
     (:access_token (parseqry body))))
 
 ;; enlive rendered routes
-(defpage "/" {:keys [code]}
-  (let [sesh-id (cookies/get "ring-session")]
-    (session/put! "sesh-id" sesh-id)
+(defroutes root
+  (GET "/" {:keys [code]}
+  (let [sesh-id nil]
+    ;(session/put! "sesh-id" sesh-id)
     (if code
       (do
         (when-let [token (fetch-token code)]
           (user/set-user! sesh-id {:token token :status "auth"})) 
         (resp/redirect "/"))
-      (enlive/layout (and sesh-id (user/get-user sesh-id))))))
+      (enlive/layout (and sesh-id (user/get-user sesh-id)))))))
 
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
