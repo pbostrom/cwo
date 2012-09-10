@@ -2,9 +2,9 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/core.logic "0.7.5"]
-                 [aleph "0.3.0-alpha2"]
+                 [aleph "0.3.0-beta3"]
                  [noir "1.3.0-beta4"]
-                 [compojure "1.0.1"]
+                 [compojure "1.1.3"]
                  [enlive "1.0.0"]
                  [crate "0.1.0-alpha2"]
                  [clojail "1.0.1"]
@@ -12,7 +12,7 @@
                  [com.novemberain/monger "1.1.0"]
                  [midje "1.4.0"]
 ;                 [org.python/jython-standalone "2.5.2"]
-                 [ring "1.1.0-RC1"]]
+                 [ring "1.1.5"]]
   :plugins [[lein-cljsbuild "0.2.4"]]
   :cljsbuild {
     :builds [{:source-path "src-cljs"

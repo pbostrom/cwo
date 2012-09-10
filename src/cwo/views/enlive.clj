@@ -46,7 +46,5 @@
   [:div#widgets] (html/content (status) (transfer-text)))
 
 (defn layout [user]
-  (if (user/signed-in? user)
-    (signedin-layout user)
-    (signedout-layout)))
-    
+  (signedout-layout))
+  

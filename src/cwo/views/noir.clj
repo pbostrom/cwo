@@ -47,6 +47,9 @@
         (resp/redirect "/"))
       (enlive/layout (and sesh-id (user/get-user sesh-id)))))))
 
+(defroutes app-routes
+  (GET "/" [] "Hello World"))
+
 (defpage "/ghauth" []
   (let [sesh-id (session/get "sesh-id")]
     (user/set-user! sesh-id {:status "gh"}))

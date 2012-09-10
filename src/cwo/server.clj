@@ -1,17 +1,17 @@
 (ns cwo.server
   (:require [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
+            [compojure.handler :as handler]
             [ring.middleware.file :as ring-file]
             [ring.middleware.reload :as reload]
             [aleph.http :as aleph]
             [cwo.chmgr :as chmgr]
-            [cwo.mongo :as mg]
-            [cwo.views.noir :as views]
+            [cwo.views.routes :as views]
             [cwo.wastemgt :as wastemgt])
   (:gen-class))
 
 ; Need user.dir for Java policy file
-(noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
+;(noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
 
 ; Load noir views and generate handler
 
@@ -25,7 +25,7 @@
     (reset! debug-store session-store)
     ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
     (fn [webch handshake]
-      (chmgr/init-socket (session/get "sesh-id") session-store webch))))
+      (chmgr/init-socket "1234" session-store webch)))) ;FIXME: grab session id from handshake
 
 (fn [sesh-id]
   (let [session-store nil] 
@@ -37,17 +37,14 @@
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
-  (GET "/socket" [] wrapped-socket-handler)
-  views/root
+;  (GET "/socket" [] wrapped-socket-handler)
+  views/root-dbg2
+;  (route/not-found "Not Found")
   (route/resources "/"))
 
 ; Add aleph handler and start server
 (defn -main []
   (let [port 8080]
     (aleph/start-http-server 
-      (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
-    (println "server started on port" port)
-    (mg/connect!)
-    ;TODO: remove for production
-    (mg/reset-db!)
-    (wastemgt/start)))
+      (aleph/wrap-ring-handler master-handler) {:port port :websocket false})
+    (println "server started on port" port)))
