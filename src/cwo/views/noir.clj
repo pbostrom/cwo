@@ -37,9 +37,10 @@
 
 ;; enlive rendered routes
 (defroutes root
-  (GET "/" {:keys [code]}
+  (GET "/" {:keys [code] :as req}
   (let [sesh-id nil]
     ;(session/put! "sesh-id" sesh-id)
+    (println "req map:" req)
     (if code
       (do
         (when-let [token (fetch-token code)]
