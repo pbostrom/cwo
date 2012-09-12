@@ -1,15 +1,11 @@
 (ns cwo.views.noir
-  (:require [noir.core :refer [defpage]]
-            [compojure.core :refer [defroutes GET]]
-            [cwo.chmgr :as chmgr]
+  (:require [compojure.core :refer [defroutes GET]]
             [cwo.models.user :as user]
             [cwo.views.enlive :as enlive]
             [cwo.http :as http]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
-            [noir.session :as session]
-            [cwo.config :as cfg]
-            [noir.cookies :as cookies]))
+            [cwo.config :as cfg]))
 
 (defn fmap [m f]
   (into {} (for [[k v] m] [k (f v)])))
@@ -36,22 +32,18 @@
     (:access_token (parseqry body))))
 
 ;; enlive rendered routes
-(defroutes root
-  (GET "/" {:keys [code] :as req}
-  (let [sesh-id nil]
-    ;(session/put! "sesh-id" sesh-id)
-    (println "req map:" req)
-    (if code
-      (do
-        (when-let [token (fetch-token code)]
-          (user/set-user! sesh-id {:token token :status "auth"})) 
-        (resp/redirect "/"))
-      (enlive/layout (and sesh-id (user/get-user sesh-id)))))))
-
 (defroutes app-routes
-  (GET "/" [] "Hello World"))
-
-(defpage "/ghauth" []
-  (let [sesh-id (session/get "sesh-id")]
-    (user/set-user! sesh-id {:status "gh"}))
-  (resp/redirect (cfg/auth-url)))
+  (GET "/" {:keys [code] :as req}
+       (let [sesh-id nil]
+         ;(session/put! "sesh-id" sesh-id)
+         (println "req map:" req)
+         (if code
+           (do
+             (when-let [token (fetch-token code)]
+               (user/set-user! sesh-id {:token token :status "auth"})) 
+             (resp/redirect "/"))
+           (enlive/layout (and sesh-id (user/get-user sesh-id))))))
+  (GET "/ghauth" []
+       (let [sesh-id nil]
+         (user/set-user! sesh-id {:status "gh"}))
+       (resp/redirect (cfg/auth-url))))

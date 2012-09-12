@@ -56,8 +56,8 @@
   ([msg cmd] 
    (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
-(defn cc-from-handle [sesh-store handle]
-  (@sesh-store (@(:handles @sesh-store) handle)))
+(defn cc-from-handle [app-state handle]
+  (@app-state (@(:handles @app-state) handle)))
 
 ; return the number of milliseconds since the specified time
 (defn ms-since [t]
@@ -85,14 +85,14 @@
     (doseq [f fs]
       (f))))
 
-(defn- login [sesh-store sesh-id handle]
+(defn- login [app-state sesh-id handle]
   (println "login!")
-  (let [cc (@sesh-store sesh-id)]
+  (let [cc (@app-state sesh-id)]
     (if (dosync
           (when-not 
-            (or ((ensure (:handles @sesh-store)) handle) (:handle (ensure cc)))
+            (or ((ensure (:handles @app-state)) handle) (:handle (ensure cc)))
             (alter cc assoc :handle handle)
-            (alter (:handles @sesh-store) assoc handle sesh-id)
+            (alter (:handles @app-state) assoc handle sesh-id)
             handle))
       (dosync 
         (let [{:keys [cl-ch]} @cc
@@ -101,7 +101,7 @@
           (alter cc update-in [:sidefx] into cmds))
         (into [cc] 
               (dosync
-                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
                         cmds [#(client-cmd cl-ch [:rmanonsub nil])
                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
@@ -119,15 +119,15 @@
           (alter cc #(update-in % [:sidefx] conj err-msg))
           [cc])))))
 
-(defn- logout [sesh-store sesh-id _]
+(defn- logout [app-state sesh-id _]
   (println "logout")
-  (let [cc (@sesh-store sesh-id)]
+  (let [cc (@app-state sesh-id)]
     (if-let [handle (dosync
                       (let [handle (:handle (ensure cc))]
                         (when
-                          (and handle ((ensure (:handles @sesh-store)) handle) )
+                          (and handle ((ensure (:handles @app-state)) handle) )
                           (alter cc dissoc :handle)
-                          (alter (:handles @sesh-store) dissoc handle)
+                          (alter (:handles @app-state) dissoc handle)
                           handle)))] 
       (dosync 
         (let [{:keys [cl-ch]} @cc
@@ -136,7 +136,7 @@
           (alter cc update-in [:sidefx] into cmds))
         (into [cc] 
               (dosync
-                (when-let [pub-cc (cc-from-handle sesh-store (get-in (ensure cc) [:sub :hdl]))]
+                (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
                         cmds [#(client-cmd cl-ch [:addanonsub nil])
                               #(client-cmd cl-ch [:rmuser ["#home-peer-list" handle]])
@@ -154,10 +154,10 @@
           (alter cc #(update-in % [:sidefx] conj err-msg))
           [cc])))))
 
-(defn- subscribe [sesh-store sesh-id pub-hdl]
+(defn- subscribe [app-state sesh-id pub-hdl]
   (dosync
-    (let [pub-cc (cc-from-handle sesh-store pub-hdl)
-          sub-cc (@sesh-store sesh-id)
+    (let [pub-cc (cc-from-handle app-state pub-hdl)
+          sub-cc (@app-state sesh-id)
           {:keys [cl-ch srv-ch you]} @pub-cc  ;publisher
           {old-sub :sub subclch :cl-ch} @sub-cc ;subscriber
           sub-vlv (lamina/channel)]
@@ -186,9 +186,9 @@
           (alter sub-cc update-in [:sidefx] into cmds)))
       [pub-cc sub-cc])))
 
-(defn- end-transfer [sesh-store sesh-id handle]
-  (let [owner-cc (@sesh-store sesh-id)
-        trans-cc (cc-from-handle sesh-store handle)]
+(defn- end-transfer [app-state sesh-id handle]
+  (let [owner-cc (@app-state sesh-id)
+        trans-cc (cc-from-handle app-state handle)]
     (dosync
       (let [{pv :pt-vlv tv :tsub-vlv cl :cl-ch} (ensure owner-cc)
             ocmds [#(lamina/close pv)
@@ -205,9 +205,9 @@
     [owner-cc trans-cc]))
 
 ; transfer control of sesh-id's REPL to specified handle
-(defn- transfer [sesh-store sesh-id handle]
-  (let [owner-cc (@sesh-store sesh-id)
-        trans-cc (cc-from-handle sesh-store handle)
+(defn- transfer [app-state sesh-id handle]
+  (let [owner-cc (@app-state sesh-id)
+        trans-cc (cc-from-handle app-state handle)
         pv (lamina/channel)
         tv (lamina/channel)
         parse-tprompt (fn [msg]
@@ -232,8 +232,8 @@
             tcmds [#(client-cmd tr-cl [:transfer nil])
                    #(lamina/close (:vlv sub))]]
         (when trans
-          (end-transfer sesh-store sesh-id trans)
-          (subscribe sesh-store (@(:handles sesh-store) trans) owner-hdl))
+          (end-transfer app-state sesh-id trans)
+          (subscribe app-state (@(:handles app-state) trans) owner-hdl))
         (alter trans-cc #(-> %
                            (update-in [:sidefx] into tcmds)
                            (into {:oth target-repl})))
@@ -244,18 +244,18 @@
                                   :transfer handle})))))
     [owner-cc trans-cc]))
 
-(defn- disconnect [sesh-store sesh-id handle]
+(defn- disconnect [app-state sesh-id handle]
   (println "disconnect" handle)
   (let [pub-sesh-id (user/get-session handle)
-        {{:keys [cl-ch transfer]} pub-sesh-id} @sesh-store ;publisher
-        {{sub :sub sub-user :user} sesh-id} @sesh-store ;subscriber
+        {{:keys [cl-ch transfer]} pub-sesh-id} @app-state ;publisher
+        {{sub :sub sub-user :user} sesh-id} @app-state ;subscriber
         sub-hdl (:handle sub-user)] 
     (when (and sub-hdl (= sub-hdl transfer))
       (end-transfer pub-sesh-id sub-hdl)
-      (client-cmd (get-in @sesh-store [pub-sesh-id :cl-ch]) [:reclaim :_])
-      (client-cmd (:hist (get-in @sesh-store [pub-sesh-id :you])) [:chctrl handle]))
+      (client-cmd (get-in @app-state [pub-sesh-id :cl-ch]) [:reclaim :_])
+      (client-cmd (:hist (get-in @app-state [pub-sesh-id :you])) [:chctrl handle]))
     (lamina/close (:vlv sub))
-    (swap! sesh-store assoc-in [sesh-id :sub] nil)
+    (swap! app-state assoc-in [sesh-id :sub] nil)
     (if sub-hdl
       (do
         (user/rm-peer! pub-sesh-id handle) 
@@ -265,18 +265,18 @@
         (user/rm-anon-peer! pub-sesh-id)))))
 
 ; reclaim control of sesh-id's REPL from specified handle
-(defn- reclaim [sesh-store sesh-id handle]
+(defn- reclaim [app-state sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
-        {owner-user :user cl :cl-ch repl :you} (@sesh-store sesh-id)
+        {owner-user :user cl :cl-ch repl :you} (@app-state sesh-id)
         owner-handle (:handle owner-user)]
     (end-transfer sesh-id handle)
     (client-cmd cl [:reclaim :_]) 
     (client-cmd (:hist repl) [:chctrl owner-handle])
     (subscribe hdl-sesh-id owner-handle)))
 
-(defn- eval-clj [sesh-store sesh-id [expr sb-key]]
+(defn- eval-clj [app-state sesh-id [expr sb-key]]
   (println "eval-clj!")
-  (let [{:keys [cl-ch srv-ch] repl sb-key} @(@sesh-store sesh-id)
+  (let [{:keys [cl-ch srv-ch] repl sb-key} @(@app-state sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
         data (if error
@@ -289,8 +289,8 @@
     (client-cmd srv-ch [:ts 0])
     nil))
 
-(defn- chat [sesh-store sesh-id [chat-id txt]]
-  (let [{:keys [srv-ch cl-ch sub handle]} (@sesh-store sesh-id) 
+(defn- chat [app-state sesh-id [chat-id txt]]
+  (let [{:keys [srv-ch cl-ch sub handle]} (@app-state sesh-id) 
         chat-hdlr {:you-chat 
                    (fn [t]
                      (client-cmd srv-ch [:othchat [handle txt]])
@@ -314,10 +314,10 @@
              :reclaim reclaim
              :eval-clj eval-clj})
 
-(defn execute [cmd sesh-store sesh-id arg]
+(defn execute [cmd app-state sesh-id arg]
   (when-not (contains? fn-map cmd) 
     (throw (Exception. (str "RPC function not defined: " :cmd))))
-  ((cmd fn-map) sesh-store sesh-id arg))
+  ((cmd fn-map) app-state sesh-id arg))
 
 (defn recycle-all!
   "For development use only! Clears out all application state."
@@ -326,26 +326,26 @@
 
 (defn recycle!
   "Remove the channel controller map for the specified session id"
-  [sesh-store sesh-id]
+  [app-state sesh-id]
   (throw (Exception. "Recycling not implemented yet"))
   (println "Recycling" sesh-id)
   (declare disconnect client-cmd)
-  (let [cc (@sesh-store sesh-id)]
+  (let [cc (@app-state sesh-id)]
     (when-let [sub-hdl (get-in cc [:sub :hdl])]
       (disconnect sesh-id sub-hdl))
     (when-let [hdl (user/get-handle sesh-id)]
       (client-cmd handle-ch [:rmhandle hdl]))
     (user/rm-user! sesh-id)
-    (swap! sesh-store dissoc sesh-id)))
+    (swap! app-state dissoc sesh-id)))
 
 ; Handle commands send via srv-ch
-(defn cmd-hdlr [sesh-store sesh-id cmd-str]
+(defn cmd-hdlr [app-state sesh-id cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
-    (doseq [cc (execute cmd sesh-store sesh-id arg)]
+    (doseq [cc (execute cmd app-state sesh-id arg)]
       (do-sidefx! cc))))
 
 ; create a send/receive channel pair, swap map structure
-(defn init-cc! [sesh-store sesh-id]
+(defn init-cc! [app-state sesh-id]
   (println "init-cc!" sesh-id)
   (let [newcc (ref {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                     :cl-ch (lamina/channel* :grounded? true :permanent? true)
@@ -356,17 +356,17 @@
                     :you (Repl. (lamina/permanent-channel)
                                 (sb/make-sandbox)
                                 (atom (System/currentTimeMillis)))})]
-    (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(cmd-hdlr sesh-store sesh-id %))
+    (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(cmd-hdlr app-state sesh-id %))
     (lamina/siphon handle-ch (:cl-ch @newcc))
-    (swap! sesh-store assoc sesh-id newcc)
+    (swap! app-state assoc sesh-id newcc)
     newcc))
 
-(defn init-socket [sesh-id sesh-store sock]
-  (let [cc (or (@sesh-store sesh-id) (init-cc! sesh-store sesh-id))]
-    (when-let [handle (:handle @(@sesh-store sesh-id))] 
-      (login sesh-store sesh-id handle))
+(defn init-socket [sesh-id app-state sock]
+  (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))]
+    (when-let [handle (:handle @(@app-state sesh-id))] 
+      (login app-state sesh-id handle))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
-    ;    (lamina/on-closed webch #(when-not (= (get-in sesh-store [sesh-id :status]) "gh")
+    ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
-    (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @sesh-store))])))
+    (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))

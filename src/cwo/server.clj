@@ -2,7 +2,7 @@
   (:require [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
             [compojure.handler :as handler]
-            [ring.middleware.file :as ring-file]
+            [ring.middleware.cookies :as cookies]
             [ring.middleware.reload :as reload]
             [aleph.http :as aleph]
             [cwo.chmgr :as chmgr]
@@ -15,37 +15,26 @@
 
 ; Load noir views and generate handler
 
-(def debug-store (atom nil))
+(def debug-state (atom nil))
 
-(defn debug-reset [] (reset! @debug-store {:handles (ref {})}))
+(defn debug-reset [] (reset! @debug-state {:handles (ref {})}))
 
-(defn gen-ws-handler []
+(defn gen-handlers []
   "Returns a websocket handler with a session store atom."
-  (let [session-store (atom {:handles (ref {})})] 
-    (reset! debug-store session-store)
-    ;TODO: consider a "store" protocol... user-store (mongo), session-store (in-memory ref/atom)
-    (fn [webch handshake]
-      (println "WS handshake:" handshake)
-      (chmgr/init-socket "1234" session-store webch)))) ;FIXME: grab session id from handshake
+  (let [app-state (atom {:handles (ref {})})] 
+    (reset! debug-state app-state)
+    {:ws (fn [webch handshake]
+           (println "WS handshake:" handshake)
+           (chmgr/init-socket "1234" app-state webch))
+     :http (fn [request]
+             (views/app-routes (assoc request :app-state app-state)))})) ;FIXME: grab session id from handshake
 
-(fn [sesh-id]
-  (let [session-store nil] 
-    (when-let [cc (session-store sesh-id)]
-      (:handle @cc))))
-
-; wrap socket handler twice to conform to ring and include noir session info
-(def wrapped-socket-handler (aleph/wrap-aleph-handler (gen-ws-handler)))
-
-(def some-state {:a 1 :b 2})
-
-(defn wrap-state [handler appstate]
-  (fn [request]
-    (handler (assoc request :appstate appstate))))
+(def handlers (gen-handlers))
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
-  (GET "/socket" [] wrapped-socket-handler)
-  (wrap-state views/root some-state)
+  (GET "/socket" [] (aleph/wrap-aleph-handler (:ws handlers)))
+  (cookies/wrap-cookies (:http handlers))
   (route/resources "/")
   (route/not-found "Not Found"))
 
