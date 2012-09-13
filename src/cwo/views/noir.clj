@@ -42,7 +42,11 @@
              (when-let [token (fetch-token code)]
                (user/set-user! sesh-id {:token token :status "auth"})) 
              (resp/redirect "/"))
-           (enlive/layout (and sesh-id (user/get-user sesh-id))))))
+           {:status 200
+            :headers {}
+            ; stick dummy value into session so ring generates session key
+            :session {"foo" {:value "bar"}}
+            :body (enlive/layout (and sesh-id (user/get-user sesh-id)))})))
   (GET "/ghauth" []
        (let [sesh-id nil]
          (user/set-user! sesh-id {:status "gh"}))

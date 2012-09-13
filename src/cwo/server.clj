@@ -3,6 +3,7 @@
             [compojure.route :as route]
             [compojure.handler :as handler]
             [ring.middleware.cookies :as cookies]
+            [ring.middleware.session :as session]
             [ring.middleware.reload :as reload]
             [aleph.http :as aleph]
             [cwo.chmgr :as chmgr]
@@ -13,8 +14,6 @@
 ; Need user.dir for Java policy file
 ;(noir/add-middleware ring-file/wrap-file (System/getProperty "user.dir"))
 
-; Load noir views and generate handler
-
 (def debug-state (atom nil))
 
 (defn debug-reset [] (reset! @debug-state {:handles (ref {})}))
@@ -24,17 +23,17 @@
   (let [app-state (atom {:handles (ref {})})] 
     (reset! debug-state app-state)
     {:ws (fn [webch handshake]
-           (println "WS handshake:" handshake)
-           (chmgr/init-socket "1234" app-state webch))
+           (let [sesh-id (get-in handshake [:cookies "ring-session" :value])]
+             (chmgr/init-socket sesh-id app-state webch)))
      :http (fn [request]
-             (views/app-routes (assoc request :app-state app-state)))})) ;FIXME: grab session id from handshake
+             (views/app-routes (assoc request :app-state app-state)))}))
 
 (def handlers (gen-handlers))
 
 ; Combine routes for Websocket, noir, and static resources
 (defroutes master-handler
-  (GET "/socket" [] (aleph/wrap-aleph-handler (:ws handlers)))
-  (cookies/wrap-cookies (:http handlers))
+  (GET "/socket" [] (cookies/wrap-cookies (aleph/wrap-aleph-handler (:ws handlers))))
+  (session/wrap-session (:http handlers))
   (route/resources "/")
   (route/not-found "Not Found"))
 
