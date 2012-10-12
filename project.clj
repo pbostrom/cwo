@@ -3,7 +3,6 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/core.logic "0.7.5"]
                  [aleph "0.3.0-beta3"]
-                 [noir "1.3.0-beta4"]
                  [compojure "1.1.3"]
                  [enlive "1.0.0"]
                  [crate "0.1.0-alpha2"]

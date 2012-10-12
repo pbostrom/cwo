@@ -1,10 +1,10 @@
-(ns cwo.views.noir
+(ns cwo.routes
   (:require [compojure.core :refer [defroutes GET]]
-            [cwo.models.user :as user]
             [cwo.views.enlive :as enlive]
             [cwo.http :as http]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
+            [cwo.models.user :as user]
             [cwo.config :as cfg]))
 
 (defn fmap [m f]
