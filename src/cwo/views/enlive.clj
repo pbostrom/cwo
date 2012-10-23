@@ -45,6 +45,10 @@
   [:div#user-container] (html/content (loginbox))
   [:div#widgets] (html/content (status) (transfer-text)))
 
-(defn layout [user]
+(defn layout-old [user]
   (signedout-layout))
-   
+
+(html/deftemplate layout (str pub "layout.html")
+  [user]
+  [:div#user-container] (html/content (if (:handle user) (logoutbox user) (loginbox)))
+  [:div#widgets] (html/content (status) (transfer-text)))

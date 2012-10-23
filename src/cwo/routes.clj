@@ -31,12 +31,18 @@
   (when-let [body (:body (http/post-access-code code))]
     (:access_token (parseqry body))))
 
+(defn session-data [{:keys [app-state cookies]}]
+  (let [sesh-id (get-in cookies ["ring-session" :value])
+        sesh-state (@app-state sesh-id)
+        handle (and sesh-state (@sesh-state :handle))]
+    [sesh-id handle]))
+
 ;; enlive rendered routes
 (defroutes app-routes
   (GET "/" {:keys [code] :as req}
-       (let [sesh-id nil]
-         ;(session/put! "sesh-id" sesh-id)
-         (println "req map:" req)
+       (let [[sesh-id handle] (session-data req)]
+         (println "sesh-id:" sesh-id)
+         (println "handle:" handle)
          (if code
            (do
              (when-let [token (fetch-token code)]
@@ -46,7 +52,7 @@
             :headers {}
             ; stick dummy value into session so ring generates session key
             :session {"foo" {:value "bar"}}
-            :body (enlive/layout (and sesh-id (user/get-user sesh-id)))})))
+            :body (enlive/layout {:handle handle})})))
   (GET "/ghauth" []
        (let [sesh-id nil]
          (user/set-user! sesh-id {:status "gh"}))
