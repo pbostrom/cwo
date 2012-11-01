@@ -367,6 +367,7 @@
       (login app-state sesh-id handle))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
+    (lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
     ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
     (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))
