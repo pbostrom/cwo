@@ -363,8 +363,6 @@
 
 (defn init-socket [sesh-id app-state sock]
   (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))]
-    (when-let [handle (:handle @(@app-state sesh-id))] 
-      (login app-state sesh-id handle))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
     (lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
