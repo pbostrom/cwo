@@ -69,7 +69,10 @@
   (rmoption list-id handle))
 
 (defmethod wscmd :initusers
-  [_ [list-id handle]])
+  [_ [list-id handles]]
+  (.remove (jq (str list-id " > option")))
+  (doseq [h handles]
+    (.append (jq list-id) (crate/html [:option h]))))
 
 (defmethod wscmd :addsub-dep
   [_ handle]

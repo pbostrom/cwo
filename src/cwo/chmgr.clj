@@ -182,7 +182,7 @@
         (let [cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
                     #(lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
                     #(client-cmd subclch [:ts (ms-since @(:ts you))])
-                    #(client-cmd subclch [:initpeers (:peers @pub-cc)])]]
+                    #(client-cmd subclch [:initusers ["#peer-list" (:peers @pub-cc)]])]]
           (alter sub-cc update-in [:sidefx] into cmds)))
       [pub-cc sub-cc])))
 
