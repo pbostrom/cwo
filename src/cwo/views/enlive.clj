@@ -35,20 +35,8 @@
 (defn default-content []
   {:userbox (loginbox) :text (default-text)})
 
-(html/deftemplate signedin-layout (str pub "layout.html")
-  [user]
-  [:div#user-container] (html/content (logoutbox user))
-  [:div#widgets] (html/content (status) (transfer-text)))
- 
-(html/deftemplate signedout-layout (str pub "layout.html")
-  []
-  [:div#user-container] (html/content (loginbox))
-  [:div#widgets] (html/content (status) (transfer-text)))
-
-(defn layout-old [user]
-  (signedout-layout))
-
 (html/deftemplate layout (str pub "layout.html")
   [user]
   [:div#user-container] (html/content (if (:handle user) (logoutbox user) (loginbox)))
-  [:div#widgets] (html/content (status) (transfer-text)))
+  [:div#widgets] (html/content (transfer-text)))
+ 
