@@ -39,4 +39,3 @@
   [user]
   [:div#user-container] (html/content (if (:handle user) (logoutbox user) (loginbox)))
   [:div#widgets] (html/content (transfer-text)))
- 

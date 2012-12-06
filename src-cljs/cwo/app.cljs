@@ -32,13 +32,12 @@
 (-> (jq "#others-list")
   (.on "click" (fn [evt] 
                  (-> (jq "#others-list option:selected") (.removeAttr "selected"))
-                 (-> (jq (.-target evt)) (.attr "selected" "selected"))
-                 (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show")))))
+                 (-> (jq (.-target evt)) (.attr "selected" "selected")))))
 
 ; connect button
 (-> (jq "#join-btn") (.on "click" repl/join))
 ; disconnect button
-(-> (jq "#peers") (.on "click" "#discon" repl/disconnect))
+(-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
 
 ; transfer button
 (-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
@@ -60,18 +59,6 @@
 ; chat input listeners
 (-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
 
-; bootstrap UI widgets
-; main accordion menu
-(-> (jq ".accordion-body")
-  (.on "show" (fn [] (this-as ta 
-                              (let [icon (jq "i" (.parent (jq ta)))]
-                                (.removeClass icon "icon-chevron-right")
-                                (.addClass icon "icon-chevron-down")))))
-  (.on "hide" (fn [] (this-as ta 
-                              (let [icon (jq "i" (.parent (jq ta)))]
-                                (.removeClass icon "icon-chevron-down")
-                                (.addClass icon "icon-chevron-right"))))))
-
 ; repl tabs
 (-> (jq "#repl-tabs a")
   (.on "click" (fn [e]
@@ -82,13 +69,13 @@
 (.on (jq "#repl-tabs a[href=\"#peer\"]") "show" 
      (fn [] 
        (.append (jq "#widgets") (jq "#home-panel"))
-       (.after (jq "#peer-panel div.span3.empty") (jq "#others-box"))
+       (.after (jq "#peer-panel div.empty") (jq "#others-box"))
        (.prepend (jq "#panel-box") (jq "#peer-panel"))))
 
 (.on (jq "#repl-tabs a[href=\"#home\"]") "show" 
      (fn [] 
        (.append (jq "#widgets") (jq "#peer-panel"))
-       (.after (jq "#home-panel div.span3.empty") (jq "#others-box"))
+       (.after (jq "#home-panel div.empty") (jq "#others-box"))
        (.prepend (jq "#panel-box") (jq "#home-panel"))))
 
 ; $(document).ready function

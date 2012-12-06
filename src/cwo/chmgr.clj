@@ -244,6 +244,23 @@
                                   :transfer handle})))))
     [owner-cc trans-cc]))
 
+(defn- disconnect-new [app-state sesh-id handle]
+  (println "disconnect" handle)
+  (let [pub-cc (cc-from-handle app-state handle)
+        sub-cc (@app-state sesh-id)]
+    (dosync
+      (let [{pub-cl :cl-ch trans :transfer pub-repl :you} (ensure pub-cc)
+            {sub :sub sub-hdl :handle} (ensure sub-cc)]
+        (when (and sub-hdl (= sub-hdl trans))
+          (end-transfer app-state pub-sesh-id sub-hdl)
+          (client-cmd pub-cc [:reclaim :_])
+          (client-cmd (:hist pub-repl) [:chctrl handle]))   
+        )
+      )
+    )
+
+  )
+
 (defn- disconnect [app-state sesh-id handle]
   (println "disconnect" handle)
   (let [pub-sesh-id (user/get-session handle)

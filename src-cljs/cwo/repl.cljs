@@ -97,7 +97,7 @@
 
 (defn disconnect []
   (set-repl-mode :oth :sub)
-  (.append (jq "#widgets") (jq "#peer-status-box"))
+  (-> (jq "#peer-status") (.css "visibility" "hidden"))
   (.html (jq "#oth-chat-box > pre") nil)
   (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
                  (srv-cmd :disconnect handle))))
