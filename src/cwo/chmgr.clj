@@ -163,7 +163,7 @@
           sub-vlv (lamina/channel)]
       (when (and pub-cc (:handle @pub-cc))
         (println sesh-id "subscribe to" pub-hdl)
-        (if-let [sub-hdl (:handle sub-cc)]
+        (if-let [sub-hdl (:handle @sub-cc)]
           (alter pub-cc 
                  (fn [cc]
                    (-> cc 
@@ -244,7 +244,7 @@
                                   :transfer handle})))))
     [owner-cc trans-cc]))
 
-(defn- disconnect-new [app-state sesh-id handle]
+(defn- disconnect [app-state sesh-id handle]
   (println "disconnect" handle)
   (let [pub-cc (cc-from-handle app-state handle)
         sub-cc (@app-state sesh-id)]
@@ -252,37 +252,36 @@
       (let [{pub-cl :cl-ch trans :transfer pub-repl :you} (ensure pub-cc)
             {sub :sub sub-hdl :handle} (ensure sub-cc)]
         (when (and sub-hdl (= sub-hdl trans))
-          (end-transfer app-state pub-sesh-id sub-hdl)
-          (client-cmd pub-cc [:reclaim :_])
-          (client-cmd (:hist pub-repl) [:chctrl handle]))   
-        )
-      )
-    )
-
-  )
-
-(defn- disconnect [app-state sesh-id handle]
-  (println "disconnect" handle)
-  (let [pub-sesh-id (user/get-session handle)
-        {{:keys [cl-ch transfer]} pub-sesh-id} @app-state ;publisher
-        {{sub :sub sub-user :user} sesh-id} @app-state ;subscriber
-        sub-hdl (:handle sub-user)] 
-    (when (and sub-hdl (= sub-hdl transfer))
-      (end-transfer pub-sesh-id sub-hdl)
-      (client-cmd (get-in @app-state [pub-sesh-id :cl-ch]) [:reclaim :_])
-      (client-cmd (:hist (get-in @app-state [pub-sesh-id :you])) [:chctrl handle]))
-    (lamina/close (:vlv sub))
-    (swap! app-state assoc-in [sesh-id :sub] nil)
-    (if sub-hdl
-      (do
-        (user/rm-peer! pub-sesh-id handle) 
-        (client-cmd cl-ch [:rmsub sub-hdl])) 
-      (do
-        (client-cmd cl-ch [:rmanonsub nil])
-        (user/rm-anon-peer! pub-sesh-id)))))
+          (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
+          (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
+                                                  #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
+        (alter sub-cc (fn [cc] (-> cc
+                                 (update-in [:sidefx] conj #(lamina/close (:vlv sub)))
+                                 (dissoc :sub))))
+        (if sub-hdl
+          (alter pub-cc (fn [cc] (-> cc
+                                   (update-in [:sidefx] conj #(client-cmd pub-cl [:rmuser ["#home-peer-list" sub-hdl]]))
+                                   (update-in [:peers] disj sub-hdl))))
+          (alter pub-cc (fn [cc] (-> cc
+                                   (update-in [:sidefx] conj #(client-cmd pub-cl [:rmanonsub nil]))
+                                   (update-in [:anon] dec))))))
+      [pub-cc sub-cc])))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim [app-state sesh-id handle]
+  (let [pub-cc (@app-state sesh-id)
+        sub-cc (cc-from-handle app-state handle)]
+    (dosync
+      (let [{pub-cl :cl-ch repl :you pub-hdl :handle} (ensure pub-cc)
+            pub-cmds [#(client-cmd pub-cl [:reclaim :_])
+                      #(client-cmd (:hist repl) [:chctrl pub-hdl])]]
+        (end-transfer sesh-id handle)
+        (alter pub-cc update-in [:sidefx] into pub-cmds)
+        (subscribe (@(:handles @app-state) handle) pub-hdl)))
+    [pub-cc sub-cc]))
+
+; reclaim control of sesh-id's REPL from specified handle
+(defn- reclaim-old [app-state sesh-id handle]
   (let [hdl-sesh-id (user/get-session handle)
         {owner-user :user cl :cl-ch repl :you} (@app-state sesh-id)
         owner-handle (:handle owner-user)]
