@@ -206,6 +206,7 @@
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn- transfer [app-state sesh-id handle]
+  (println app-state "+" handle)
   (let [owner-cc (@app-state sesh-id)
         trans-cc (cc-from-handle app-state handle)
         pv (lamina/channel)

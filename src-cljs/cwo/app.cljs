@@ -15,6 +15,7 @@
       (.SetPromptText (:you repl/repls) tmsg))))
 
 (defn msg-hdlr [msg]
+  (jslog msg)
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
@@ -34,14 +35,9 @@
                  (-> (jq "#others-list option:selected") (.removeAttr "selected"))
                  (-> (jq (.-target evt)) (.attr "selected" "selected")))))
 
-; connect button
 (-> (jq "#join-btn") (.on "click" repl/join))
-; disconnect button
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
-
-; transfer button
-(-> (jq "#sub-box") (.on "click" "#transfer" repl/transfer))
-; reclaim button
+(-> (jq "#transfer") (.on "click" repl/transfer))
 (-> (jq "#your-status") (.on "click" "#reclaim" repl/reclaim))
 
 ; login/out buttons 

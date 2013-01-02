@@ -70,12 +70,13 @@ body {
         <div class="span8" id="panel-box">
           <div id="home-panel">
             <div class="row-fluid">
-              <div class="span6">
+              <div class="span4">
                 <p>This is the home tab.</p>
               </div>
-              <div class="span1 empty">
+              <div class="span4 empty">
               </div>
-              <div id="others-box" class="list-box span3">
+              <div id="others-box" class="list-box span8">
+                <h3>Available Peer REPLs</h3>
                 <select id="others-list" multiple="multiple">
                 </select><button id="join-btn" class="btn">Join</button>
               </div>
@@ -84,7 +85,7 @@ body {
               <div id="home-peers" class="list-box span6">
                 <select id="home-peer-list" multiple="multiple">
                 </select>
-                <button id="transfer" class="btn btn-small">Transfer <i class="icon-share-alt"></i></button>
+                <button id="transfer" class="btn btn-small" disabled="disabled">Transfer <i class="icon-share-alt"></i></button>
               </div>
               <div class="span10 chatwin">
                 <pre></pre>
@@ -114,7 +115,7 @@ body {
             </tbody>
           </table>
         </div>
-        <div class="span1 empty">
+        <div class="span2 empty">
         </div>
       </div>
       <div id="peer-chat-box" class="chat row-fluid">

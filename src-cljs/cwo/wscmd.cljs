@@ -8,9 +8,20 @@
   (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
 
-(defn- rmoption [list-id opt-val]
-  (-> (qry-list list-id opt-val)
-    (.remove)))
+; update widget
+(defmulti update
+  (fn [id act] id))
+
+(defmethod update "#home-peer-list"
+  [id act]
+  (let [cnt (.size (jq (str id " > option")))
+        btn (jq "#transfer")]
+    (when (and (= cnt 1) (= act :add))
+      (.removeAttr btn "disabled"))
+    (when (and (= cnt 0) (= act :rm))
+      (.attr btn "disabled" "disabled"))))
+
+(defmethod update :default [id f])
 
 ; multimethod for dispatching cmds recv'd via websocket
 (defmulti wscmd 
@@ -29,61 +40,27 @@
         (repl/connect))
       (js/alert (str hdl " is not available")))))
 
-(defmethod wscmd :addhandle-dep
-  [_ arg]
-  (let [all-hdls (conj (select-set "#others-list") arg)]
-    (-> (jq "#others-list option") (.remove))
-    (dorun
-      (map #(-> (jq "#others-list")
-              (.append
-                (crate/html [:option %]))) all-hdls))))
-
-(defmethod wscmd :rmhandle-dep
-  [_ handle]
-  (rmoption "#others-list" handle))
-
-(defmethod wscmd :initpeers-dep
-  [_ handles]
-  (.remove (jq "#peer-list > option"))
-  (doseq [h handles]
-    (.append (jq "#peer-list") (crate/html [:option h]))))
-
-(defmethod wscmd :addpeer-dep ;TODO: abstract this for home-peer-list
-  [_ handle]
-  (let [all-hdls (conj (select-set "#sub-peer-list") handle)]
-    (-> (jq "#sub-peer-list option") (.remove))
-    (doseq [h all-hdls]
-      (-> (jq "#sub-peer-list") (.append (crate/html [:option h]))))))
-
 (defmethod wscmd :adduser
   [_ [list-id handle]]
   (if handle
     (let [all-hdls (conj (select-set list-id) handle)]
       (-> (jq (str list-id " option")) (.remove))
       (doseq [h all-hdls]
-        (-> (jq list-id) (.append (crate/html [:option h])))))
+        (-> (jq list-id) (.append (crate/html [:option h]))))
+      (update list-id :add))
     :anonymous-case))
 
 (defmethod wscmd :rmuser
   [_ [list-id handle]]
-  (rmoption list-id handle))
+  (-> (qry-list list-id handle)
+    (.remove))
+  (update list-id :rm))
 
 (defmethod wscmd :initusers
   [_ [list-id handles]]
   (.remove (jq (str list-id " > option")))
   (doseq [h handles]
     (.append (jq list-id) (crate/html [:option h]))))
-
-(defmethod wscmd :addsub-dep
-  [_ handle]
-  (rmoption "#sub-list" handle)
-  (-> (jq "#sub-list")
-    (.append
-      (crate/html [:option handle]))))
-
-(defmethod wscmd :rmsub-dep 
-  [_ handle]
-  (rmoption "#sub-list" handle))
 
 (defmethod wscmd :addanonsub ;TODO consider abstracting next 2 fns
   [_ _]

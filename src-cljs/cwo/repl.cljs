@@ -1,7 +1,5 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog sock srv-cmd]]
-            [crate.core :as crate]
-            [cwo.widgets :as widgets]))
+  (:require [cwo.utils :refer [jq jslog sock srv-cmd]]))
 
 (def publish-console? (atom {:you true :oth false}))
 
@@ -103,7 +101,7 @@
                  (srv-cmd :disconnect handle))))
 
 (defn transfer []
-  (let [handle (-> (jq "#sub-list option:selected") (.val))]
+  (let [handle (-> (jq "#home-peer-list option:selected") (.val))]
     ; convert console to subscribe mode
     (set-repl-mode :you :sub)
     ; configure transfer on server
