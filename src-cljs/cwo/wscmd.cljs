@@ -121,6 +121,10 @@
                (crate/html [:tr#chctrl [:td "Controlled by:"] [:td handle]]))))
   (.Write (repl-key repl/repls) (str "REPL transferred to " handle "\n") "jqconsole-info"))
 
+(defmethod wscmd :drop 
+  [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
+  (.Write (repl-key repl/repls) (str "REPL owner " handle " has disconnected\n" ) "jqconsole-info"))
+
 (defmethod wscmd :trepl 
   [_ cmd-vec]
   (apply wscmd (conj cmd-vec :repl-key :you)))

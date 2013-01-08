@@ -21,7 +21,7 @@
     (reset! debug-state app-state)
     {:ws (fn [webch handshake]
            (let [sesh-id (get-in handshake [:cookies "ring-session" :value])]
-             (chmgr/init-socket sesh-id app-state webch)))
+             (chmgr/init-socket app-state sesh-id webch)))
      :http (fn [request]
              (routes/app-routes (assoc request :app-state app-state)))}))
 

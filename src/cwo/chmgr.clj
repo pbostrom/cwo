@@ -75,15 +75,16 @@
       (contains? rt-set (keyword msg-obj)))))
 
 ;; RPC methods, declared private
-(defn- do-sidefx!
-  "Calls the fns stored in the side fx queue of the cc"
-  [cc]
-  (let [fs (dosync
-             (let [q (:sidefx @cc)]
-               (alter cc assoc :sidefx [])
-               q))]
-    (doseq [f fs]
-      (f))))
+
+(defn run-sidefx [cc-seq]
+"Iterate through seq of cc, empty and call sidefx queue"
+  (doseq [cc cc-seq]
+    (let [fs (dosync
+               (let [q (:sidefx @cc)]
+                 (alter cc assoc :sidefx [])
+                 q))]
+      (doseq [f fs]
+        (f)))))
 
 (defn- login [app-state sesh-id handle]
   (println "login!")
@@ -268,6 +269,23 @@
                                    (update-in [:anon] dec))))))
       [pub-cc sub-cc])))
 
+(defn- send-disconnect [app-state sesh-id handle]
+  (println "drop peer" handle)
+  (let [sub-cc (cc-from-handle app-state handle)
+        pub-cc (@app-state sesh-id)]
+    (dosync
+      (let [{pub-cl :cl-ch trans :transfer pub-repl :you pub-hdl :handle} (ensure pub-cc)
+            {sub :sub sub-hdl :handle} (ensure sub-cc)]
+        (when (and sub-hdl (= sub-hdl trans))
+          (end-transfer app-state (@(:handles @app-state) handle) sub-hdl))   
+        (alter sub-cc (fn [cc] (-> cc
+                                 (update-in [:sidefx] conj #(lamina/close (:vlv sub)))
+                                 (dissoc :sub))))
+        (alter pub-cc (fn [cc] (-> cc
+                                 (update-in [:sidefx] conj #(client-cmd (:hist pub-repl) [:drop handle]))
+                                 (update-in [:peers] disj sub-hdl)))))
+      [pub-cc sub-cc])))
+
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim [app-state sesh-id handle]
   (let [pub-cc (@app-state sesh-id)
@@ -280,6 +298,20 @@
         (alter pub-cc update-in [:sidefx] into pub-cmds)
         (subscribe (@(:handles @app-state) handle) pub-hdl)))
     [pub-cc sub-cc]))
+
+; disconnect any subscriptions, logout, etc
+(defn- tear-down [app-state sesh-id]
+  (-> 
+    (dosync
+      (let [cc (ensure (@app-state sesh-id))
+            sub-hdl (get-in cc [:sub :hdl])
+            cc-vec (atom [])]
+        (println cc)
+        (when sub-hdl 
+          (swap! cc-vec into (disconnect app-state sesh-id sub-hdl)))
+        cc-vec))
+    (run-sidefx))
+  (client-cmd (:hist) [:discon (:handle @cc)]))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim-old [app-state sesh-id handle]
@@ -358,8 +390,7 @@
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [app-state sesh-id cmd-str]
   (let [[cmd arg] (safe-read-str cmd-str)]
-    (doseq [cc (execute cmd app-state sesh-id arg)]
-      (do-sidefx! cc))))
+    (run-sidefx ((cmd fn-map) app-state sesh-id arg))))
 
 ; create a send/receive channel pair, swap map structure
 (defn init-cc! [app-state sesh-id]
@@ -378,11 +409,14 @@
     (swap! app-state assoc sesh-id newcc)
     newcc))
 
-(defn init-socket [sesh-id app-state sock]
+(defn init-socket [app-state sesh-id sock]
   (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))]
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
-    (lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
+    ;(lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
+    (lamina/on-closed sock (fn [] 
+                             (println "closing!")
+                             (tear-down app-state sesh-id)))
     ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
     (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))
