@@ -300,18 +300,18 @@
     [pub-cc sub-cc]))
 
 ; disconnect any subscriptions, logout, etc
-(defn- tear-down [app-state sesh-id]
+(defn- drop-off [app-state sesh-id]
   (-> 
     (dosync
-      (let [cc (ensure (@app-state sesh-id))
-            sub-hdl (get-in cc [:sub :hdl])
-            cc-vec (atom [])]
-        (println cc)
-        (when sub-hdl 
+      (let [cc (@app-state sesh-id)
+            {:keys [sub you]} (ensure cc)
+            cc-vec (atom [cc])
+            sub-hdl (:hdl sub)]
+        (when sub-hdl
           (swap! cc-vec into (disconnect app-state sesh-id sub-hdl)))
-        cc-vec))
-    (run-sidefx))
-  (client-cmd (:hist) [:discon (:handle @cc)]))
+        (alter cc update-in [:sidefx] conj #(client-cmd (:hist you) [:drop-off (:handle @cc)]))
+        @cc-vec))
+    run-sidefx))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim-old [app-state sesh-id handle]
@@ -416,7 +416,7 @@
     ;(lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
     (lamina/on-closed sock (fn [] 
                              (println "closing!")
-                             (tear-down app-state sesh-id)))
+                             (drop-off app-state sesh-id)))
     ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
     (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))
