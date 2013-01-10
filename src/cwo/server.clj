@@ -13,8 +13,6 @@
 
 (def debug-state (atom nil))
 
-(defn debug-reset [] (reset! @debug-state {:handles (ref {})}))
-
 (defn gen-handlers []
   "Returns a websocket handler with a session store atom."
   (let [app-state (atom {:handles (ref {})})] 

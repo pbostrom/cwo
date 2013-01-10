@@ -251,40 +251,26 @@
   (let [pub-cc (cc-from-handle app-state handle)
         sub-cc (@app-state sesh-id)]
     (dosync
-      (let [{pub-cl :cl-ch trans :transfer pub-repl :you} (ensure pub-cc)
-            {sub :sub sub-hdl :handle} (ensure sub-cc)]
-        (when (and sub-hdl (= sub-hdl trans))
-          (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
-          (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
-                                                  #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
+      (let [{pub-cl :cl-ch trans :transfer pub-repl :you} (and pub-cc (ensure pub-cc))
+            {sub :sub sub-hdl :handle} (ensure sub-cc)
+            cc-vec (atom [sub-cc])]
+        (when pub-cl
+          (when (and sub-hdl (= sub-hdl trans))
+            (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
+            (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
+                                                    #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
+          (if sub-hdl
+            (alter pub-cc (fn [cc] (-> cc
+                                     (update-in [:sidefx] conj #(client-cmd pub-cl [:rmuser ["#home-peer-list" sub-hdl]]))
+                                     (update-in [:peers] disj sub-hdl))))
+            (alter pub-cc (fn [cc] (-> cc
+                                     (update-in [:sidefx] conj #(client-cmd pub-cl [:rmanonsub nil]))
+                                     (update-in [:anon] dec)))))
+          (swap! cc-vec conj pub-cc)) 
         (alter sub-cc (fn [cc] (-> cc
                                  (update-in [:sidefx] conj #(lamina/close (:vlv sub)))
                                  (dissoc :sub))))
-        (if sub-hdl
-          (alter pub-cc (fn [cc] (-> cc
-                                   (update-in [:sidefx] conj #(client-cmd pub-cl [:rmuser ["#home-peer-list" sub-hdl]]))
-                                   (update-in [:peers] disj sub-hdl))))
-          (alter pub-cc (fn [cc] (-> cc
-                                   (update-in [:sidefx] conj #(client-cmd pub-cl [:rmanonsub nil]))
-                                   (update-in [:anon] dec))))))
-      [pub-cc sub-cc])))
-
-(defn- send-disconnect [app-state sesh-id handle]
-  (println "drop peer" handle)
-  (let [sub-cc (cc-from-handle app-state handle)
-        pub-cc (@app-state sesh-id)]
-    (dosync
-      (let [{pub-cl :cl-ch trans :transfer pub-repl :you pub-hdl :handle} (ensure pub-cc)
-            {sub :sub sub-hdl :handle} (ensure sub-cc)]
-        (when (and sub-hdl (= sub-hdl trans))
-          (end-transfer app-state (@(:handles @app-state) handle) sub-hdl))   
-        (alter sub-cc (fn [cc] (-> cc
-                                 (update-in [:sidefx] conj #(lamina/close (:vlv sub)))
-                                 (dissoc :sub))))
-        (alter pub-cc (fn [cc] (-> cc
-                                 (update-in [:sidefx] conj #(client-cmd (:hist pub-repl) [:drop handle]))
-                                 (update-in [:peers] disj sub-hdl)))))
-      [pub-cc sub-cc])))
+        @cc-vec))))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim [app-state sesh-id handle]
@@ -301,17 +287,24 @@
 
 ; disconnect any subscriptions, logout, etc
 (defn- drop-off [app-state sesh-id]
-  (-> 
-    (dosync
-      (let [cc (@app-state sesh-id)
-            {:keys [sub you]} (ensure cc)
-            cc-vec (atom [cc])
-            sub-hdl (:hdl sub)]
-        (when sub-hdl
-          (swap! cc-vec into (disconnect app-state sesh-id sub-hdl)))
-        (alter cc update-in [:sidefx] conj #(client-cmd (:hist you) [:drop-off (:handle @cc)]))
-        @cc-vec))
-    run-sidefx))
+  (println "drop-off")
+  (let [app-snapshot (atom @app-state)]
+    (swap! app-state dissoc sesh-id)
+    (-> 
+      (dosync
+        (let [cc (@app-snapshot sesh-id)
+              {:keys [sub you srv-ch handle]} (ensure cc)
+              cc-vec (atom [cc])
+              sub-hdl (:hdl sub)]
+          (when sub-hdl
+            (swap! cc-vec into (disconnect app-snapshot sesh-id sub-hdl)))
+          (when handle 
+            (alter cc update-in [:sidefx] into 
+                   [#(client-cmd srv-ch [:drop-off handle])
+                    #(client-cmd handle-ch [:rmuser ["#others-list" handle]])]))
+          (alter (:handles @app-state) dissoc handle)
+          @cc-vec))
+      run-sidefx)))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim-old [app-state sesh-id handle]

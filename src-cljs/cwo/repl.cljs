@@ -94,11 +94,12 @@
     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
-;  (set-repl-mode :oth :sub)
+  ;  (set-repl-mode :oth :sub)
+  (jslog "disconnect")
   (-> (jq "#peer-status") (.css "visibility" "hidden"))
   (.html (jq "#oth-chat-box > pre") nil)
-  (this-as btn (let [handle (-> (jq btn) (.attr "handle"))]
-                 (srv-cmd :disconnect handle))))
+  (let [handle (-> (jq "#discon") (.attr "handle"))]
+    (srv-cmd :disconnect handle)))
 
 (defn transfer []
   (let [handle (-> (jq "#home-peer-list option:selected") (.val))]
