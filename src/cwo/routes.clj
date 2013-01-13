@@ -52,7 +52,7 @@
             :headers {}
             ; stick dummy value into session so ring generates session key
             :session {"foo" {:value "bar"}}
-            :body (enlive/layout {:handle handle})})))
+            :body (enlive/layout {:handle nil})})))
   (GET "/ghauth" []
        (let [sesh-id nil]
          (user/set-user! sesh-id {:status "gh"}))

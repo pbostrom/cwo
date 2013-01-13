@@ -53,7 +53,7 @@
              (.val (jq ta) ""))))
 
 ; chat input listeners
-(-> (jq ".tab-pane > .row") (.on "keydown" ".chat > input" chat-hdlr))
+(-> (jq ".chatwin > input") (.on "keydown" chat-hdlr))
 
 ; repl tabs
 (-> (jq "#repl-tabs a")
@@ -65,13 +65,13 @@
 (.on (jq "#repl-tabs a[href=\"#peer\"]") "show" 
      (fn [] 
        (.append (jq "#widgets") (jq "#home-panel"))
-       (.after (jq "#peer-panel div.empty") (jq "#others-box"))
+       (.after (jq "#peer-panel div.spacer") (jq "#others-box"))
        (.prepend (jq "#panel-box") (jq "#peer-panel"))))
 
 (.on (jq "#repl-tabs a[href=\"#home\"]") "show" 
      (fn [] 
        (.append (jq "#widgets") (jq "#peer-panel"))
-       (.after (jq "#home-panel div.empty") (jq "#others-box"))
+       (.after (jq "#home-panel div.spacer") (jq "#others-box"))
        (.prepend (jq "#panel-box") (jq "#home-panel"))))
 
 ; $(document).ready function

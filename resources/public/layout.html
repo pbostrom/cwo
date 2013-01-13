@@ -70,26 +70,35 @@ body {
         <div class="span8" id="panel-box">
           <div id="home-panel">
             <div class="row-fluid">
-              <div class="span4">
-                <p>This is the home tab.</p>
-              </div>
-              <div class="span4 empty">
+              <div class="span8 spacer empty">
               </div>
               <div id="others-box" class="list-box span8">
                 <h3>Available Peer REPLs</h3>
-                <select id="others-list" multiple="multiple">
-                </select><button id="join-btn" class="btn">Join</button>
+                <select id="others-list" multiple="multiple"></select>
+                <div id="btn-w-txt">
+                  <button id="join-btn" class="btn">Connect</button>
+                  <p style="display:inline;">Select a REPL from the list</p>
+                </div>
               </div>
             </div>
-            <div id="you-chat-box" class="chat row-fluid">
+            <div id="you-chat-box" class="chat">
+              <div class="row-fluid chat-hdr">
+                <div class="span6 empty"></div>
+                <div class="span10">
+                  <h5>Home REPL chat box</h5>
+                </div>
+              </div>
+              <div class="row-fluid">
               <div id="home-peers" class="list-box span6">
                 <select id="home-peer-list" multiple="multiple">
                 </select>
                 <button id="transfer" class="btn btn-small" disabled="disabled">Transfer <i class="icon-share-alt"></i></button>
+                <p>Use the "Transfer" button to assign control of your REPL to another user</p>
               </div>
               <div class="span10 chatwin">
                 <pre></pre>
                 <input id="you-chat" type="text" placeholder="chat"></input>
+              </div>
               </div>
             </div>
           </div>
@@ -115,17 +124,25 @@ body {
             </tbody>
           </table>
         </div>
-        <div class="span2 empty">
+        <div class="span2 spacer empty">
         </div>
       </div>
-      <div id="peer-chat-box" class="chat row-fluid">
+      <div id="peer-chat-box" class="chat">
+        <div class="row-fluid chat-hdr">
+          <div class="span6 empty"></div>
+          <div class="span10">
+            <h5>Peer REPL chat box</h5>
+          </div>
+        </div>
+        <div class="row-fluid">
         <div id="peers" class="list-box span6">
           <select id="peer-list" multiple="multiple">
           </select>
         </div>
         <div class="span10 chatwin">
           <pre></pre>
-          <input id="you-chat" type="text" placeholder="chat"></input>
+          <input id="oth-chat" type="text" placeholder="chat"></input>
+        </div>
         </div>
       </div>
     </div>

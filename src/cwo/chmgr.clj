@@ -332,20 +332,24 @@
     nil))
 
 (defn- chat [app-state sesh-id [chat-id txt]]
-  (let [{:keys [srv-ch cl-ch sub handle]} (@app-state sesh-id) 
+  (println chat-id "-" txt)
+  (let [{:keys [srv-ch cl-ch sub handle]} @(@app-state sesh-id) 
         chat-hdlr {:you-chat 
                    (fn [t]
+                     (println "youchat")
                      (client-cmd srv-ch [:othchat [handle txt]])
                      (client-cmd cl-ch [:youchat [handle txt]]))
                    :oth-chat 
                    (fn [t]
-                     (let [{:keys [srv-ch cl-ch transfer]} (cc-from-handle (:hdl sub))]
+                     (println "othchat")
+                     (let [{:keys [srv-ch cl-ch transfer]} @(cc-from-handle app-state (:hdl sub))]
                        (client-cmd srv-ch [:othchat [handle txt]])
                        (client-cmd cl-ch [:youchat [handle txt]])
                        (when transfer
-                         (client-cmd (:cl-ch (cc-from-handle transfer)) 
+                         (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
                                      [:othchat [handle txt]]))))}]
-    (((keyword chat-id) chat-hdlr) txt)))
+    (((keyword chat-id) chat-hdlr) txt)
+    nil))
 
 (def fn-map {:login login
              :logout logout
@@ -354,6 +358,7 @@
              :transfer transfer
              :disconnect disconnect
              :reclaim reclaim
+             :chat chat
              :eval-clj eval-clj})
 
 (defn execute [cmd app-state sesh-id arg]

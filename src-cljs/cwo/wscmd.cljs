@@ -140,13 +140,13 @@
 
 (defmethod wscmd :othchat 
   [_ [handle txt]]
-  (let [chat (jq "#oth-chat-box > pre")]
+  (let [chat (jq "#peer-chat-box pre")]
     (.append chat (str handle ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 
 (defmethod wscmd :youchat 
   [_ [handle txt]]
-  (let [chat (jq "#you-chat-box > pre")]
+  (let [chat (jq "#you-chat-box pre")]
     (.append chat (str handle ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 

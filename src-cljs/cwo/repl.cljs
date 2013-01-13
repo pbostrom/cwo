@@ -4,8 +4,8 @@
 (def publish-console? (atom {:you true :oth false}))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "" "=> " " "))
-   :you (-> (jq "#your-repl") (.jqconsole "Your Clojure REPL\n" "=> " " "))})
+  {:oth (-> (jq "#others-repl") (.jqconsole "Peer REPL sessions are displayed in the console below.\n" "=> " " "))
+   :you (-> (jq "#your-repl") (.jqconsole "Enter your Clojure code at the prompt.\n" "=> " " "))})
 
 (defn send-prompt [console-kw]
   (let [repl (repls console-kw)

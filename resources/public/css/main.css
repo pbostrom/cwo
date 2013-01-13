@@ -16,8 +16,15 @@ html, body {
 .userbox .btn {
   margin-left: -5px; }
 
+/*
 .list-box .btn {
-  display: block; }
+  display: block;
+}*/
+.chat-hdr > [class*="span"] {
+  min-height: 1px; }
+
+.chat-hdr {
+  margin-top: -8px; }
 
 #user-container span {
   margin-left: 10px;
@@ -57,11 +64,13 @@ img.icon {
   padding: 10px;
   margin-bottom: 0px;
   margin-right: 10px;
-  margin-top: 68px;
+  margin-top: 59px;
   background-color: #eee8d5; }
 
 .chat pre {
   height: 310px;
+  width: 100%;
+  padding: 0 4px 2px;
   border: 1px solid #CCC;
   border: 1px solid rgba(0, 0, 0, 0.15);
   background-color: #fdf6e3;
