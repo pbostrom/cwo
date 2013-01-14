@@ -256,8 +256,7 @@
             cc-vec (atom [sub-cc])]
         (when pub-cl
           (when (and sub-hdl (= sub-hdl trans))
-            (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
-            (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
+            ([
                                                     #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
           (if sub-hdl
             (alter pub-cc (fn [cc] (-> cc
@@ -280,9 +279,9 @@
       (let [{pub-cl :cl-ch repl :you pub-hdl :handle} (ensure pub-cc)
             pub-cmds [#(client-cmd pub-cl [:reclaim :_])
                       #(client-cmd (:hist repl) [:chctrl pub-hdl])]]
-        (end-transfer sesh-id handle)
+        (end-transfer app-state sesh-id handle)
         (alter pub-cc update-in [:sidefx] into pub-cmds)
-        (subscribe (@(:handles @app-state) handle) pub-hdl)))
+        (subscribe app-state (@(:handles @app-state) handle) pub-hdl)))
     [pub-cc sub-cc]))
 
 ; disconnect any subscriptions, logout, etc
@@ -305,16 +304,6 @@
           (alter (:handles @app-state) dissoc handle)
           @cc-vec))
       run-sidefx)))
-
-; reclaim control of sesh-id's REPL from specified handle
-(defn- reclaim-old [app-state sesh-id handle]
-  (let [hdl-sesh-id (user/get-session handle)
-        {owner-user :user cl :cl-ch repl :you} (@app-state sesh-id)
-        owner-handle (:handle owner-user)]
-    (end-transfer sesh-id handle)
-    (client-cmd cl [:reclaim :_]) 
-    (client-cmd (:hist repl) [:chctrl owner-handle])
-    (subscribe hdl-sesh-id owner-handle)))
 
 (defn- eval-clj [app-state sesh-id [expr sb-key]]
   (println "eval-clj!")

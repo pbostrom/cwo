@@ -44,7 +44,7 @@
 (-> (jq "#join-btn") (.on "click" repl/join))
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
 (-> (jq "#transfer") (.on "click" repl/transfer))
-(-> (jq "#your-status") (.on "click" "#reclaim" repl/reclaim))
+(-> (jq "#reclaim") (.on "click" repl/reclaim))
 
 ; login/out buttons 
 (-> (jq "#user-container")
