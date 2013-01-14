@@ -198,11 +198,11 @@
         (alter trans-cc #(-> %
                            (update-in [:sidefx] into ocmds)
                            (into {:tsub-vlv nil
-                                  :pt-vlv nil
-                                  :transfer nil})))
+                                  :pt-vlv nil})))
         (alter owner-cc #(-> %
                            (update-in [:sidefx] conj tcmd)
-                           (into {:oth nil})))))
+                           (into {:oth nil
+                                  :transfer nil})))))
     [owner-cc trans-cc]))
 
 ; transfer control of sesh-id's REPL to specified handle
@@ -219,7 +219,8 @@
                      (str "[:trepl " msg "]"))
         route-prompt (fn [msg]
                        (let [{prompt-txt :p} (safe-read-str msg)]
-                         (pr-str {:t prompt-txt})))]
+                         (pr-str {:t prompt-txt})))
+        cc-vec (atom [owner-cc trans-cc])]
     (dosync
       (let [{tr-cl :cl-ch tr-srv :srv-ch sub :sub} (ensure trans-cc)
             {old-cl :cl-ch old-srv :srv-ch target-repl :you owner-hdl :handle 
@@ -235,7 +236,7 @@
                    #(lamina/close (:vlv sub))]]
         (when trans
           (end-transfer app-state sesh-id trans)
-          (subscribe app-state (@(:handles app-state) trans) owner-hdl))
+          (swap! cc-vec into (subscribe app-state (@(:handles @app-state) trans) owner-hdl)))
         (alter trans-cc #(-> %
                            (update-in [:sidefx] into tcmds)
                            (into {:oth target-repl})))
@@ -244,7 +245,7 @@
                            (into {:tsub-vlv tv
                                   :pt-vlv pv
                                   :transfer handle})))))
-    [owner-cc trans-cc]))
+    @cc-vec))
 
 (defn- disconnect [app-state sesh-id handle]
   (println "disconnect" handle)
@@ -256,7 +257,8 @@
             cc-vec (atom [sub-cc])]
         (when pub-cl
           (when (and sub-hdl (= sub-hdl trans))
-            ([
+            (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
+            (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
                                                     #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
           (if sub-hdl
             (alter pub-cc (fn [cc] (-> cc
@@ -269,7 +271,7 @@
         (alter sub-cc (fn [cc] (-> cc
                                  (update-in [:sidefx] conj #(lamina/close (:vlv sub)))
                                  (dissoc :sub))))
-        @cc-vec))))
+        (reverse @cc-vec)))))
 
 ; reclaim control of sesh-id's REPL from specified handle
 (defn- reclaim [app-state sesh-id handle]

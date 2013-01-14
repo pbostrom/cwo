@@ -114,7 +114,7 @@
 
 (defmethod wscmd :chctrl 
   [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
-  (when (= repl-key :you)
+  (when (and (= repl-key :you) (not= handle (.text (jq "#handle"))))
     (.text (jq "#tr-hdl") handle)
     (.attr (jq "#reclaim") "handle" handle)
     (.append (jq "#home-peers") (jq "#tr-box")))
