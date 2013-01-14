@@ -106,10 +106,7 @@
     ; convert console to subscribe mode
     (set-repl-mode :you :sub)
     ; configure transfer on server
-    (srv-cmd :transfer handle)
-    (.text (jq "#tr-hdl") handle)
-    (.attr (jq "#reclaim") "handle" handle)
-    (.append (jq "#your-status") (jq "#tr-box"))))
+    (srv-cmd :transfer handle)))
 
 (defn reclaim []
   (this-as btn 

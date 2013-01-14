@@ -114,11 +114,10 @@
 
 (defmethod wscmd :chctrl 
   [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
-  (if (= repl-key :oth)
-    (do 
-      (.remove (jq "#chctrl"))
-      (.append (jq "#status-box tbody")
-               (crate/html [:tr#chctrl [:td "Controlled by:"] [:td handle]]))))
+  (when (= repl-key :you)
+    (.text (jq "#tr-hdl") handle)
+    (.attr (jq "#reclaim") "handle" handle)
+    (.append (jq "#home-peers") (jq "#tr-box")))
   (.Write (repl-key repl/repls) (str "REPL transferred to " handle "\n") "jqconsole-info"))
 
 (defmethod wscmd :drop-off 

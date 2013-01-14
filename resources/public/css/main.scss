@@ -46,6 +46,10 @@ html, body {
   display: block;
 }*/
 
+#tr-box {
+  margin-top: 28px;
+}
+
 .chat-hdr > [class*="span"] {
   min-height: 1px;
 }
@@ -99,7 +103,7 @@ img.icon {
   padding: 10px;
   margin-bottom: 0px;
   margin-right: 10px;
-  margin-top: 59px;
+  margin-top: 74px;
   background-color: $base2;
 }
 

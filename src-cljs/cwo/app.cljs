@@ -30,10 +30,16 @@
 ; ui listeners
 
 ; prevent muli-selects
+(quote (-> (jq "#others-list")
+  (.on "click" (fn [evt]
+                 (-> (jq "#others-list > option:selected") (.removeAttr "selected"))
+                 (-> (jq (.-target evt)) (.attr "selected" "selected"))))))
+
 (-> (jq "#others-list")
-  (.on "click" (fn [evt] 
-                 (-> (jq "#others-list option:selected") (.removeAttr "selected"))
-                 (-> (jq (.-target evt)) (.attr "selected" "selected")))))
+  (.on "change" (fn [evt]
+                 (if (= 1 (.-length (jq "#others-list > option:selected")))
+                   (-> (jq "#join-btn") (.removeAttr "disabled"))
+                   (-> (jq "#join-btn") (.attr "disabled" "disabled"))))))
 
 (-> (jq "#join-btn") (.on "click" repl/join))
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
