@@ -170,7 +170,8 @@
                    (-> cc 
                      (update-in [:sidefx] 
                                 conj 
-                                #(client-cmd cl-ch [:adduser ["#home-peer-list" sub-hdl]]))
+                                #(client-cmd cl-ch [:adduser ["#home-peer-list" sub-hdl]])
+                                #(client-cmd srv-ch [:adduser ["#peer-list" sub-hdl]]))
                      (update-in [:peers] conj sub-hdl))))
           (alter pub-cc 
                  (fn [cc]
@@ -324,12 +325,15 @@
 
 (defn- chat [app-state sesh-id [chat-id txt]]
   (println chat-id "-" txt)
-  (let [{:keys [srv-ch cl-ch sub handle]} @(@app-state sesh-id) 
+  (let [{:keys [srv-ch cl-ch sub handle transfer]} @(@app-state sesh-id) 
         chat-hdlr {:you-chat 
                    (fn [t]
                      (println "youchat")
                      (client-cmd srv-ch [:othchat [handle txt]])
-                     (client-cmd cl-ch [:youchat [handle txt]]))
+                     (client-cmd cl-ch [:youchat [handle txt]])
+                     (when transfer
+                       (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
+                                   [:othchat [handle txt]])))
                    :oth-chat 
                    (fn [t]
                      (println "othchat")
