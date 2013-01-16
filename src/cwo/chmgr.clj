@@ -104,9 +104,10 @@
               (dosync
                 (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
-                        cmds [#(client-cmd cl-ch [:rmanonsub nil])
+                        cmds [#(client-cmd cl-ch [:rmanon "#home-peer-list"])
+                              #(client-cmd srv-ch [:rmanon "#peer-list"])
                               #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
-                              #(client-cmd srv-ch [:adduser ["#sub-peer-list" handle]])]]
+                              #(client-cmd srv-ch [:adduser ["#peer-list" handle]])]]
                     (alter pub-cc 
                            (fn [cc]
                              (-> cc 
@@ -139,9 +140,10 @@
               (dosync
                 (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
                   (let [{:keys [cl-ch srv-ch]} @pub-cc
-                        cmds [#(client-cmd cl-ch [:addanonsub nil])
+                        cmds [#(client-cmd cl-ch [:addanon "#home-peer-list"])
+                              #(client-cmd srv-ch [:addanon "#peer-list"])
                               #(client-cmd cl-ch [:rmuser ["#home-peer-list" handle]])
-                              #(client-cmd srv-ch [:rmuser ["#sub-peer-list" handle]])]]
+                              #(client-cmd srv-ch [:rmuser ["#peer-list" handle]])]]
                     (alter pub-cc 
                            (fn [cc]
                              (-> cc 
@@ -176,7 +178,8 @@
           (alter pub-cc 
                  (fn [cc]
                    (-> cc 
-                     (update-in [:sidefx] conj #(client-cmd cl-ch [:addanonsub]))
+                     (update-in [:sidefx] conj #(client-cmd cl-ch [:addanon "#home-peer-list"]))
+                     (update-in [:sidefx] conj #(client-cmd srv-ch [:addanon "#peer-list"]))
                      (update-in [:anon] inc)))))
         (when old-sub 
           (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
@@ -253,20 +256,22 @@
   (let [pub-cc (cc-from-handle app-state handle)
         sub-cc (@app-state sesh-id)]
     (dosync
-      (let [{pub-cl :cl-ch trans :transfer pub-repl :you} (and pub-cc (ensure pub-cc))
+      (let [{cl-ch :cl-ch srv-ch :srv-ch trans :transfer pub-repl :you} (and pub-cc (ensure pub-cc))
             {sub :sub sub-hdl :handle} (ensure sub-cc)
             cc-vec (atom [sub-cc])]
-        (when pub-cl
+        (when cl-ch
           (when (and sub-hdl (= sub-hdl trans))
             (end-transfer app-state (@(:handles @app-state) handle) sub-hdl)
-            (alter pub-cc update-in [:sidefx] into [#(client-cmd pub-cl [:reclaim :_])
+            (alter pub-cc update-in [:sidefx] into [#(client-cmd cl-ch [:reclaim :_])
                                                     #(client-cmd (:hist pub-repl) [:chctrl handle])]))   
           (if sub-hdl
             (alter pub-cc (fn [cc] (-> cc
-                                     (update-in [:sidefx] conj #(client-cmd pub-cl [:rmuser ["#home-peer-list" sub-hdl]]))
+                                     (update-in [:sidefx] conj #(client-cmd cl-ch [:rmuser ["#home-peer-list" sub-hdl]]))
+                                     (update-in [:sidefx] conj #(client-cmd srv-ch [:rmuser ["#peer-list" sub-hdl]]))
                                      (update-in [:peers] disj sub-hdl))))
             (alter pub-cc (fn [cc] (-> cc
-                                     (update-in [:sidefx] conj #(client-cmd pub-cl [:rmanonsub nil]))
+                                     (update-in [:sidefx] conj #(client-cmd cl-ch [:rmanon "#home-peer-list"]))
+                                     (update-in [:sidefx] conj #(client-cmd srv-ch [:rmanon "#peer-list"]))
                                      (update-in [:anon] dec)))))
           (swap! cc-vec conj pub-cc)) 
         (alter sub-cc (fn [cc] (-> cc

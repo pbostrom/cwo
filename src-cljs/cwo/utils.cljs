@@ -20,9 +20,9 @@
 
 (defn select-set
   "Returns sorted set of all handles in the select list"
-  [sel-list]
+  [list-opts]
   (into (sorted-set) (for [o (js->clj 
-                               (.makeArray jq (jq (str sel-list " option"))))]
+                               (.makeArray jq list-opts))]
                        (.-value o))))
 
 (defn clj->js

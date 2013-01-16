@@ -43,8 +43,9 @@
 (defmethod wscmd :adduser
   [_ [list-id handle]]
   (if handle
-    (let [all-hdls (conj (select-set list-id) handle)]
-      (-> (jq (str list-id " option")) (.remove))
+    (let [list-opts (-> (jq (str list-id " option")) (.not "[class='anon']"))
+          all-hdls (conj (select-set list-opts) handle)]
+      (.remove list-opts)
       (doseq [h all-hdls]
         (-> (jq list-id) (.append (crate/html [:option h]))))
       (update list-id :add))
@@ -62,22 +63,22 @@
   (doseq [h handles]
     (.append (jq list-id) (crate/html [:option h]))))
 
-(defmethod wscmd :addanonsub ;TODO consider abstracting next 2 fns
-  [_ _]
-  (if-let [anon-val (.val (jq "#anonsub"))]
+(defmethod wscmd :addanon ;TODO consider abstracting next 2 fns
+  [_ id]
+  (if-let [anon-val (.val (jq (str id " > .anon")))]
     (let [cnt (inc (reader/read-string (let [[n] (.split anon-val " ")] n)))]
-      (.text (jq "#anonsub") (str cnt " anonymous")))
-    (-> (jq "#home-peer-list")
+      (.text (jq (str id " > .anon")) (str cnt " anonymous")))
+    (-> (jq id)
       (.append
-        (crate/html [:option#anonsub (str 1 " anonymous")])))))
+        (crate/html [:option.anon (str 1 " anonymous")])))))
 
-(defmethod wscmd :rmanonsub
-  [_ _]
-  (when-let [anon-val (.val (jq "#anonsub"))]
+(defmethod wscmd :rmanon
+  [_ id]
+  (when-let [anon-val (.val (jq (str id " > .anon")))]
     (let [cnt (dec (reader/read-string (let [[n] (.split anon-val " ")] n)))]
       (if (> cnt 0)
-        (.text (jq "#anonsub") (str cnt " anonymous")) 
-        (.remove (jq "#anonsub"))))))
+        (.text (jq (str id " > .anon")) (str cnt " anonymous")) 
+        (.remove (jq (str id " > .anon")))))))
 
 (defmethod wscmd :rehtml 
   [_ [id html]]
