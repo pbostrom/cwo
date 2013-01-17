@@ -34,7 +34,7 @@
 
 ; Add aleph handler and start server
 (defn -main []
-  (let [port 8080]
+  (let [port 80]
     (aleph/start-http-server 
       (aleph/wrap-ring-handler master-handler) {:port port :websocket true})
     (println "server started on port" port)))
