@@ -158,6 +158,7 @@
           [cc])))))
 
 (defn- subscribe [app-state sesh-id pub-hdl]
+  (println "**" @app-state "**")
   (dosync
     (let [pub-cc (cc-from-handle app-state pub-hdl)
           sub-cc (@app-state sesh-id)
@@ -184,10 +185,11 @@
         (when old-sub 
           (alter sub-cc update-in [:sidefx] conj #(lamina/close (:vlv old-sub))))
         (alter sub-cc assoc :sub {:vlv sub-vlv :hdl pub-hdl})
-        (let [cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
+        (let [{:keys [anon peers]} @pub-cc
+              cmds [#(lamina/siphon (lamina/fork (:hist you)) sub-vlv subclch)
                     #(lamina/siphon (lamina/filter* (comp not cmd?) srv-ch) sub-vlv subclch)
                     #(client-cmd subclch [:ts (ms-since @(:ts you))])
-                    #(client-cmd subclch [:initusers ["#peer-list" (:peers @pub-cc)]])]]
+                    #(client-cmd subclch [:initusers ["#peer-list" peers anon]])]]
           (alter sub-cc update-in [:sidefx] into cmds)))
       [pub-cc sub-cc])))
 

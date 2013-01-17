@@ -7,6 +7,9 @@
 
 (def flag (atom true))
 
+(defn somf [x] 
+  (if flag x :y))
+
 (def b (channel))
 (def perm (channel* :grounded? true :permanent? true))
 (siphon perm b)

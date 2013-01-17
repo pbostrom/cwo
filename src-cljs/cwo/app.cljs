@@ -4,9 +4,6 @@
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
 
-; open websocket
-(reset! sock (js/WebSocket. ws-url))
-
 (defn route [msg-obj]
   (let [{pmsg :p tmsg :t} msg-obj]
     (when pmsg
@@ -20,13 +17,13 @@
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
 
-(set! (.-onmessage @sock) msg-hdlr)
-
-; init repls
-(set! (.-onopen @sock) (fn []
-                          (repl/set-repl-mode :you :active) 
-                          (repl/set-repl-mode :oth :sub))) 
-
+; open websocket and set handlers
+(defn open-websocket []
+  (reset! sock (js/WebSocket. ws-url))
+  (set! (.-onmessage @sock) msg-hdlr)
+  (set! (.-onopen @sock) (fn []
+                           (repl/set-repl-mode :you :active) 
+                           (repl/set-repl-mode :oth :sub))))
 ; ui listeners
 
 ; prevent muli-selects
@@ -85,12 +82,11 @@
   (let [token (.attr (jq "#token") "value")]
     (when (and token ((comp not empty?) token) 
                (ajax/gh-profile token))))
-  (when (= 0 (.size (jq "#user-container > #logoutbox")))
-    (.removeAttr (jq "#bc-radio") "data-toggle")
-    (.addClass (jq "#bc-radio > button") "disabled"))
 
   (if (get-hash)
     (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
-    (-> (jq "#repl-tabs a:first") (.tab "show"))))
+    (-> (jq "#repl-tabs a:first") (.tab "show")))
+  
+  (open-websocket))
 
 (.ready (jq js/document) ready)

@@ -37,7 +37,7 @@
     (if (contains? (set handles) hdl)
       (do 
         (-> (qry-list "#others-list" hdl) (.click))
-        (repl/connect))
+        (repl/join))
       (js/alert (str hdl " is not available")))))
 
 (defmethod wscmd :adduser
@@ -58,8 +58,10 @@
   (update list-id :rm))
 
 (defmethod wscmd :initusers
-  [_ [list-id handles]]
+  [_ [list-id handles anon]]
   (.remove (jq (str list-id " > option")))
+  (when (> anon 0)
+    (.append (jq list-id) (crate/html [:option.anon (str anon " anonymous")]))) 
   (doseq [h handles]
     (.append (jq list-id) (crate/html [:option h]))))
 
