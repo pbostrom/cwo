@@ -11,6 +11,8 @@ Shared, web-based Clojure REPL
 
 Open browser to http://localhost:8080
 
+See it in action at http://cwo.io
+
 ## License
 
     Copyright (c) Paul Bostrom. All rights reserved.
