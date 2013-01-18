@@ -14,5 +14,4 @@ Open browser to http://localhost:8080
 ## License
 
     Copyright (c) Paul Bostrom. All rights reserved.
-    This source code is proprietary and should not
-    be redistributed.
+    Distributed under the Eclipse Public License, the same as Clojure.
