@@ -1,0 +1,17 @@
+/pom.xml
+.*.swp
+*jar
+/lib
+/classes
+/native
+/.lein-failures
+/checkouts
+/.lein-deps-sum
+/.lein-cljsbuild*
+/.lein-plugins
+/.repl
+/out
+resources/public/js/cljs-compiled.js
+resources/public/markup.html
+/resources/public/css/.sass-cache/
+/target

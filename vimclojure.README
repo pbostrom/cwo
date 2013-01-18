@@ -1,0 +1,6 @@
+Setting up nailgun client and vimclojure server
+0. Get latest vimclojure plugin
+1. Get ng client:  https://github.com/daveray/vimclojure-easy, build, install in path
+2. Get lein-tarsier: https://github.com/sattvik/lein-tarsier 0.9.3-SNAPSHOT
+3. Add 'let vimclojure#WantNailgun = 1' to .vimrc
+4. Use :map to see plugin bindings

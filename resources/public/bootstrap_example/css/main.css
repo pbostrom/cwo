@@ -1,0 +1,14 @@
+.head {
+  text-align: center
+}
+
+.box {
+  border: 1px solid #ddd;
+  margin-left: auto;
+  margin-right: auto;
+  float: none;
+}
+
+label, select, input {
+  display: inline;
+}
