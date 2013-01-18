@@ -1,6 +1,6 @@
 # cwo
 
-Shared REPL session: Private Repository
+Shared, web-based Clojure REPL
 
 ## Build Clojurescript and start server
 
