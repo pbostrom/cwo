@@ -8,21 +8,6 @@
   (-> (jq (str list-id " > option"))
     (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
 
-; update widget
-(defmulti update
-  (fn [id act] id))
-
-(defmethod update "#home-peer-list"
-  [id act]
-  (let [cnt (.size (jq (str id " > option")))
-        btn (jq "#transfer")]
-    (when (and (= cnt 1) (= act :add))
-      (.removeAttr btn "disabled"))
-    (when (and (= cnt 0) (= act :rm))
-      (.attr btn "disabled" "disabled"))))
-
-(defmethod update :default [id f])
-
 ; multimethod for dispatching cmds recv'd via websocket
 (defmulti wscmd 
   (fn [cmd arg] cmd))
@@ -47,15 +32,13 @@
           all-hdls (conj (select-set list-opts) handle)]
       (.remove list-opts)
       (doseq [h all-hdls]
-        (-> (jq list-id) (.append (crate/html [:option h]))))
-      (update list-id :add))
+        (-> (jq list-id) (.append (crate/html [:option h])))))
     :anonymous-case))
 
 (defmethod wscmd :rmuser
   [_ [list-id handle]]
   (-> (qry-list list-id handle)
-    (.remove))
-  (update list-id :rm))
+    (.remove)))
 
 (defmethod wscmd :initusers
   [_ [list-id handles anon]]

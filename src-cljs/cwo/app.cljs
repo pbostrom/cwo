@@ -26,18 +26,25 @@
                            (repl/set-repl-mode :oth :sub))))
 ; ui listeners
 
-; prevent muli-selects
-(quote (-> (jq "#others-list")
-  (.on "click" (fn [evt]
-                 (-> (jq "#others-list > option:selected") (.removeAttr "selected"))
-                 (-> (jq (.-target evt)) (.attr "selected" "selected"))))))
-
+; button [en|dis]ablers
 (-> (jq "#others-list")
   (.on "change" (fn [evt]
                  (if (= 1 (.-length (jq "#others-list > option:selected")))
                    (-> (jq "#join-btn") (.removeAttr "disabled"))
                    (-> (jq "#join-btn") (.attr "disabled" "disabled"))))))
 
+(-> (jq "#home-peer-list")
+  (.on "change" 
+       (fn [evt]
+         (let [num-sel (-> 
+                         (jq "#home-peer-list > option:selected")
+                         (.not "[class='anon']")
+                         (.-length))] 
+           (if (= 1  num-sel)
+             (-> (jq "#transfer") (.removeAttr "disabled"))
+             (-> (jq "#transfer") (.attr "disabled" "disabled")))))))
+
+; button listners
 (-> (jq "#join-btn") (.on "click" repl/join))
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
 (-> (jq "#transfer") (.on "click" repl/transfer))
