@@ -7,8 +7,7 @@
             [ring.middleware.reload :as reload]
             [aleph.http :as aleph]
             [cwo.chmgr :as chmgr]
-            [cwo.routes :as routes]
-            [cwo.wastemgt :as wastemgt])
+            [cwo.routes :as routes])
   (:gen-class))
 
 (def debug-state (atom nil))
