@@ -3,8 +3,7 @@
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
             [cwo.utils :refer [safe-read-str]]
-            [cwo.views.enlive :as el]
-            [cwo.models.user :as user]))
+            [cwo.views.enlive :as el]))
 
 ; Channel mgmt architecture
 ; A channel controller is a map for regulating websocket traffic between clients
@@ -372,20 +371,6 @@
   "For development use only! Clears out all application state."
   []
   (throw (Exception. "Recycling not implemented yet")))
-
-(defn recycle!
-  "Remove the channel controller map for the specified session id"
-  [app-state sesh-id]
-  (throw (Exception. "Recycling not implemented yet"))
-  (println "Recycling" sesh-id)
-  (declare disconnect client-cmd)
-  (let [cc (@app-state sesh-id)]
-    (when-let [sub-hdl (get-in cc [:sub :hdl])]
-      (disconnect sesh-id sub-hdl))
-    (when-let [hdl (user/get-handle sesh-id)]
-      (client-cmd handle-ch [:rmhandle hdl]))
-    (user/rm-user! sesh-id)
-    (swap! app-state dissoc sesh-id)))
 
 ; Handle commands send via srv-ch
 (defn cmd-hdlr [app-state sesh-id cmd-str]

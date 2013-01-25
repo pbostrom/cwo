@@ -4,7 +4,6 @@
             [cwo.http :as http]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
-            [cwo.models.user :as user]
             [cwo.config :as cfg]))
 
 (defn fmap [m f]
@@ -46,7 +45,7 @@
          (if code
            (do
              (when-let [token (fetch-token code)]
-               (user/set-user! sesh-id {:token token :status "auth"})) 
+               (println sesh-id {:token token :status "auth"})) 
              (resp/redirect "/"))
            {:status 200
             :headers {}
@@ -55,5 +54,5 @@
             :body (enlive/layout {:handle nil})})))
   (GET "/ghauth" []
        (let [sesh-id nil]
-         (user/set-user! sesh-id {:status "gh"}))
+         (println sesh-id {:status "gh"}))
        (resp/redirect (cfg/auth-url))))

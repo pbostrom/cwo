@@ -1,6 +1,5 @@
 (ns cwo.views.enlive
-  (:require [net.cgrand.enlive-html :as html]
-            [cwo.models.user :as user]))
+  (:require [net.cgrand.enlive-html :as html]))
 
 (defn render-snippet [s]
   (apply str (html/emit* s)))
