@@ -15,3 +15,4 @@ resources/public/js/cljs-compiled.js
 resources/public/markup.html
 /resources/public/css/.sass-cache/
 /target
+.lein-repl-history
