@@ -24,6 +24,7 @@
        "externs/twitter-bootstrap.js"
        "externs/jquery-1.7.externs.js"],
       :optimizations :whitespace}}]}
+  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :vimclojure-opts {:repl true}
   :main cwo.server)

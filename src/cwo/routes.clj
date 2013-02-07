@@ -36,22 +36,27 @@
         handle (and sesh-state (@sesh-state :handle))]
     [sesh-id handle]))
 
+(defn root [{:keys [code] :as req}]
+  (let [[sesh-id handle] (session-data req)]
+    (println "sesh-id:" sesh-id)
+    (println "handle:" handle)
+    (if code
+      (do
+        (when-let [token (fetch-token code)]
+          (println sesh-id {:token token :status "auth"})) 
+        (resp/redirect "/"))
+      {:status 200
+       :headers {}
+       ; stick dummy value into session so ring generates session key
+       :session {"foo" {:value "bar"}}
+       :body (enlive/layout {:handle nil})})))
+
 ;; enlive rendered routes
 (defroutes app-routes
-  (GET "/" {:keys [code] :as req}
-       (let [[sesh-id handle] (session-data req)]
-         (println "sesh-id:" sesh-id)
-         (println "handle:" handle)
-         (if code
-           (do
-             (when-let [token (fetch-token code)]
-               (println sesh-id {:token token :status "auth"})) 
-             (resp/redirect "/"))
-           {:status 200
-            :headers {}
-            ; stick dummy value into session so ring generates session key
-            :session {"foo" {:value "bar"}}
-            :body (enlive/layout {:handle nil})})))
+  (GET "/paste/*" {:as req}
+       (root req))
+  (GET "/" {:as req}
+       (root req))
   (GET "/ghauth" []
        (let [sesh-id nil]
          (println sesh-id {:status "gh"}))
