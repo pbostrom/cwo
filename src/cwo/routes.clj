@@ -53,7 +53,7 @@
 
 ;; enlive rendered routes
 (defroutes app-routes
-  (GET "/paste/*" {:as req}
+  (GET "/paste*" {:as req}
        (root req))
   (GET "/" {:as req}
        (root req))

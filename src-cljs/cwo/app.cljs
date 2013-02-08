@@ -2,10 +2,7 @@
   (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
-            [snout.core :as snout]
             [cwo.wscmd :as wscmd]))
-
-(snout/get-token)
 
 (defn route [msg-obj]
   (let [{pmsg :p tmsg :t} msg-obj]
