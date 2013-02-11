@@ -37,3 +37,6 @@
 (defn re-html [sel html]
   (-> (jq sel)
     (.html html)))
+
+(defn jq-ajax [url success]
+  (.ajax jq (clj->js {:url url :success success})))

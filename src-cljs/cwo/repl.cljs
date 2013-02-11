@@ -1,5 +1,6 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog sock srv-cmd]]))
+  (:require [cwo.utils :refer [jq jslog sock srv-cmd jq-ajax]]
+            [clojure.string :as string]))
 
 (def publish-console? (atom {:you true :oth false}))
 
@@ -114,3 +115,33 @@
              (.append (jq "#widgets") (jq "#tr-box"))
              (jslog "srv-cmd :reclaim")
              (srv-cmd :reclaim handle))))
+
+(defn hash-connect []
+  (if (contains? (set handles) hdl)
+    (do 
+      (-> (qry-list "#others-list" hdl) (.click))
+      (repl/join))
+    (js/alert (str hdl " is not available"))))
+
+(defn load-paste 
+  "Loads forms contained in paste"
+  [paste]
+  )
+
+(defn paste
+  "Make ajax call to paste host"
+  [[host id]]
+  (cond
+   (= "refheap" host) (jq-ajax (str "https://www.refheap.com/paste/" id))
+   (= "gist" host) (jq-ajax (str "https://www.refheap.com/paste/" id)))
+  )
+
+(defn process-hash
+  "Process hash string of url"
+  [hsh]
+  (let [hshvec (string/split hsh "/")
+        action (first hshvec)
+        args (rest hshvec)]
+    (cond
+     (= "paste" action) (paste hshvec)
+     (= "connect" action) (hash-connect))))

@@ -1,5 +1,5 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog select-set get-hash re-html]]
+  (:require [cwo.utils :refer [jq jslog select-set re-html]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
@@ -12,18 +12,12 @@
 (defmulti wscmd 
   (fn [cmd arg] cmd))
 
-(defmethod wscmd :inithandles
+(defmethod wscmd :initclient
   [_ handles]
-  (dorun
-    (map #(-> (jq "#others-list")
-            (.append
-              (crate/html [:option %]))) handles))
-  (when-let [hdl (get-hash)]
-    (if (contains? (set handles) hdl)
-      (do 
-        (-> (qry-list "#others-list" hdl) (.click))
-        (repl/join))
-      (js/alert (str hdl " is not available")))))
+  (doseq [h handles]
+    (-> (jq "#others-list") (.append (crate/html [:option h]))))
+  (when-let [hsh (get-hash)]
+    (repl/process-hash hsh)))
 
 (defmethod wscmd :adduser
   [_ [list-id handle]]

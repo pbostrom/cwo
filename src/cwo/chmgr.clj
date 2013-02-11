@@ -404,4 +404,4 @@
                              (drop-off app-state sesh-id)))
     ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
     ;                               (recycle! sesh-id)))
-    (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))
+    (client-cmd (@cc :cl-ch) [:initclient (keys @(:handles @app-state))])))

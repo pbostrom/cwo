@@ -1,9 +1,9 @@
-(ns cwo.url
-  (:require [snout.core :as snout])
-  (:use-macros [snout.macros :only [defroute]]))
+(ns cwo.url)
 
-(defn get-url []
-  (snout/get-token))
+(defn hash-hdlr [evt]
+  (js/alert (.-hash js/location)))
 
-(defroute "/paste/rh/:id" [id]
-  (js/alert (str "refheap" id)))
+(set! (.-onhashchange js/window) hash-hdlr)
+
+(defmulti route
+  (fn []))
