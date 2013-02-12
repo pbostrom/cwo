@@ -38,5 +38,5 @@
   (-> (jq sel)
     (.html html)))
 
-(defn jq-ajax [url success]
-  (.ajax jq (clj->js {:url url :success success})))
+(defn jq-ajax [url succ fail]
+  (.ajax jq (clj->js {:url url :dataType "jsonp" :success succ :error fail})))

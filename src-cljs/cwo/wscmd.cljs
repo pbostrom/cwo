@@ -1,5 +1,5 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog select-set re-html]]
+  (:require [cwo.utils :refer [jq jslog select-set get-hash re-html]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))

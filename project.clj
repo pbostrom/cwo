@@ -9,8 +9,7 @@
                  [clj-http "0.4.3"]
                  [midje "1.4.0"]
                  [ring "1.1.5"]
-                 [com.cemerick/piggieback "0.0.2"]
-                 [snout "0.1.0"]
+                 ;[com.cemerick/piggieback "0.0.2"]
                  [crate "0.2.4"]]
   :plugins [[lein-cljsbuild "0.3.0"]]
   :cljsbuild
@@ -24,7 +23,7 @@
        "externs/twitter-bootstrap.js"
        "externs/jquery-1.7.externs.js"],
       :optimizations :whitespace}}]}
-  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+  ;:repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :vimclojure-opts {:repl true}
   :main cwo.server)
