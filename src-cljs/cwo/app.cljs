@@ -93,7 +93,8 @@
   (if (get-hash)
     (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
     (-> (jq "#repl-tabs a:first") (.tab "show")))
-  
+
+  (set! (.-onhashchange js/window) (fn [x] (repl/process-hash (get-hash))))
   (open-websocket))
 
 (.ready (jq js/document) ready)

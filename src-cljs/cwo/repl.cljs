@@ -126,7 +126,7 @@
 (defn load-forms
   "Load a list of forms into REPL"
   [forms]
-  (jslog (pr-str forms)))
+  (jslog (pr-str (js->clj forms))))
 
 (defn paste-modal
   "Opens modal dialog with paste options"
@@ -139,7 +139,7 @@
   [host id]
   (cond
    (= "refheap" host) (str "https://www.refheap.com/api/paste/" id)
-   (= "gist" host) ((str "https://www.refheap.com/paste/" id))))
+   (= "gist" host) (str "https:/api.github.com/gists/" id)))
 
 (defn paste
   "Make ajax call to paste host"
