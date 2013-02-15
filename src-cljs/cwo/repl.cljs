@@ -125,7 +125,7 @@
 
 (defn load-forms
   "Load a list of forms into REPL"
-  [forms]
+  [forms parse-f]
   (jslog (pr-str (js->clj forms))))
 
 (defn paste-modal
@@ -134,17 +134,24 @@
   (js/alert "Error")
   (jslog init))
 
-(defn paste-url
-  "Map host string to paste url"
+(defn paste-ajax-map
+  "Return host string and parse function for a paste host"
   [host id]
+  (let [ajax {:dataType "jsonp" :error paste-modal}])
   (cond
-   (= "refheap" host) (str "https://www.refheap.com/api/paste/" id)
-   (= "gist" host) (str "https:/api.github.com/gists/" id)))
+   (= "refheap" host)
+   (assoc ajax
+     :url (str "https://www.refheap.com/api/paste/" id)
+     :success #(load-forms % parse-refheap))
+   (= "gist" host)
+   (assoc ajax
+     :url (str "https:/api.github.com/gists/" id)
+     :success #(load-forms % parse-gist))))
 
 (defn paste
   "Make ajax call to paste host"
   [[host id]]
-  (-> (jq-ajax (paste-url host id) load-forms paste-modal)))
+  (.ajax jq (clj->js (paste-ajax-map host id))))
 
 (defn process-hash
   "Process hash string of url"
