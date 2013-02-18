@@ -1,5 +1,6 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
+            [cwo.http :as http]
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
             [cwo.utils :refer [safe-read-str]]
@@ -329,6 +330,14 @@
     (client-cmd srv-ch [:ts 0])
     nil))
 
+(defn- paste [app-state sesh-id [host id repl]]
+  (println "Paste:" host id repl)
+  (let [{cl-ch :cl-ch} @(@app-state sesh-id)
+        forms (http/get-paste (keyword host) id)]
+    (doseq [form forms]
+      (client-cmd cl-ch [:expr (pr-str [repl form])])
+      (eval-clj app-state sesh-id [form repl]))))
+
 (defn- chat [app-state sesh-id [chat-id txt]]
   (println chat-id "-" txt)
   (let [{:keys [srv-ch cl-ch sub handle transfer]} @(@app-state sesh-id) 
@@ -360,6 +369,7 @@
              :disconnect disconnect
              :reclaim reclaim
              :chat chat
+             :paste paste
              :eval-clj eval-clj})
 
 (defn execute [cmd app-state sesh-id arg]

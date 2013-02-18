@@ -7,6 +7,7 @@
                  [enlive "1.0.1"]
                  [clojail "1.0.3"]
                  [clj-http "0.4.3"]
+                 [cheshire "5.0.1"]
                  [midje "1.4.0"]
                  [ring "1.1.5"]
                  ;[com.cemerick/piggieback "0.0.2"]

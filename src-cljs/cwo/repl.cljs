@@ -123,35 +123,12 @@
       (repl/join))
     (js/alert (str hdl " is not available"))))
 
-(defn load-forms
-  "Load a list of forms into REPL"
-  [forms]
-  (jslog (pr-str (js->clj forms))))
-
-(defn paste-modal
-  "Opens modal dialog with paste options"
-  [init status error]
-  (js/alert "Error")
-  (jslog init))
-
-(defn paste-url
-  "Map host string to paste url"
-  [host id]
-  (cond
-   (= "refheap" host) (str "https://www.refheap.com/api/paste/" id)
-   (= "gist" host) (str "https:/api.github.com/gists/" id)))
-
-(defn paste
-  "Make ajax call to paste host"
-  [[host id]]
-  (-> (jq-ajax (paste-url host id) load-forms paste-modal)))
-
 (defn process-hash
   "Process hash string of url"
   [hsh]
   (let [hshvec (string/split hsh "/")
         action (first hshvec)
-        args (rest hshvec)]
+        args (vec (rest hshvec))]
     (cond
-     (= "paste" action) (paste args)
+     (= "paste" action) (srv-cmd :paste (conj args :you))
      (= "connect" action) (hash-connect))))

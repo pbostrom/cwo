@@ -76,6 +76,13 @@
   (.append (jq "#widgets") (jq "#tr-box"))
   (repl/set-repl-mode :you :active))
 
+(defmethod wscmd :expr 
+  [_ expr]
+  (let [[repl-key expr] (reader/read-string expr)
+        repl (repl-key repl/repls)]
+    (.SetPromptText repl (str expr))
+    (.AbortPrompt repl)))
+
 (defmethod wscmd :result 
   [_ rslt]
   (let [[repl rslt] (reader/read-string rslt)]
