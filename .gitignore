@@ -10,6 +10,7 @@
 /.lein-cljsbuild*
 /.lein-plugins
 /.repl
+/repl
 /out
 resources/public/js/cljs-compiled.js
 resources/public/markup.html

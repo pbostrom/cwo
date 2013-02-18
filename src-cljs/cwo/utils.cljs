@@ -37,6 +37,3 @@
 (defn re-html [sel html]
   (-> (jq sel)
     (.html html)))
-
-(defn jq-ajax [url succ fail]
-  (.ajax jq (clj->js {:url url :dataType "jsonp" :success succ :error fail})))
