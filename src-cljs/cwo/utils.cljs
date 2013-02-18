@@ -18,6 +18,10 @@
   (let [hsh (.-hash js/window.location)]
     (when-not (empty? hsh) (.substring hsh 1))))
 
+(defn- qry-list [list-id opt-val]
+  (-> (jq (str list-id " > option"))
+    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
+
 (defn select-set
   "Returns sorted set of all handles in the select list"
   [list-opts]

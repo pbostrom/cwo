@@ -1,5 +1,5 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog sock srv-cmd jq-ajax]]
+  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd jq-ajax]]
             [clojure.string :as string]))
 
 (def publish-console? (atom {:you true :oth false}))
@@ -43,7 +43,7 @@
 (declare prompt)
 (defn eval-hdlr [expr repl]
   (if-not (empty? (.trim expr)) 
-    (srv-cmd :eval-clj [expr repl])
+    (srv-cmd :read-eval-clj [expr repl])
     (prompt repl)))
 
 (defn prompt [repl]
@@ -85,14 +85,17 @@
 (defn logout []
   (srv-cmd :logout nil))
 
-(defn join []
-  (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
-  (-> (jq "#peer-status") (.css "visibility" "visible"))
-  (set-repl-mode :oth :sub)
-  (let [handle (-> (jq "#others-list option:selected") (.val))]
-    (.text (jq "#owner") handle)
-    (.attr (jq "#discon") "handle" handle)
-    (srv-cmd :subscribe handle)))
+(defn join
+  ([_]
+     (join (-> (jq "#others-list option:selected") (.val)) nil))
+  ([handle _]
+     (jslog (str "join" handle))
+     (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
+     (-> (jq "#peer-status") (.css "visibility" "visible"))
+     (set-repl-mode :oth :sub)
+     (.text (jq "#owner") handle)
+     (.attr (jq "#discon") "handle" handle)
+     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
   ;  (set-repl-mode :oth :sub)
@@ -116,12 +119,11 @@
              (jslog "srv-cmd :reclaim")
              (srv-cmd :reclaim handle))))
 
-(defn hash-connect []
-  (if (contains? (set handles) hdl)
-    (do 
-      (-> (qry-list "#others-list" hdl) (.click))
-      (repl/join))
-    (js/alert (str hdl " is not available"))))
+(defn hash-connect [[hdl]]
+  (let [handles (select-set (jq "#others-list > option"))]
+    (if (contains? handles hdl)
+      (join hdl nil)
+      (js/alert (str hdl " is not available")))))
 
 (defn process-hash
   "Process hash string of url"
@@ -131,4 +133,4 @@
         args (vec (rest hshvec))]
     (cond
      (= "paste" action) (srv-cmd :paste (conj args :you))
-     (= "connect" action) (hash-connect))))
+     (= "connect" action) (hash-connect args))))

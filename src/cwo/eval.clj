@@ -9,8 +9,7 @@
   [expr sb]
   (try
     (with-open [out (StringWriter.)]
-      (let [expr (safe-read-str expr)
-            result (sb expr {#'*out* out})]
+      (let [result (sb expr {#'*out* out})]
         {:expr expr
          :result [out result]}))
     (catch TimeoutException _
@@ -24,3 +23,5 @@
 ;  (.runsource interp expr)
 ;    (let )))
 
+(def fee :bee)
+(def boo :baa)

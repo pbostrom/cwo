@@ -1,12 +1,8 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog select-set get-hash re-html]]
+  (:require [cwo.utils :refer [jq jslog qry-list select-set get-hash re-html]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
-
-(defn- qry-list [list-id opt-val]
-  (-> (jq (str list-id " > option"))
-    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
 
 ; multimethod for dispatching cmds recv'd via websocket
 (defmulti wscmd 

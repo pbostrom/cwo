@@ -1,6 +1,7 @@
 (ns cwo.sandbox
   (:require [clojail.testers :refer [secure-tester-without-def blanket]]
-            [clojail.core :refer [sandbox]]))
+            [clojail.core :refer [sandbox]]
+            [clojure.core.logic]))
 
 (def cwo-clojure-tester
   (conj secure-tester-without-def

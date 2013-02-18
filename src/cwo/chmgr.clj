@@ -50,11 +50,11 @@
 
 (defn cmd? 
   ([msg]
-   (declare fn-map)
-   (let [msg-obj (safe-read-str msg)]
-     (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
+    (declare fn-map)
+     (let [msg-obj (safe-read-str msg)]
+       (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
   ([msg cmd] 
-   (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
+     (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [app-state handle]
   (@app-state (@(:handles @app-state) handle)))
@@ -315,8 +315,8 @@
           @cc-vec))
       run-sidefx)))
 
-(defn- eval-clj [app-state sesh-id [expr sb-key]]
-  (println "eval-clj!")
+(defn- eval-clj [app-state sesh-id expr sb-key]
+  (println "eval-clj:" expr)
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@app-state sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)
@@ -329,6 +329,9 @@
     (client-cmd (:hist repl) [:hist (pr-str [expr data])])
     (client-cmd srv-ch [:ts 0])
     nil))
+
+(defn- read-eval-clj [app-state sesh-id [expr sb-key]]
+  (eval-clj app-state sesh-id (safe-read-str expr) sb-key))
 
 (defn- paste [app-state sesh-id [host id repl]]
   (println "Paste:" host id repl)
@@ -370,7 +373,7 @@
              :reclaim reclaim
              :chat chat
              :paste paste
-             :eval-clj eval-clj})
+             :read-eval-clj read-eval-clj})
 
 (defn execute [cmd app-state sesh-id arg]
   (when-not (contains? fn-map cmd) 

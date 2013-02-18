@@ -1,6 +1,7 @@
 (ns cwo.http
   (:require [clj-http.client :as client]
             [cheshire.core :as cheshire]
+            [cwo.utils :refer [safe-read-str]]
             [cwo.config :as cfg]))
 
 (defn post-access-code [code]
@@ -21,7 +22,7 @@
 (defmethod get-paste :gist
   [host id]
   (let [url (str "https://api.github.com/gists/" id)]
-    (map :content (vals (:files (get-as-clj url))))))
+    (mapcat safe-read-str (map :content (vals (:files (get-as-clj url)))))))
 
 (defmethod get-paste :refheap
   [host id]
