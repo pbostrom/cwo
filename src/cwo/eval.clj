@@ -5,7 +5,7 @@
 	   java.util.concurrent.TimeoutException))
 
 (defn eval-expr
-  "Read an expression, then evaluate in the specified repl, i.e. :you|oth"
+  "Evaluate expression in the specified repl, i.e. :you|:oth"
   [expr sb]
   (try
     (with-open [out (StringWriter.)]

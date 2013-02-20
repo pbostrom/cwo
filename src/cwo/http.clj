@@ -1,7 +1,7 @@
 (ns cwo.http
   (:require [clj-http.client :as client]
             [cheshire.core :as cheshire]
-            [cwo.utils :refer [safe-read-str]]
+            [cwo.utils :refer [read-forms]]
             [cwo.config :as cfg]))
 
 (defn post-access-code [code]
@@ -16,15 +16,15 @@
 (defn get-as-clj [url]
   (cheshire/parse-string (:body (client/get url)) true))
 
-(defmulti get-paste
+(defmulti read-paste
   (fn [host id] host))
 
-(defmethod get-paste :gist
+(defmethod read-paste :gist
   [host id]
   (let [url (str "https://api.github.com/gists/" id)]
-    (mapcat safe-read-str (map :content (vals (:files (get-as-clj url)))))))
+    (mapcat read-forms (map :content (vals (:files (get-as-clj url)))))))
 
-(defmethod get-paste :refheap
+(defmethod read-paste :refheap
   [host id]
   (let [url (str "https://www.refheap.com/api/paste/" id)
-        forms (get-as-clj url)])) 
+        forms (get-as-clj url)]))
