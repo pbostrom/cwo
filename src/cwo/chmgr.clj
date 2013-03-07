@@ -316,7 +316,7 @@
       run-sidefx)))
 
 (defn- eval-clj [app-state sesh-id expr sb-key]
-  (println "eval-clj:" expr)
+  (println "eval sb:" expr)
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@app-state sesh-id)
         sb (:sb repl)
         {:keys [result error message] :as res} (evl/eval-expr expr sb)

@@ -1,6 +1,6 @@
 (defproject cwo "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
-  :dependencies [[org.clojure/clojure "1.4.0"]
+  :dependencies [[org.clojure/clojure "1.5.0"]
                  [org.clojure/core.logic "0.8.0-rc2"]
                  [aleph "0.3.0-beta11"]
                  [compojure "1.1.3"]
@@ -11,7 +11,7 @@
                  [midje "1.4.0"]
                  [org.flatland/useful "0.9.3"]
                  [ring "1.1.5"]
-                 ;[com.cemerick/piggieback "0.0.2"]
+                 [com.cemerick/piggieback "0.0.4"]
                  [crate "0.2.4"]]
   :plugins [[lein-cljsbuild "0.3.0"]]
   :pedantic :warn
@@ -26,7 +26,7 @@
        "externs/twitter-bootstrap.js"
        "externs/jquery-1.7.externs.js"],
       :optimizations :whitespace}}]}
-  ;:repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+  :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
   :vimclojure-opts {:repl true}
   :main cwo.server)
