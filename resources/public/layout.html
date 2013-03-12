@@ -36,12 +36,13 @@
     <h3 id="myModalLabel">Load a Paste</h3>
   </div>
   <div class="modal-body">
-    <p>gist</p>
-    <p>refheap</p>
+    <input type="radio" name="pastehost" value="gist">gist<br>
+    <input type="radio" name="pastehost" value="refheap">refheap<br>
+    <input placeholder="paste id" class="span3" type="text" id="paste-id">
   </div>
   <div class="modal-footer">
     <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-    <button class="btn btn-primary">Save changes</button>
+    <button class="btn btn-primary">Load paste</button>
   </div>
 </div>
 <!-- /Paste Modal -->
