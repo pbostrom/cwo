@@ -49,9 +49,15 @@
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
 (-> (jq "#transfer") (.on "click" repl/transfer))
 (-> (jq "#reclaim") (.on "click" repl/reclaim))
-(-> (jq "#pastebtn") (.on "click" #(do
-                                     (js/alert "close")
-                                     (.modal (jq "#pasteModal") "hide"))))
+
+;; paste handler
+(defn paste-hdlr []
+  (let [host (.val (jq "input[name=pastehost]:checked"))
+        id (.val (jq "#paste-id"))]
+    (srv-cmd :paste [host id :you]))
+  (.modal (jq "#pasteModal") "hide"))
+
+(-> (jq "#pastebtn") (.on "click" paste-hdlr))
 
 ; login/out buttons 
 (-> (jq "#user-container")
