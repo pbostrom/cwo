@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash]]
+  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash srv-cmd]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -49,6 +49,9 @@
 (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
 (-> (jq "#transfer") (.on "click" repl/transfer))
 (-> (jq "#reclaim") (.on "click" repl/reclaim))
+(-> (jq "#pastebtn") (.on "click" #(do
+                                     (js/alert "close")
+                                     (.modal (jq "#pasteModal") "hide"))))
 
 ; login/out buttons 
 (-> (jq "#user-container")
