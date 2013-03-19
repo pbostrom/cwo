@@ -26,5 +26,5 @@
 
 (defmethod read-paste :refheap
   [host id]
-  (let [url (str "https://www.refheap.com/api/paste/" id)
-        forms (get-as-clj url)]))
+  (let [url (str "https://www.refheap.com/api/paste/" id)]
+    (read-forms (:contents (get-as-clj url)))))
