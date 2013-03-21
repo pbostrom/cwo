@@ -140,6 +140,11 @@
   [_ errmsg]
   (js/alert errmsg))
 
+(defmethod wscmd :paste-error
+  [_ errmsg]
+  (.modal (jq "#paste-modal") "show")
+  (.html (jq "#paste-err") errmsg))
+
 (defmethod wscmd :default
   [cmd _] 
   (throw (js/Error. (str "Command " cmd " not implemented" ))))

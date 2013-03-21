@@ -335,15 +335,18 @@
 
 (defn- paste [app-state sesh-id [host id repl]]
   (println "Paste:" host id repl)
-  (try
-    (let [{cl-ch :cl-ch} @(@app-state sesh-id)
-         forms (http/read-paste (keyword host) id)]
-     (doseq [form forms]
-       (client-cmd cl-ch [:expr (pr-str [repl form])])
-       (eval-clj app-state sesh-id form repl)))
-    (catch clojure.lang.ExceptionInfo e
-      (let [status (get-in (ex-data e) [:object :status])]
-        (println "Exception in http GET request:" status)))))
+  (let [{cl-ch :cl-ch} @(@app-state sesh-id)]
+    (try
+      (doseq [form (http/read-paste (keyword host) id)]
+        (client-cmd cl-ch [:expr (pr-str [repl form])])
+        (eval-clj app-state sesh-id form repl))
+      (catch clojure.lang.ExceptionInfo e
+        (let [{:keys [trace-redirects status]} (:object (ex-data e))
+              [url] trace-redirects
+              msg (str "Could not load " url "<br>HTTP status: " status)]
+          (println msg)
+          (client-cmd cl-ch [:paste-error msg])
+          nil)))))
 
 (defn- chat [app-state sesh-id [chat-id txt]]
   (println chat-id "-" txt)

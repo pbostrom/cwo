@@ -55,9 +55,10 @@
   (let [host (.val (jq "input[name=pastehost]:checked"))
         id (.val (jq "#paste-id"))]
     (srv-cmd :paste [host id :you]))
-  (.modal (jq "#pasteModal") "hide"))
+  (.modal (jq "#paste-modal") "hide"))
 
 (-> (jq "#pastebtn") (.on "click" paste-hdlr))
+(-> (jq "#paste-modal") (.on "hidden" #(.html (jq "#paste-err") "")))
 
 ; login/out buttons 
 (-> (jq "#user-container")
