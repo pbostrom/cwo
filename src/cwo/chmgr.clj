@@ -50,7 +50,7 @@
 
 (defn cmd? 
   ([msg]
-    (declare fn-map)
+    (declare fn-map) ;; TODO: this should probably be a multi method
      (let [msg-obj (safe-read-str msg)]
        (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
   ([msg cmd] 
@@ -343,7 +343,7 @@
       (catch clojure.lang.ExceptionInfo e
         (let [{:keys [trace-redirects status]} (:object (ex-data e))
               [url] trace-redirects
-              msg (str "Could not load " url "<br>HTTP status: " status)]
+              msg (str "Could not load paste " id " from " host "<br>" url " returned status " status)]
           (println msg)
           (client-cmd cl-ch [:paste-error msg])
           nil)))))
