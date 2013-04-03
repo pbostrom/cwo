@@ -1,8 +1,12 @@
 (ns cwo.http
   (:require [clj-http.client :as client]
+            [clojure.core.cache :as cache]
             [cheshire.core :as cheshire]
             [cwo.utils :refer [read-forms]]
             [cwo.config :as cfg]))
+
+;; TODO: top-level atom, consider alternatives
+(def paste-cache (atom {:ttl (cache/ttl-cache-factory {} :ttl 30000)}))
 
 (defn post-access-code [code]
   (client/post (:access-url cfg/cfg)
@@ -12,6 +16,11 @@
 
 (defn get-user [token]
   (client/get (str "https://api.github.com/user?access_token=" token)))
+
+(defn fetch-paste
+  "Looks for paste contents in cache, or retrieves from host"
+  [host id]
+  )
 
 (defn get-as-clj [url]
   (cheshire/parse-string (:body (client/get url)) true))
