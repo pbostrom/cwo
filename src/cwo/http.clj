@@ -5,9 +5,6 @@
             [cwo.utils :refer [read-forms]]
             [cwo.config :as cfg]))
 
-;; TODO: top-level atom, consider alternatives
-(def paste-cache (atom {:ttl (cache/ttl-cache-factory {} :ttl 30000)}))
-
 (defn post-access-code [code]
   (client/post (:access-url cfg/cfg)
                {:form-params {:client_id (:client_id cfg/cfg)
@@ -17,13 +14,17 @@
 (defn get-user [token]
   (client/get (str "https://api.github.com/user?access_token=" token)))
 
+;; TODO: top-level atom, consider alternatives
+(def paste-cache (atom {:ttl (cache/ttl-cache-factory {} :ttl 30000)
+                        :lru (cache/lru-cache-factory {})}))
+
 (defn fetch-paste
   "Looks for paste contents in cache, or retrieves from host"
-  [host id]
-  )
+  [url]
+  (client/get url))
 
 (defn get-as-clj [url]
-  (cheshire/parse-string (:body (client/get url)) true))
+  (cheshire/parse-string (:body (fetch-paste url)) true))
 
 (defmulti read-paste
   (fn [host id] host))
