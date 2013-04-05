@@ -23,19 +23,19 @@
 
 (defn cache-fetch!
   "Return value "
-  [C-atom key missfn]
-  (get (swap! C-atom #(cache-update % key missfn)) key))
+  [{:keys [C missfn]} key]
+  (get (swap! C #(cache-update % key missfn)) key))
 
 (defn http-cache-fetch!
   "Return value "
   [C key missfn])
 
 ;; TODO: top-level atom, consider alternatives
-(def L2 {:C (cache/lru-cache-factory {}) :missfn #(client/get url)} )
-(def L1 {:C (cache/ttl-cache-factory {} :ttl 30000) :missfn } )
+(def L2 {:C (atom (cache/lru-cache-factory {})) :missfn #(client/get url)} )
+(def L1 {:C (atom (cache/ttl-cache-factory {} :ttl 30000)) :missfn } )
 
 (defn get-as-clj [url]
-  (cheshire/parse-string (:body (fetch-paste url)) true))
+  (cheshire/parse-string (:body (cache-fetch! L1 url)) true))
 
 (defmulti read-paste
   (fn [host id] host))
