@@ -14,14 +14,25 @@
 (defn get-user [token]
   (client/get (str "https://api.github.com/user?access_token=" token)))
 
-;; TODO: top-level atom, consider alternatives
-(def paste-cache (atom {:ttl (cache/ttl-cache-factory {} :ttl 30000)
-                        :lru (cache/lru-cache-factory {})}))
+(defn cache-update
+  "Get from cache or call miss function"
+  [C key missfn]
+  (if (cache/has? C key)
+    (cache/hit C key)
+    (cache/miss C key (missfn))))
 
-(defn fetch-paste
-  "Looks for paste contents in cache, or retrieves from host"
-  [url]
-  (client/get url))
+(defn cache-fetch!
+  "Return value "
+  [C-atom key missfn]
+  (get (swap! C-atom #(cache-update % key missfn)) key))
+
+(defn http-cache-fetch!
+  "Return value "
+  [C key missfn])
+
+;; TODO: top-level atom, consider alternatives
+(def L2 {:C (cache/lru-cache-factory {}) :missfn #(client/get url)} )
+(def L1 {:C (cache/ttl-cache-factory {} :ttl 30000) :missfn } )
 
 (defn get-as-clj [url]
   (cheshire/parse-string (:body (fetch-paste url)) true))
