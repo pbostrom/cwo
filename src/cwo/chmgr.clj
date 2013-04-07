@@ -1,5 +1,6 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
+            [hiccup.util :refer [escape-html]]
             [cwo.http :as http]
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
@@ -349,10 +350,9 @@
           nil)))))
 
 (defn- chat [app-state sesh-id [chat-id txt]]
-  (println chat-id "-" txt)
   (let [{:keys [srv-ch cl-ch sub handle transfer]} @(@app-state sesh-id) 
         chat-hdlr {:you-chat 
-                   (fn [t]
+                   (fn [txt]
                      (println "youchat")
                      (client-cmd srv-ch [:othchat [handle txt]])
                      (client-cmd cl-ch [:youchat [handle txt]])
@@ -360,14 +360,16 @@
                        (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
                                    [:othchat [handle txt]])))
                    :oth-chat 
-                   (fn [t]
+                   (fn [txt]
                      (println "othchat")
                      (let [{:keys [srv-ch cl-ch transfer]} @(cc-from-handle app-state (:hdl sub))]
                        (client-cmd srv-ch [:othchat [handle txt]])
                        (client-cmd cl-ch [:youchat [handle txt]])
                        (when transfer
                          (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
-                                     [:othchat [handle txt]]))))}]
+                                     [:othchat [handle txt]]))))}
+        txt (escape-html txt)]
+    (println chat-id "-" txt)
     (((keyword chat-id) chat-hdlr) txt)
     nil))
 
