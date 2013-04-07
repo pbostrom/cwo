@@ -14,25 +14,26 @@
 (defn get-user [token]
   (client/get (str "https://api.github.com/user?access_token=" token)))
 
-(defn cache-update
-  "Get from cache or call miss function"
-  [C key missfn]
-  (if (cache/has? C key)
-    (cache/hit C key)
-    (cache/miss C key (missfn))))
-
 (defn cache-fetch!
-  "Return value "
-  [{:keys [C missfn]} key]
-  (get (swap! C #(cache-update % key missfn)) key))
+  [{:keys [C missfn not-stale?]} url]
+  (let [update-fn (fn [c] (if (and (cache/has? c url) (not-stale? c url))
+                           (cache/hit c url)
+                           (cache/miss c url (missfn url))))]
+    (cache/lookup (swap! C #(update-fn %)) url)))
 
-(defn http-cache-fetch!
-  "Return value "
-  [C key missfn])
+(defn etag-not-stale? [c url]
+  (let [cached-etag (get-in (cache/lookup c url) [:headers "etag"])
+        server-etag (get-in (client/head url) [:headers "etag"])]
+    (println "Comparing etags -- cache:" cached-etag "server:" server-etag)
+    (= cached-etag server-etag)))
 
-;; TODO: top-level atom, consider alternatives
-(def L2 {:C (atom (cache/lru-cache-factory {})) :missfn #(client/get url)} )
-(def L1 {:C (atom (cache/ttl-cache-factory {} :ttl 30000)) :missfn } )
+;; TODO: top-level atoms, consider alternatives
+(def L2 {:C (atom (cache/lru-cache-factory {}))
+         :missfn #(do (println "Get latest from server") (client/get %))
+         :not-stale? etag-not-stale?})
+
+;; always assume TTL cache values are not stale (only 30 sec window)
+(def L1 {:C (atom (cache/ttl-cache-factory {} :ttl 30000)) :missfn #(cache-fetch! L2 %) :not-stale? (fn [_ _] true)})
 
 (defn get-as-clj [url]
   (cheshire/parse-string (:body (cache-fetch! L1 url)) true))
