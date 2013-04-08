@@ -2,6 +2,7 @@
   (:require [clojail.testers :refer [secure-tester-without-def blanket
                                      blacklist-symbols blacklist-packages]]
             [clojail.core :refer [sandbox]]
+            [clojure.tools.macro]
             [clojure.core.logic]
             [clojure.core.logic.fd]))
 

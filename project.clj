@@ -2,6 +2,7 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [org.clojure/core.logic "0.8.0-rc2"]
+                 [org.clojure/tools.macro "0.1.2"]
                  [org.clojure/core.cache "0.6.3"]
                  [aleph "0.3.0-beta11"]
                  [compojure "1.1.3"]
