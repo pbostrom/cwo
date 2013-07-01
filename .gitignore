@@ -17,3 +17,4 @@ resources/public/markup.html
 /resources/public/css/.sass-cache/
 /target
 .lein-repl-history
+src/cwo/credentials.edn
