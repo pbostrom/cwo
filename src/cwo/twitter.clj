@@ -1,6 +1,7 @@
 (ns cwo.twitter
   (:require [oauth.twitter :as oauth]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn])
+  (:import [java.io InputStreamReader BufferedReader]))
 
 (defn client
   [{:keys [consumer-key consumer-secret access-token access-token-secret]}]
@@ -16,7 +17,13 @@
            :url "https://api.twitter.com/1.1/statuses/update.json"
            :form-params {:status status}}))
 
-(defn stream-mentions []
+(defn mentions
+  []
   (twitter-client {:method :get
-           :url "https://userstream.twitter.com/1.1/user.json"
-           :as :stream}))
+           :url "https://api.twitter.com/1.1/statuses/mentions_timeline.json"}))
+
+(defn stream-mentions []
+  (let [stream (twitter-client {:method :get
+                         :url "https://userstream.twitter.com/1.1/user.json"
+                         :as :stream})]
+    (line-seq (BufferedReader. (InputStreamReader. stream)))))
