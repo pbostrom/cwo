@@ -11,6 +11,11 @@
 
 (def twitter-client (client credentials))
 
+(defn get-tweets
+  [user]
+  (twitter-client {:method :get
+                   :url (str "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=" user)}))
+
 (defn tweet
   [status]
   (twitter-client {:method :post
