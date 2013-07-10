@@ -4,6 +4,7 @@
                  [org.clojure/core.logic "0.8.0-rc2"]
                  [org.clojure/tools.macro "0.1.2"]
                  [org.clojure/core.cache "0.6.3"]
+                 [core.async "0.1.0-SNAPSHOT"]
                  [aleph "0.3.0-beta11"]
                  [compojure "1.1.3"]
                  [enlive "1.0.1"]

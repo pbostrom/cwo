@@ -1,6 +1,7 @@
 (ns cwo.twitter
   (:require [oauth.twitter :as oauth]
-            [clojure.edn :as edn])
+            [clojure.edn :as edn]
+            [clojure.core.async :refer :all])
   (:import [java.io InputStreamReader BufferedReader]))
 
 (defn client
@@ -32,3 +33,9 @@
                          :url "https://userstream.twitter.com/1.1/user.json"
                          :as :stream})]
     (line-seq (BufferedReader. (InputStreamReader. stream)))))
+
+(defn timeout-ex []
+ (let [t (timeout 1200)
+      begin (System/currentTimeMillis)]
+  (<!! t)
+  (println "Waited" (- (System/currentTimeMillis) begin))))
