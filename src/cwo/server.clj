@@ -26,7 +26,7 @@
 ; Combine routes for Websocket, compojure, and static resources
 (defroutes master-handler
   (GET "/socket" [] (cookies/wrap-cookies (aleph/wrap-aleph-handler (:ws handlers))))
-  (session/wrap-session (:http handlers))
+  (session/wrap-session (:http handlers) {:cookie-attrs {:max-age 2600000}})
   (route/resources "/")
   (route/not-found "Not Found"))
 

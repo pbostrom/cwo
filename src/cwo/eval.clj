@@ -1,11 +1,10 @@
 (ns cwo.eval
   (:require [clojure.stacktrace :refer [root-cause]])
-  (:require [cwo.utils :refer [safe-read-str]])
   (:import java.io.StringWriter
 	   java.util.concurrent.TimeoutException))
 
-(defn eval-expr
-  "Evaluate expression in the specified repl, i.e. :you|:oth"
+(defn- eval-expr-hlpr
+  "Evaluate expression in the specified sandbox, catching eval exceptions"
   [expr sb]
   (try
     (with-open [out (StringWriter.)]
@@ -17,11 +16,17 @@
     (catch Exception e
       {:error true :message (str (root-cause e))})))
 
+(defn eval-expr
+  "Evaluate expression in the specified sandbox"
+  [expr sb]
+  (let [{:keys [result error message] :as res} (eval-expr-hlpr expr sb)]
+    (if error
+      res
+      (let [[out res] result]
+        (str out (pr-str res))))))
+
 ;(defn eval-py [expr sb]
 ;  (with-open [out (StringWriter.)]
 ;  (def interp (org.python.util.InteractiveInterpreter.))
 ;  (.runsource interp expr)
 ;    (let )))
-
-(def fee :bee)
-(def boo :baa)

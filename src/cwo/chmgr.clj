@@ -4,7 +4,7 @@
             [cwo.http :as http]
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
-            [cwo.utils :refer [safe-read-str]]
+            [cwo.utils :refer [safe-read-str read-forms]]
             [cwo.views.enlive :as el]))
 
 ; Channel mgmt architecture
@@ -23,19 +23,18 @@
 ;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
 ;  :tsub-vlv          Optional, a subscription to your transfered REPL session
 ;
-;  evaluation sandboxes
-;  :you Repl Your primary code evaluation environment
-;  :oth Repl Optional, if someone transfers their repl to you
+;  REPLs
+;  :you Your primary code evaluation environment
+;  :oth Optional, if someone transfers their repl to you
 ; }
 ;
 
-; Repl
+; REPL
 ; {
 ;  :hist      Channel to send history commands to connected users
 ;  :sb        Evalutation sandbox
 ;  :ts        Timestamp of last activity
 ; }
-(defrecord Repl [hist sb ts])
 
 ; channel to update handle listq
 ; TODO: this should not be at the top-level
@@ -320,27 +319,29 @@
   (println "eval sb:" expr)
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@app-state sesh-id)
         sb (:sb repl)
-        {:keys [result error message] :as res} (evl/eval-expr expr sb)
-        data (if error
-               res
-               (let [[out res] result]
-                 (str out (pr-str res))))]
+        result (evl/eval-expr expr sb)]
     (reset! (:ts repl) (System/currentTimeMillis))
-    (client-cmd cl-ch [:result (pr-str [sb-key data])])
-    (client-cmd (:hist repl) [:hist (pr-str [expr data])])
+    (client-cmd cl-ch [:result (pr-str [sb-key result])])
+    (client-cmd (:hist repl) [:hist (pr-str [expr result])])
     (client-cmd srv-ch [:ts 0])
     nil))
 
-(defn- read-eval-clj [app-state sesh-id [expr sb-key]]
+(defn- read-eval-clj-deprecated [app-state sesh-id [expr sb-key]]
   (eval-clj app-state sesh-id (safe-read-str expr) sb-key))
 
+(defn- read-eval-clj [app-state sesh-id [expr sb-key]]
+  (eval-forms app-state sesh-id (read-forms expr) sb-key))
+
+(defn- eval-forms [app-state sesh-id forms repl]
+  (let [{cl-ch :cl-ch} @(@app-state sesh-id)]
+    (doseq [form forms]
+        (client-cmd cl-ch [:expr (pr-str [repl form])])
+        (eval-clj app-state sesh-id form repl))))
+
 (defn- paste [app-state sesh-id [host id repl]]
-  (println "Paste:" host id repl)
   (let [{cl-ch :cl-ch} @(@app-state sesh-id)]
     (try
-      (doseq [form (http/read-paste (keyword host) id)]
-        (client-cmd cl-ch [:expr (pr-str [repl form])])
-        (eval-clj app-state sesh-id form repl))
+      (eval-forms app-state sesh-id (http/read-paste (keyword host) id) repl)
       (catch clojure.lang.ExceptionInfo e
         (let [{:keys [trace-redirects status]} (:object (ex-data e))
               [url] trace-redirects
@@ -408,9 +409,9 @@
                     :sidefx []
                     :peers #{}
                     :anon 0
-                    :you (Repl. (lamina/permanent-channel)
-                                (sb/make-sandbox)
-                                (atom (System/currentTimeMillis)))})]
+                    :you {:hist (lamina/permanent-channel)
+                          :sb      (sb/make-sandbox)
+                          :ts      (atom (System/currentTimeMillis))}})]
     (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(cmd-hdlr app-state sesh-id %))
     (lamina/siphon handle-ch (:cl-ch @newcc))
     (swap! app-state assoc sesh-id newcc)
@@ -420,10 +421,7 @@
   (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))]
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
-    ;(lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
     (lamina/on-closed sock (fn [] 
                              (println "closing!")
                              (drop-off app-state sesh-id)))
-    ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
-    ;                               (recycle! sesh-id)))
     (client-cmd (@cc :cl-ch) [:initclient (keys @(:handles @app-state))])))

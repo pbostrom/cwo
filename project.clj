@@ -3,6 +3,7 @@
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [org.clojure/core.logic "0.8.0-rc2"]
                  [org.clojure/tools.macro "0.1.2"]
+                 [org.clojure/tools.trace "0.7.5"]
                  [org.clojure/core.cache "0.6.3"]
                  [core.async "0.1.0-SNAPSHOT"]
                  [aleph "0.3.0-beta11"]
@@ -15,7 +16,8 @@
                  [org.flatland/useful "0.9.3"]
                  [ring "1.1.5"]
                  [com.cemerick/piggieback "0.0.4"]
-                 [oauth-clj "0.1.4"]
+                 [mavericklou/oauth-clj "0.1.4.1"]
+                 [overtone/at-at "1.2.0"]
                  [crate "0.2.4"]]
   :plugins [[lein-cljsbuild "0.3.0"]]
   :pedantic :warn

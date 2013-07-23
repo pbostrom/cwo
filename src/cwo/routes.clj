@@ -2,6 +2,7 @@
   (:require [compojure.core :refer [defroutes GET]]
             [cwo.views.enlive :as enlive]
             [cwo.http :as http]
+            [cwo.twitter :as twitter]
             [ring.util.response :as resp]
             [ring.util.codec :as codec]
             [cwo.config :as cfg]))
@@ -60,4 +61,11 @@
   (GET "/ghauth" []
        (let [sesh-id nil]
          (println sesh-id {:status "gh"}))
-       (resp/redirect (cfg/auth-url))))
+       (resp/redirect (cfg/auth-url)))
+  (GET "/siwt" []
+       (let [url "https://api.twitter.com/oauth/authenticate?oauth_token="
+             tok (twitter/request-token)]
+         (resp/redirect (str url tok))))
+  (GET "/siwted" [oauth_token oauth_verifier] 
+       (let [{:keys [screen-name]} (twitter/access-token oauth_token oauth_verifier)]
+         (resp/redirect "/"))))
