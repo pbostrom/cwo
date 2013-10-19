@@ -3,11 +3,12 @@
             [oauth.v1 :as oauth-v1]
             [cwo.utils :as utils]
             [cwo.eval :as evl]
+            [cwo.chmgr :as chmgr]
+            [cwo.redis :as redis]
             [clj-http.client :as client]
             [clj-http.util :refer [url-encode]]
             [clojure.edn :as edn]
-            [overtone.at-at :as at-at]
-            [clojure.core.async :refer :all])
+            [overtone.at-at :as at-at])
   (:import [java.util.concurrent Executors TimeUnit]
            [java.io InputStreamReader BufferedReader]))
 
@@ -30,56 +31,68 @@
            :url "https://api.twitter.com/1.1/statuses/update.json"
            :form-params {:status status}}))
 
+(defmacro tc-wrap [try-form catch-form]
+  `(try
+     ~try-form
+     (catch Exception e#
+       (spit "twitter-http.log" (str (.getData e#) "\n") :append true)
+       ~catch-form)))
+
+(defn reply
+  [user reply-id status twt-log]
+  (tc-wrap
+   (do
+     (twitter-client {:method :post
+                     :url "https://api.twitter.com/1.1/statuses/update.json"
+                     :form-params {:status (str "@" user " " status)
+                                   :in_reply_to_status_id reply-id}})
+     (swap! twt-log update-in [:replies] conj [user reply-id])
+     (redis/set :since-id reply-id))
+   (swap! twt-log update-in [:errors] conj [user reply-id status])))
+
 (defn mentions
-  []
-  (twitter-client
-   {:method :get
-    :url "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
-    :query-params {"trim_user" "false"}}))
+  [since-id]
+  (tc-wrap
+   (twitter-client
+    {:method :get
+     :url "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
+                                        ;    :throw-exceptions true
+     :query-params {"trim_user" "false"
+                    "since_id" since-id}})
+   []))
 
-(defn stream-mentions []
-  (let [stream (twitter-client {:method :get
-                         :url "https://userstream.twitter.com/1.1/user.json"
-                         :as :stream})]
-    (line-seq (BufferedReader. (InputStreamReader. stream)))))
+(defn wrap-debug [f]
+  (with-redefs [mentions (fn [_] (edn/read-string (slurp "debug-tweets")))
+                tweet (fn [status]
+                        (spit "debug-post-tweet" (str status "\n") :append true))]
+    (f)))
 
-(defn timeout-ex []
- (let [t (timeout 1200)
-      begin (System/currentTimeMillis)]
-  (<!! t)
-  (println "Waited" (- (System/currentTimeMillis) begin))))
+(defn parse-mention [t]
+  (let [{:keys [text id user entities]} t
+        {:keys [screen_name]} user
+        offset (-> entities :user_mentions last :indices last)]
+    [(subs text offset) text id screen_name]))
 
-(defn fake-mentions []
-  [{:text "@cwoio (defn lame[]" :id 111 :user {:screen_name "pip"}}])
+(defn save-cycle-log [cycle-id log]
+  (doseq [[k v] log]
+    (redis/hset k cycle-id v)))
 
-(defn parse-mentions []
-  (doseq [{text :text id :id {screen_name :screen_name} :user} (mentions)]
-    (let [forms (subs text 7)
-          sb nil]
-      (doseq [form (utils/read-forms forms)]
-        (let [result (evl/eval-expr form sb)])))
-    (println [screen_name (subs text 7) id])))
-
-(defn start-old []
-  (let [executor (Executors/newSingleThreadScheduledExecutor)]
-    (.scheduleAtFixedRate executor parse-mentions 0 65 TimeUnit/SECONDS)))
-
-
-(defonce twtr-pool (at-at/mk-pool))
-
-(defn cycle-task [f period]
-  (at-at/every period f twtr-pool :fixed-delay true))
-
-
-(defn process-mentions []
-  (loop [ts (mentions)
-        error false]
-   (when (and (not error) (seq ts))
-     (let [{text :text id :id {screen_name :screen_name} :user} (first ts)
-           forms (subs text 7)
-           sb nil])
-     (println (first ts))
-     (recur (rest ts) (< 5 (first ts))))))
+(defn twitter-repl [app-state]
+  (let [twt-log (atom {:mentions [] :replies [] :errors []})
+        cycle-id (redis/incr "cycle-id")
+        since-id (redis/get :since-id)] ; TODO: 
+    (println "polling mentions; cycle:" cycle-id)
+    (doseq [[sexps _ id screen_name] (reverse (map parse-mention (mentions since-id)))]
+      (swap! twt-log update-in [:mentions] conj id)
+      (let [repl (chmgr/get-twitter-repl app-state screen_name)]
+        (doseq [sexp (utils/read-forms sexps)]
+          (let [result (evl/eval-expr sexp (:sb repl))]
+            (chmgr/client-cmd (:hist repl) [:hist (pr-str [sexp result])])
+            (reply screen_name id result twt-log)
+            (println [screen_name id sexp result])))))
+    (save-cycle-log cycle-id @twt-log))
+; TODO: grab any failures from DB and retry them here
+  )
 
 (defn request-token []
   (let [{:keys [consumer-key consumer-secret]} credentials]
@@ -87,7 +100,7 @@
      ((oauth-v1/make-consumer
        :oauth-consumer-key consumer-key
        :oauth-consumer-secret consumer-secret
-       :oauth-callback "http://localhost:8080"
+       :oauth-callback "http://localhost:8080/siwted"
        :form-params {:x_auth_access_type "read"})
       {:method :post :url "https://api.twitter.com/oauth/request_token"}))))
 
@@ -98,3 +111,9 @@
        :oauth-token token
        :form-params {:oauth_verifier verifier})
       {:method :post :url "https://api.twitter.com/oauth/access_token"}))))
+
+(defn stream-mentions []
+  (let [stream (twitter-client {:method :get
+                         :url "https://userstream.twitter.com/1.1/user.json"
+                         :as :stream})]
+    (line-seq (BufferedReader. (InputStreamReader. stream)))))

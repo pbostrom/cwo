@@ -1,5 +1,5 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd jq-ajax]]
+  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd]]
             [clojure.string :as string]))
 
 (def publish-console? (atom {:you true :oth false}))
