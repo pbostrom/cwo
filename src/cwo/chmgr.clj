@@ -18,12 +18,12 @@
 ;  :sidefx    A queue of side-effects to execute outside dosync block
 ;  :peers     A vector of connected peers
 ;  :anon      A count of connected anonymous peers
-;  :transfer  A handle that your REPL has been transfered to
+;  :transfer  A handle that your REPL has been transferred to
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
 ;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
-;  :tsub-vlv          Optional, a subscription to your transfered REPL session
+;  :tsub-vlv          Optional, a subscription to your transferred REPL session
 ;
 ;  REPLs
 ;  :you Your primary code evaluation environment
@@ -121,6 +121,19 @@
              err-msg #(client-cmd cl-ch [:error "Handle taken"])]
          (alter cc #(update-in % [:sidefx] conj err-msg))
          [cc])))))
+
+(defn login-ua [app-state sesh-id handle]
+  "TODO: implement unauthenticated login; prefix '_.' to specified handle to avoid
+   clashes with twitter auth'd users"
+  (if (= -1 (.indexOf handle "@"))
+    (login app-state sesh-id (str "_." handle))
+    (dosync
+     (let [cc (@app-state sesh-id)
+           {cl-ch :cl-ch} @cc
+           err-str "Handle cannot contain special characters"
+           err-msg #(client-cmd cl-ch [:error err-str])]
+       (alter cc #(update-in % [:sidefx] conj err-msg))
+       [cc]))))
 
 (defn logout [app-state sesh-id _]
   (println "logout")
@@ -374,7 +387,7 @@
     (((keyword chat-id) chat-hdlr) txt)
     nil))
 
-(def fn-map {:login login
+(def fn-map {:login login-ua
              :logout logout
              :subscribe subscribe
              :end-transfer end-transfer

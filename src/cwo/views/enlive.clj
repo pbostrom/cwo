@@ -4,19 +4,18 @@
 (defn render-snippet [s]
   (apply str (html/emit* s)))
 
+(defn hfmt [handle]
+  (if (= 0 (.indexOf handle "_."))
+    (.substring handle 2)
+    (str "@" handle)))
+
 (def pub "cwo/resources/public/")
 
 (html/defsnippet loginbox (str pub "snippets.html") [:#loginbox] [])
 
-;;(html/defsnippet default-text (str pub "snippets.html") [:#default-text] [])
-
 (html/defsnippet logoutbox (str pub "snippets.html") [:#logoutbox] [user]
-  [:#handle] (html/content (:handle user))
+  [:#handle] (html/content (hfmt (:handle user)))
   [:#token] (html/set-attr :value (:token user)))
-
-;;(html/defsnippet home-panel (str pub "layout.html") [:#home-panel] [])
-
-;;(html/defsnippet status (str pub "snippets.html") [:#status] [])
 
 (html/defsnippet transfer-text (str pub "snippets.html") [:#tr-box] [])
 

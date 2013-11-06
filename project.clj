@@ -18,11 +18,11 @@
                  [midje "1.4.0"]
                  [org.flatland/useful "0.9.3"]
                  [ring "1.1.5"]
-;                 [com.cemerick/piggieback "0.0.4"]
                  [mavericklou/oauth-clj "0.1.4.1"]
                  [overtone/at-at "1.2.0"]
                  [crate "0.2.4"]]
   :plugins [[lein-cljsbuild "0.3.3"]]
+  :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]]}}
   :pedantic :warn
   :cljsbuild
   {:builds
@@ -35,6 +35,5 @@
        "externs/twitter-bootstrap.js"
        "externs/jquery-1.7.externs.js"],
       :optimizations :whitespace}}]}
-  ;:repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
-  :jvm-opts ["-Djava.security.policy=example.policy""-Xmx80M"]
+  :jvm-opts ["-Djava.security.policy=example.policy" "-Xmx128M"]
   :main cwo.server)

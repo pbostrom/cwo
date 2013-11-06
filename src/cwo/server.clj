@@ -36,11 +36,13 @@
      :twitter-repl #(twitter/twitter-repl app-state)}))
 
 (defn cycle-task [f tp period]
-  (at-at/every period f tp :fixed-delay true))
+  (at-at/every period f tp :fixed-delay true)
+  (println "Twitter REPL started"))
 
 (defn start-aleph [handlers port]
+  (println "server started on port" port)
   (aleph/start-http-server
-      (aleph/wrap-ring-handler handlers) {:port port :websocket true}))
+   (aleph/wrap-ring-handler handlers) {:port port :websocket true}))
 
 (defn stop-system [sys]
   ((:stop-aleph sys))
@@ -51,7 +53,5 @@
   (let [port 8080
         {:keys [twitter-repl thread-pool] :as sys} (system)
         stop-aleph (start-aleph (:handlers sys) port)]
-    (println "server started on port" port)
     (cycle-task twitter-repl thread-pool 65000)
-    (println "Twitter REPL started")
     (assoc sys :stop-aleph stop-aleph)))

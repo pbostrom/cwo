@@ -1,5 +1,5 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd]]
+  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd hfmt]]
             [clojure.string :as string]))
 
 (def publish-console? (atom {:you true :oth false}))
@@ -93,7 +93,7 @@
      (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
      (-> (jq "#peer-status") (.css "visibility" "visible"))
      (set-repl-mode :oth :sub)
-     (.text (jq "#owner") handle)
+     (.text (jq "#owner") (hfmt handle))
      (.attr (jq "#discon") "handle" handle)
      (srv-cmd :subscribe handle)))
 

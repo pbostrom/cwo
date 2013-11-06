@@ -2,6 +2,9 @@
 html, body {
   color: #586e75; }
 
+.navbar-fixed-top {
+  color: white; }
+
 body {
   padding-top: 37px;
   padding-bottom: 5px; }
