@@ -7,7 +7,7 @@
                  [org.clojure/tools.reader "0.7.8"]
                  [org.clojure/tools.trace "0.7.5"]
                  [org.clojure/core.cache "0.6.3"]
-                 [core.async "0.1.242.0-44b1e3-alpha"]
+                 [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]
                  [aleph "0.3.0-beta11"]
                  [compojure "1.1.3"]
                  [com.taoensso/carmine "2.1.3"]
