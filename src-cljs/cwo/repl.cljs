@@ -101,7 +101,8 @@
   ;  (set-repl-mode :oth :sub)
   (jslog "disconnect")
   (-> (jq "#peer-status") (.css "visibility" "hidden"))
-  (.html (jq "#oth-chat-box > pre") nil)
+  (.html (jq "#peer-chat-box pre") nil)
+  (.html (jq "#peer-list") nil)
   (let [handle (-> (jq "#discon") (.attr "handle"))]
     (srv-cmd :disconnect handle)))
 

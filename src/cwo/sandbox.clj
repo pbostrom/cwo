@@ -14,5 +14,6 @@
 
 (defn make-sandbox []
   (sandbox cwo-clojure-tester
+           :max-defs 9000
            :timeout 2000
            :init '(do (require '[clojure.repl :refer [doc]]))))

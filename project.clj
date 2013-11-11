@@ -2,7 +2,7 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1913"]
-                 [org.clojure/core.logic "0.8.0-rc2"]
+                 [org.clojure/core.logic "0.8.4"]
                  [org.clojure/tools.macro "0.1.2"]
                  [org.clojure/tools.reader "0.7.8"]
                  [org.clojure/tools.trace "0.7.5"]

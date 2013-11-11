@@ -73,6 +73,10 @@
   (.append (jq "#widgets") (jq "#tr-box"))
   (repl/set-repl-mode :you :active))
 
+(defmethod wscmd :activate-repl 
+  [_ _]
+  (repl/set-repl-mode :you :active))
+
 (defmethod wscmd :expr 
   [_ expr]
   (let [[repl-key expr] (reader/read-string expr)

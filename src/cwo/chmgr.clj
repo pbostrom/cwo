@@ -9,7 +9,7 @@
             [cwo.utils :refer [safe-read-str read-forms]]
             [cwo.views.enlive :as el]))
 
-; Channel mgmt architecture
+; Channel data structure
 ; A channel controller is a map for regulating websocket traffic between clients
 ; {
 ;  :srv-ch    Required, permanent channel to send commands to server
@@ -99,6 +99,7 @@
       (dosync 
        (let [{:keys [cl-ch]} @cc
              cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
+                   #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
                    #(client-cmd cl-ch [:rehtml ["#user-container" (el/login-html {:handle handle})]])]]
          (alter cc update-in [:sidefx] into cmds))
        (into [cc] 
@@ -146,8 +147,10 @@
                           (alter (:handles @app-state) dissoc handle)
                           handle)))] 
       (dosync 
-        (let [{:keys [cl-ch]} @cc
+        (let [{:keys [cl-ch srv-ch]} @cc
               cmds [#(client-cmd handle-ch [:rmuser ["#others-list" handle]])
+                    #(client-cmd cl-ch [:rmuser ["#home-peer-list" handle]])
+                    #(client-cmd srv-ch [:drop-off handle])
                     #(client-cmd cl-ch [:rehtml ["#user-container" (el/logout-html)]])]]
           (alter cc update-in [:sidefx] into cmds)
           (alter cc assoc-in [:you :sb] (sb/make-sandbox)))
@@ -441,9 +444,14 @@
     (swap! app-state assoc sesh-id newcc)
     newcc))
 
+(defn init-hist [hist-seq cl-ch]
+  (doseq [h hist-seq]
+    (client-cmd cl-ch [:trepl (edn/read-string h)])))
+
 (defn init-socket [app-state sesh-id sock]
   (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))
-        handle (@cc :handle)]
+        handle (@cc :handle)
+        hist-seq (lamina/channel->seq (lamina/fork (get-in @cc [:you :hist])))]
     (dosync (alter cc assoc :ws sock))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
@@ -452,6 +460,8 @@
                              (when (lamina/closed? (@cc :ws))
                                (drop-off app-state sesh-id))))
     (client-cmd (@cc :cl-ch) [:initclient (keys @(:handles @app-state))])
+    (init-hist hist-seq (@cc :cl-ch))
+    (and hist-seq (client-cmd (@cc :cl-ch) [:activate-repl nil]))
     (when handle (run-sidefx (login app-state sesh-id handle)))))
 
 (defn get-history [app-state sesh-id]
@@ -465,6 +475,7 @@
    promote default REPL to twitter REPL."
   [app-state sesh-id handle]
   (dosync (alter (@app-state sesh-id) assoc :handle handle))
+  ;; TODO: better sync for twitter REPL state
   (if-let [trepl (get-in @app-state [:twitter-repls handle])]
     (do
       (when-let [hist (not-empty (get-history app-state sesh-id))]

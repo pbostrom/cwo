@@ -84,10 +84,14 @@
     (println "polling mentions; cycle:" cycle-id)
     (doseq [[sexps _ id screen_name] (reverse (map parse-mention (mentions since-id)))]
       (swap! twt-log update-in [:mentions] conj id)
-      (let [repl (chmgr/get-twitter-repl app-state screen_name)]
+      (let [repl (chmgr/get-twitter-repl app-state screen_name)
+            cl-ch (some-> (chmgr/cc-from-handle app-state screen_name) deref :cl-ch)]
         (doseq [sexp (utils/read-forms sexps)]
-          (let [result (evl/eval-expr sexp (:sb repl))]
-            (chmgr/client-cmd (:hist repl) [:hist (pr-str [sexp result])])
+          (let [result (evl/eval-expr sexp (:sb repl))
+                hist-str (pr-str [sexp result])]
+            (chmgr/client-cmd (:hist repl) [:hist hist-str])
+            (and cl-ch (chmgr/client-cmd cl-ch [:trepl [:hist hist-str]]))
+            (and cl-ch (chmgr/client-cmd cl-ch [:activate-repl nil]))
             (reply screen_name id result twt-log)
             (println [screen_name id sexp result])))))
     (save-cycle-log cycle-id @twt-log))
