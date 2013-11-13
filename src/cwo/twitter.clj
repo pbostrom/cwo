@@ -31,11 +31,20 @@
            :url "https://api.twitter.com/1.1/statuses/update.json"
            :form-params {:status status}}))
 
+(defn take-st
+  "Return a string of the first n lines of the stack trace"
+  [n st]
+  (reduce #(str % "\t" (.toString %2) "\n") "" (take n st)))
+
 (defmacro tc-wrap [try-form catch-form]
   `(try
      ~try-form
      (catch Exception e#
-       (spit "twitter-http.log" (str (.getData e#) "\n") :append true)
+       (let [st# (take-st 16 (.getStackTrace e#))
+             es# (.toString e#)
+             cs# (.getCause e#)]
+         (spit "twitter-http.log" (str es# " at\n" st# "Cause: " cs# "\n")
+               :append true))
        ~catch-form)))
 
 (defn reply
@@ -77,7 +86,7 @@
   (doseq [[k v] log]
     (redis/hset k cycle-id v)))
 
-(defn twitter-repl [app-state]
+(defn twitter-repl-impl [app-state]
   (let [twt-log (atom {:mentions [] :replies [] :errors []})
         cycle-id (redis/incr "cycle-id")
         since-id (redis/get :since-id)] ; TODO: 
@@ -97,6 +106,9 @@
     (save-cycle-log cycle-id @twt-log))
 ; TODO: grab any failures from DB and retry them here
   )
+
+(defn twitter-repl [app-state]
+  (tc-wrap (twitter-repl-impl app-state) nil))
 
 (defn request-token []
   (let [{:keys [consumer-key consumer-secret]} credentials]

@@ -12,7 +12,7 @@
                  [compojure "1.1.3"]
                  [com.taoensso/carmine "2.1.3"]
                  [enlive "1.0.1"]
-                 [clojail "1.0.5"]
+                 [clojail "1.0.6"]
                  [clj-http "0.7.3"]
                  [cheshire "5.0.1"]
                  [midje "1.4.0"]
