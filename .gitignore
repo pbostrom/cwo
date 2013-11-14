@@ -21,3 +21,4 @@ src/cwo/credentials.edn
 credentials.edn
 dump.rdb
 twitter-http.log
+.nrepl-port

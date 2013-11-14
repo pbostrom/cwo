@@ -6,6 +6,7 @@
             [cwo.chmgr :as chmgr]
             [cwo.redis :as redis]
             [clj-http.client :as client]
+            [clj-time.core :as time]
             [clj-http.util :refer [url-encode]]
             [clojure.edn :as edn]
             [overtone.at-at :as at-at])
@@ -43,6 +44,8 @@
        (let [st# (take-st 16 (.getStackTrace e#))
              es# (.toString e#)
              cs# (.getCause e#)]
+         (spit "twitter-http.log" (str (.toString (time/now)) "\n")
+               :append true)
          (spit "twitter-http.log" (str es# " at\n" st# "Cause: " cs# "\n")
                :append true))
        ~catch-form)))
@@ -90,7 +93,10 @@
   (let [twt-log (atom {:mentions [] :replies [] :errors []})
         cycle-id (redis/incr "cycle-id")
         since-id (redis/get :since-id)] ; TODO: 
-    (println "polling mentions; cycle:" cycle-id)
+    
+    (spit "twitter-http.log"
+          (str (.toString (time/now)) " polling mentions; cycle: " cycle-id "\n")
+          :append true)
     (doseq [[sexps _ id screen_name] (reverse (map parse-mention (mentions since-id)))]
       (swap! twt-log update-in [:mentions] conj id)
       (let [repl (chmgr/get-twitter-repl app-state screen_name)
@@ -116,7 +122,7 @@
      ((oauth-v1/make-consumer
        :oauth-consumer-key consumer-key
        :oauth-consumer-secret consumer-secret
-       :oauth-callback "http://localhost:8080/siwted"
+       :oauth-callback "http://cwo.io/siwted"
        :form-params {:x_auth_access_type "read"})
       {:method :post :url "https://api.twitter.com/oauth/request_token"}))))
 

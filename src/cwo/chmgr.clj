@@ -176,7 +176,6 @@
           [cc])))))
 
 (defn subscribe [app-state sesh-id pub-hdl]
-  (println "**" @app-state "**")
   (dosync
     (let [pub-cc (cc-from-handle app-state pub-hdl)
           sub-cc (@app-state sesh-id)
@@ -231,7 +230,6 @@
 
 ; transfer control of sesh-id's REPL to specified handle
 (defn transfer [app-state sesh-id handle]
-  (println app-state "+" handle)
   (let [owner-cc (@app-state sesh-id)
         trans-cc (cc-from-handle app-state handle)
         pv (lamina/channel)

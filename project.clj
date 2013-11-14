@@ -20,6 +20,7 @@
                  [ring "1.1.5"]
                  [mavericklou/oauth-clj "0.1.4.1"]
                  [overtone/at-at "1.2.0"]
+                 [clj-time "0.6.0"]
                  [crate "0.2.4"]]
   :plugins [[lein-cljsbuild "0.3.3"]]
   :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]]}}
