@@ -26,7 +26,6 @@
     (count (filter #(= % "(") expr))))
 
 (defn expr-indent [expr]
-  (jslog expr)
   (let [lines (js->clj (.split expr "\n"))
         line (.trim jq (last lines))
         offset (if (= (count lines) 1) 2 0)
@@ -37,7 +36,6 @@
                          (= x ")") [(inc idx) (or (next stack) [(- (first stack) 2)])]
                          true [(inc idx) stack])) 
                      [0 [-2]] (seq line))]
-    (jslog (pr-str indent-vec))
     (+ (first (second indent-vec)) 2 offset)))
 
 (declare prompt)
@@ -89,7 +87,6 @@
   ([_]
      (join (-> (jq "#others-list option:selected") (.val)) nil))
   ([handle _]
-     (jslog (str "join" handle))
      (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
      (-> (jq "#peer-status") (.css "visibility" "visible"))
      (set-repl-mode :oth :sub)
@@ -99,7 +96,6 @@
 
 (defn disconnect []
   ;  (set-repl-mode :oth :sub)
-  (jslog "disconnect")
   (-> (jq "#peer-status") (.css "visibility" "hidden"))
   (.html (jq "#peer-chat-box pre") nil)
   (.html (jq "#peer-list") nil)
@@ -113,12 +109,11 @@
     ; configure transfer on server
     (srv-cmd :transfer handle)))
 
-(defn reclaim []
-  (this-as btn 
-           (let [handle (-> (jq btn) (.attr "handle"))]
-             (.append (jq "#widgets") (jq "#tr-box"))
-             (jslog "srv-cmd :reclaim")
-             (srv-cmd :reclaim handle))))
+(defn reclaim [e]
+  (let [btn (.-target e)] 
+    (let [handle (-> (jq btn) (.attr "handle"))]
+      (.append (jq "#widgets") (jq "#tr-box"))
+      (srv-cmd :reclaim handle))))
 
 (defn hash-connect [[hdl]]
   (let [handles (select-set (jq "#others-list > option"))]
