@@ -18,6 +18,10 @@
   (let [hsh (.-hash js/window.location)]
     (when-not (empty? hsh) (.substring hsh 1))))
 
+(defn- qry-list [list-id opt-val]
+  (-> (jq (str list-id " > option"))
+    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
+
 (defn select-set
   "Returns sorted set of all handles in the select list"
   [list-opts]
@@ -37,3 +41,12 @@
 (defn re-html [sel html]
   (-> (jq sel)
     (.html html)))
+
+(defn hfmt [handle]
+  (when handle
+    (if (= 0 (.indexOf handle "_."))
+      (.substr handle 2)
+      (str "@" handle))))
+
+(defn sel-opt [handle]
+  [:option {:value handle} (hfmt handle)])

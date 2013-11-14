@@ -29,6 +29,25 @@
 </div>
 <!-- /header -->
 
+<!-- Paste Modal -->
+<div id="paste-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">Load a Paste</h3>
+  </div>
+  <div class="modal-body">
+    <div id="paste-err"></div>
+    <input type="radio" name="pastehost" value="gist">gist<br>
+    <input type="radio" name="pastehost" value="refheap">refheap<br>
+    <input placeholder="paste id" class="span3" type="text" id="paste-id">
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+    <button id="pastebtn" class="btn btn-primary">Load paste</button>
+  </div>
+</div>
+<!-- /Paste Modal -->
+
 <div class="container-fluid main">
   <div class="row-fluid">
     <div class="span16">
@@ -42,6 +61,7 @@
           <div class="tab-content">
             <div class="tab-pane" id="home">
               <div id="your-repl" class="console">
+		<button class="btn pull-right" data-toggle="modal" data-target="#paste-modal">paste</button>
               </div>
             </div>
             <div class="tab-pane" id="peer">
@@ -144,8 +164,8 @@
 <script type="text/javascript"> 
 var CLOSURE_NO_DEPS = true; 
 </script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
-<script src="/js/jqconsole-2.7.min.js" type="text/javascript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js" type="text/javascript"></script>
+<script src="/js/jqconsole-2.7.7.min.js" type="text/javascript"></script>
 <script src="/js/cljs-compiled.js" type="text/javascript"></script>
 <script src="/bootstrap/js/bootstrap.js" type="text/javascript"></script> 
 </body>

@@ -1,11 +1,15 @@
 (ns cwo.chmgr
   (:require [lamina.core :as lamina]
+            [hiccup.util :refer [escape-html]]
+            [cwo.http :as http]
             [cwo.eval :as evl]
             [cwo.sandbox :as sb]
-            [cwo.utils :refer [safe-read-str]]
+            [cwo.redis :as redis]
+            [clojure.tools.reader.edn :as edn]
+            [cwo.utils :refer [safe-read-str read-forms]]
             [cwo.views.enlive :as el]))
 
-; Channel mgmt architecture
+; Channel data structure
 ; A channel controller is a map for regulating websocket traffic between clients
 ; {
 ;  :srv-ch    Required, permanent channel to send commands to server
@@ -14,26 +18,25 @@
 ;  :sidefx    A queue of side-effects to execute outside dosync block
 ;  :peers     A vector of connected peers
 ;  :anon      A count of connected anonymous peers
-;  :transfer  A handle that your REPL has been transfered to
+;  :transfer  A handle that your REPL has been transferred to
 ;
 ;   valves are closable channels that route traffic between permanent channels
 ;  :sub {:vlv :hdl}   Optional, a subscription (valve, handle) to a shared REPL session
 ;  :pt-vlv            Optional, a pass-thru for your subscribers after a transfer
-;  :tsub-vlv          Optional, a subscription to your transfered REPL session
+;  :tsub-vlv          Optional, a subscription to your transferred REPL session
 ;
-;  evaluation sandboxes
-;  :you Repl Your primary code evaluation environment
-;  :oth Repl Optional, if someone transfers their repl to you
+;  REPLs
+;  :you Your primary code evaluation environment
+;  :oth Optional, if someone transfers their repl to you
 ; }
 ;
 
-; Repl
+; REPL
 ; {
 ;  :hist      Channel to send history commands to connected users
 ;  :sb        Evalutation sandbox
 ;  :ts        Timestamp of last activity
 ; }
-(defrecord Repl [hist sb ts])
 
 ; channel to update handle listq
 ; TODO: this should not be at the top-level
@@ -49,11 +52,11 @@
 
 (defn cmd? 
   ([msg]
-   (declare fn-map)
-   (let [msg-obj (safe-read-str msg)]
-     (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
+    (declare fn-map) ;; TODO: this should probably be a multi method
+     (let [msg-obj (safe-read-str msg)]
+       (and (vector? msg-obj) (contains? fn-map (first msg-obj)))))
   ([msg cmd] 
-   (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
+     (.startsWith msg (str "[" cmd " ")))) ;TODO: this might be better as a regex
 
 (defn cc-from-handle [app-state handle]
   (@app-state (@(:handles @app-state) handle)))
@@ -85,42 +88,55 @@
       (doseq [f fs]
         (f)))))
 
-(defn- login [app-state sesh-id handle]
-  (println "login!")
+(defn login [app-state sesh-id handle]
   (let [cc (@app-state sesh-id)]
     (if (dosync
-          (when-not 
-            (or ((ensure (:handles @app-state)) handle) (:handle (ensure cc)))
-            (alter cc assoc :handle handle)
-            (alter (:handles @app-state) assoc handle sesh-id)
-            handle))
+         (println "login!")
+         (when-not ((ensure (:handles @app-state)) handle) 
+           (alter cc assoc :handle handle)
+           (alter (:handles @app-state) assoc handle sesh-id)
+           handle))
       (dosync 
-        (let [{:keys [cl-ch]} @cc
-              cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
-                    #(client-cmd cl-ch [:rehtml ["#user-container" (el/login-html {:handle handle})]])]]
-          (alter cc update-in [:sidefx] into cmds))
-        (into [cc] 
-              (dosync
-                (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
-                  (let [{:keys [cl-ch srv-ch]} @pub-cc
-                        cmds [#(client-cmd cl-ch [:rmanon "#home-peer-list"])
-                              #(client-cmd srv-ch [:rmanon "#peer-list"])
-                              #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
-                              #(client-cmd srv-ch [:adduser ["#peer-list" handle]])]]
-                    (alter pub-cc 
-                           (fn [cc]
-                             (-> cc 
+       (let [{:keys [cl-ch]} @cc
+             cmds [#(client-cmd handle-ch [:adduser ["#others-list" handle]])
+                   #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
+                   #(client-cmd cl-ch [:rehtml ["#user-container" (el/login-html {:handle handle})]])]]
+         (alter cc update-in [:sidefx] into cmds))
+       (into [cc] 
+             (dosync
+              (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
+                (let [{:keys [cl-ch srv-ch]} @pub-cc
+                      cmds [#(client-cmd cl-ch [:rmanon "#home-peer-list"])
+                            #(client-cmd srv-ch [:rmanon "#peer-list"])
+                            #(client-cmd cl-ch [:adduser ["#home-peer-list" handle]])
+                            #(client-cmd srv-ch [:adduser ["#peer-list" handle]])]]
+                  (alter pub-cc 
+                         (fn [cc]
+                           (-> cc 
                                (update-in [:sidefx] into cmds)
                                (update-in [:anon] dec)
                                (update-in [:peers] conj handle))))
-                    [pub-cc])))))
+                  [pub-cc])))))
       (dosync
-        (let [{cl-ch :cl-ch} @cc
-              err-msg #(client-cmd cl-ch [:error "Handle taken"])]
-          (alter cc #(update-in % [:sidefx] conj err-msg))
-          [cc])))))
+       (let [{cl-ch :cl-ch} @cc
+             err-msg #(client-cmd cl-ch [:error "Handle taken"])]
+         (alter cc #(update-in % [:sidefx] conj err-msg))
+         [cc])))))
 
-(defn- logout [app-state sesh-id _]
+(defn login-ua [app-state sesh-id handle]
+  "TODO: implement unauthenticated login; prefix '_.' to specified handle to avoid
+   clashes with twitter auth'd users"
+  (if (= -1 (.indexOf handle "@"))
+    (login app-state sesh-id (str "_." handle))
+    (dosync
+     (let [cc (@app-state sesh-id)
+           {cl-ch :cl-ch} @cc
+           err-str "Handle cannot contain special characters"
+           err-msg #(client-cmd cl-ch [:error err-str])]
+       (alter cc #(update-in % [:sidefx] conj err-msg))
+       [cc]))))
+
+(defn logout [app-state sesh-id _]
   (println "logout")
   (let [cc (@app-state sesh-id)]
     (if-let [handle (dosync
@@ -131,10 +147,13 @@
                           (alter (:handles @app-state) dissoc handle)
                           handle)))] 
       (dosync 
-        (let [{:keys [cl-ch]} @cc
+        (let [{:keys [cl-ch srv-ch]} @cc
               cmds [#(client-cmd handle-ch [:rmuser ["#others-list" handle]])
+                    #(client-cmd cl-ch [:rmuser ["#home-peer-list" handle]])
+                    #(client-cmd srv-ch [:drop-off handle])
                     #(client-cmd cl-ch [:rehtml ["#user-container" (el/logout-html)]])]]
-          (alter cc update-in [:sidefx] into cmds))
+          (alter cc update-in [:sidefx] into cmds)
+          (alter cc assoc-in [:you :sb] (sb/make-sandbox)))
         (into [cc] 
               (dosync
                 (when-let [pub-cc (cc-from-handle app-state (get-in (ensure cc) [:sub :hdl]))]
@@ -156,8 +175,7 @@
           (alter cc #(update-in % [:sidefx] conj err-msg))
           [cc])))))
 
-(defn- subscribe [app-state sesh-id pub-hdl]
-  (println "**" @app-state "**")
+(defn subscribe [app-state sesh-id pub-hdl]
   (dosync
     (let [pub-cc (cc-from-handle app-state pub-hdl)
           sub-cc (@app-state sesh-id)
@@ -192,7 +210,7 @@
           (alter sub-cc update-in [:sidefx] into cmds)))
       [pub-cc sub-cc])))
 
-(defn- end-transfer [app-state sesh-id handle]
+(defn end-transfer [app-state sesh-id handle]
   (let [owner-cc (@app-state sesh-id)
         trans-cc (cc-from-handle app-state handle)]
     (dosync
@@ -211,8 +229,7 @@
     [owner-cc trans-cc]))
 
 ; transfer control of sesh-id's REPL to specified handle
-(defn- transfer [app-state sesh-id handle]
-  (println app-state "+" handle)
+(defn transfer [app-state sesh-id handle]
   (let [owner-cc (@app-state sesh-id)
         trans-cc (cc-from-handle app-state handle)
         pv (lamina/channel)
@@ -232,27 +249,27 @@
              trans :transfer} (ensure owner-cc)
             ocmds [#(client-cmd (:hist target-repl) [:chctrl handle])
                    #(lamina/siphon 
-                      (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
-                      pv old-srv)
+                     (lamina/map* parse-tprompt (lamina/filter* (route? #{:t}) tr-srv))
+                     pv old-srv)
                    #(lamina/siphon 
-                      (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
+                     (lamina/map* route-hist (lamina/fork (:hist target-repl))) tv old-cl)
                    #(lamina/siphon (lamina/map* route-prompt (lamina/fork pv)) tv old-cl)]
             tcmds [#(client-cmd tr-cl [:transfer nil])
                    #(lamina/close (:vlv sub))]]
-        (when trans
-          (end-transfer app-state sesh-id trans)
-          (swap! cc-vec into (subscribe app-state (@(:handles @app-state) trans) owner-hdl)))
-        (alter trans-cc #(-> %
-                           (update-in [:sidefx] into tcmds)
-                           (into {:oth target-repl})))
-        (alter owner-cc #(-> %
-                           (update-in [:sidefx] into ocmds)
-                           (into {:tsub-vlv tv
-                                  :pt-vlv pv
-                                  :transfer handle})))))
+       (when trans
+         (end-transfer app-state sesh-id trans)
+         (swap! cc-vec into (subscribe app-state (@(:handles @app-state) trans) owner-hdl)))
+       (alter trans-cc #(-> %
+                            (update-in [:sidefx] into tcmds)
+                            (into {:oth target-repl})))
+       (alter owner-cc #(-> %
+                            (update-in [:sidefx] into ocmds)
+                            (into {:tsub-vlv tv
+                                   :pt-vlv pv
+                                   :transfer handle})))))
     @cc-vec))
 
-(defn- disconnect [app-state sesh-id handle]
+(defn disconnect [app-state sesh-id handle]
   (println "disconnect" handle)
   (let [pub-cc (cc-from-handle app-state handle)
         sub-cc (@app-state sesh-id)]
@@ -281,7 +298,7 @@
         (reverse @cc-vec)))))
 
 ; reclaim control of sesh-id's REPL from specified handle
-(defn- reclaim [app-state sesh-id handle]
+(defn reclaim [app-state sesh-id handle]
   (let [pub-cc (@app-state sesh-id)
         sub-cc (cc-from-handle app-state handle)]
     (dosync
@@ -294,46 +311,63 @@
     [pub-cc sub-cc]))
 
 ; disconnect any subscriptions, logout, etc
-(defn- drop-off [app-state sesh-id]
-  (println "drop-off")
-  (let [app-snapshot (atom @app-state)]
-    (swap! app-state dissoc sesh-id)
-    (-> 
-      (dosync
-        (let [cc (@app-snapshot sesh-id)
-              {:keys [sub you srv-ch handle]} (ensure cc)
-              cc-vec (atom [cc])
-              sub-hdl (:hdl sub)]
-          (when sub-hdl
-            (swap! cc-vec into (disconnect app-snapshot sesh-id sub-hdl)))
-          (when handle 
-            (alter cc update-in [:sidefx] into 
-                   [#(client-cmd srv-ch [:drop-off handle])
-                    #(client-cmd handle-ch [:rmuser ["#others-list" handle]])]))
-          (alter (:handles @app-state) dissoc handle)
-          @cc-vec))
-      run-sidefx)))
+(defn drop-off [app-state sesh-id]
+  (-> 
+   (dosync
+    (println "drop-off")
+    (let [cc (@app-state sesh-id)
+          {:keys [sub srv-ch handle]} (ensure cc)
+          cc-vec (atom [cc])
+          sub-hdl (:hdl sub)]
+      (when sub-hdl
+        (swap! cc-vec into (disconnect app-state sesh-id sub-hdl)))
+      (when handle 
+        (alter cc update-in [:sidefx] into 
+               [#(client-cmd srv-ch [:drop-off handle])
+                #(client-cmd handle-ch [:rmuser ["#others-list" handle]])]))
+      (alter (:handles @app-state) dissoc handle)
+      @cc-vec))
+   run-sidefx))
 
-(defn- eval-clj [app-state sesh-id [expr sb-key]]
-  (println "eval-clj!")
+(defn eval-clj [app-state sesh-id expr sb-key]
+  (println "eval sb:" expr)
   (let [{:keys [cl-ch srv-ch] repl sb-key} @(@app-state sesh-id)
         sb (:sb repl)
-        {:keys [result error message] :as res} (evl/eval-expr expr sb)
-        data (if error
-               res
-               (let [[out res] result]
-                 (str out (pr-str res))))]
+        result (evl/eval-expr expr sb)]
     (reset! (:ts repl) (System/currentTimeMillis))
-    (client-cmd cl-ch [:result (pr-str [sb-key data])])
-    (client-cmd (:hist repl) [:hist (pr-str [expr data])])
+    (client-cmd cl-ch [:result (pr-str [sb-key result])])
+    (client-cmd (:hist repl) [:hist (pr-str [expr result])])
     (client-cmd srv-ch [:ts 0])
     nil))
 
-(defn- chat [app-state sesh-id [chat-id txt]]
-  (println chat-id "-" txt)
+(defn read-eval-clj-deprecated [app-state sesh-id [expr sb-key]]
+  (eval-clj app-state sesh-id (safe-read-str expr) sb-key))
+
+(defn eval-forms [app-state sesh-id forms repl]
+  (let [{cl-ch :cl-ch} @(@app-state sesh-id)]
+    (doseq [form forms]
+        (client-cmd cl-ch [:expr (pr-str [repl form])])
+        (eval-clj app-state sesh-id form repl))))
+
+(defn read-eval-clj [app-state sesh-id [expr sb-key]]
+  (eval-forms app-state sesh-id (read-forms expr) sb-key))
+
+(defn paste [app-state sesh-id [host id repl]]
+  (let [{cl-ch :cl-ch} @(@app-state sesh-id)]
+    (try
+      (eval-forms app-state sesh-id (http/read-paste (keyword host) id) repl)
+      (catch clojure.lang.ExceptionInfo e
+        (let [{:keys [trace-redirects status]} (:object (ex-data e))
+              [url] trace-redirects
+              msg (str "Could not load paste " id " from " host "<br>" url " returned status " status)]
+          (println msg)
+          (client-cmd cl-ch [:paste-error msg])
+          nil)))))
+
+(defn chat [app-state sesh-id [chat-id txt]]
   (let [{:keys [srv-ch cl-ch sub handle transfer]} @(@app-state sesh-id) 
         chat-hdlr {:you-chat 
-                   (fn [t]
+                   (fn [txt]
                      (println "youchat")
                      (client-cmd srv-ch [:othchat [handle txt]])
                      (client-cmd cl-ch [:youchat [handle txt]])
@@ -341,18 +375,20 @@
                        (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
                                    [:othchat [handle txt]])))
                    :oth-chat 
-                   (fn [t]
+                   (fn [txt]
                      (println "othchat")
                      (let [{:keys [srv-ch cl-ch transfer]} @(cc-from-handle app-state (:hdl sub))]
                        (client-cmd srv-ch [:othchat [handle txt]])
                        (client-cmd cl-ch [:youchat [handle txt]])
                        (when transfer
                          (client-cmd (:cl-ch @(cc-from-handle app-state transfer)) 
-                                     [:othchat [handle txt]]))))}]
+                                     [:othchat [handle txt]]))))}
+        txt (escape-html txt)]
+    (println chat-id "-" txt)
     (((keyword chat-id) chat-hdlr) txt)
     nil))
 
-(def fn-map {:login login
+(def fn-map {:login login-ua
              :logout logout
              :subscribe subscribe
              :end-transfer end-transfer
@@ -360,7 +396,8 @@
              :disconnect disconnect
              :reclaim reclaim
              :chat chat
-             :eval-clj eval-clj})
+             :paste paste
+             :read-eval-clj read-eval-clj})
 
 (defn execute [cmd app-state sesh-id arg]
   (when-not (contains? fn-map cmd) 
@@ -377,8 +414,19 @@
   (let [[cmd arg] (safe-read-str cmd-str)]
     (run-sidefx ((cmd fn-map) app-state sesh-id arg))))
 
-; create a send/receive channel pair, swap map structure
-(defn init-cc! [app-state sesh-id]
+(defn get-twitter-repl
+  "get/init twitter sandbox"
+  [app-state handle]
+  (or (get-in @app-state [:twitter-repls handle])
+      (let [sb {:hist (lamina/permanent-channel)
+                :sb   (sb/make-sandbox)
+                :ts   (atom (System/currentTimeMillis))}]
+        (swap! app-state assoc-in [:twitter-repls handle] sb)
+        sb)))
+
+(defn init-cc!
+  "Create a send/receive channel pair, swap map structure"
+  [app-state sesh-id]
   (println "init-cc!" sesh-id)
   (let [newcc (ref {:srv-ch (lamina/channel* :grounded? true :permanent? true)
                     :cl-ch (lamina/channel* :grounded? true :permanent? true)
@@ -386,22 +434,52 @@
                     :sidefx []
                     :peers #{}
                     :anon 0
-                    :you (Repl. (lamina/permanent-channel)
-                                (sb/make-sandbox)
-                                (atom (System/currentTimeMillis)))})]
+                    :you {:hist (lamina/permanent-channel)
+                          :sb      (sb/make-sandbox)
+                          :ts      (atom (System/currentTimeMillis))}})]
     (lamina/receive-all (lamina/filter* cmd? (:srv-ch @newcc)) #(cmd-hdlr app-state sesh-id %))
     (lamina/siphon handle-ch (:cl-ch @newcc))
     (swap! app-state assoc sesh-id newcc)
     newcc))
 
+(defn init-hist [hist-seq cl-ch]
+  (doseq [h hist-seq]
+    (client-cmd cl-ch [:trepl (edn/read-string h)])))
+
 (defn init-socket [app-state sesh-id sock]
-  (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))]
+  (let [cc (or (@app-state sesh-id) (init-cc! app-state sesh-id))
+        handle (@cc :handle)
+        hist-seq (lamina/channel->seq (lamina/fork (get-in @cc [:you :hist])))]
+    (dosync (alter cc assoc :ws sock))
     (lamina/siphon sock (@cc :srv-ch))
     (lamina/siphon (@cc :cl-ch) sock)
-    ;(lamina/on-closed sock #(client-cmd (@cc :cl-ch) [:logout nil]))
     (lamina/on-closed sock (fn [] 
-                             (println "closing!")
-                             (drop-off app-state sesh-id)))
-    ;    (lamina/on-closed webch #(when-not (= (get-in app-state [sesh-id :status]) "gh")
-    ;                               (recycle! sesh-id)))
-    (client-cmd (@cc :cl-ch) [:inithandles (keys @(:handles @app-state))])))
+                             (println "on closed")
+                             (when (lamina/closed? (@cc :ws))
+                               (drop-off app-state sesh-id))))
+    (client-cmd (@cc :cl-ch) [:initclient (keys @(:handles @app-state))])
+    (init-hist hist-seq (@cc :cl-ch))
+    (and hist-seq (client-cmd (@cc :cl-ch) [:activate-repl nil]))
+    (when handle (run-sidefx (login app-state sesh-id handle)))))
+
+(defn get-history [app-state sesh-id]
+  (let [hist-seq (-> @app-state (get sesh-id) deref :you :hist
+                     lamina/channel->seq)]
+    (for [s hist-seq]
+      (-> s edn/read-string second edn/read-string first))))
+
+(defn do-siwt
+  "Load twitter REPL if it exists, saving default REPL to DB. Otherwise
+   promote default REPL to twitter REPL."
+  [app-state sesh-id handle]
+  (dosync (alter (@app-state sesh-id) assoc :handle handle))
+  ;; TODO: better sync for twitter REPL state
+  (if-let [trepl (get-in @app-state [:twitter-repls handle])]
+    (do
+      (when-let [hist (not-empty (get-history app-state sesh-id))]
+        (redis/set sesh-id hist)
+        (println "display history load button"))
+      (dosync
+       (alter (@app-state sesh-id) assoc :you trepl)))
+    (let [repl (-> @app-state (get sesh-id) deref :you)]
+      (swap! app-state assoc-in [:twitter-repls handle] repl))))

@@ -10,9 +10,15 @@
 /.lein-cljsbuild*
 /.lein-plugins
 /.repl
+/repl
 /out
 resources/public/js/cljs-compiled.js
 resources/public/markup.html
 /resources/public/css/.sass-cache/
 /target
 .lein-repl-history
+src/cwo/credentials.edn
+credentials.edn
+dump.rdb
+twitter-http.log
+.nrepl-port

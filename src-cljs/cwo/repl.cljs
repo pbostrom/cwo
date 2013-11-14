@@ -1,5 +1,6 @@
 (ns cwo.repl
-  (:require [cwo.utils :refer [jq jslog sock srv-cmd]]))
+  (:require [cwo.utils :refer [jq jslog qry-list select-set sock srv-cmd hfmt]]
+            [clojure.string :as string]))
 
 (def publish-console? (atom {:you true :oth false}))
 
@@ -25,7 +26,6 @@
     (count (filter #(= % "(") expr))))
 
 (defn expr-indent [expr]
-  (jslog expr)
   (let [lines (js->clj (.split expr "\n"))
         line (.trim jq (last lines))
         offset (if (= (count lines) 1) 2 0)
@@ -36,13 +36,12 @@
                          (= x ")") [(inc idx) (or (next stack) [(- (first stack) 2)])]
                          true [(inc idx) stack])) 
                      [0 [-2]] (seq line))]
-    (jslog (pr-str indent-vec))
     (+ (first (second indent-vec)) 2 offset)))
 
 (declare prompt)
 (defn eval-hdlr [expr repl]
   (if-not (empty? (.trim expr)) 
-    (srv-cmd :eval-clj [expr repl])
+    (srv-cmd :read-eval-clj [expr repl])
     (prompt repl)))
 
 (defn prompt [repl]
@@ -84,20 +83,22 @@
 (defn logout []
   (srv-cmd :logout nil))
 
-(defn join []
-  (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
-  (-> (jq "#peer-status") (.css "visibility" "visible"))
-  (set-repl-mode :oth :sub)
-  (let [handle (-> (jq "#others-list option:selected") (.val))]
-    (.text (jq "#owner") handle)
-    (.attr (jq "#discon") "handle" handle)
-    (srv-cmd :subscribe handle)))
+(defn join
+  ([_]
+     (join (-> (jq "#others-list option:selected") (.val)) nil))
+  ([handle _]
+     (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
+     (-> (jq "#peer-status") (.css "visibility" "visible"))
+     (set-repl-mode :oth :sub)
+     (.text (jq "#owner") (hfmt handle))
+     (.attr (jq "#discon") "handle" handle)
+     (srv-cmd :subscribe handle)))
 
 (defn disconnect []
   ;  (set-repl-mode :oth :sub)
-  (jslog "disconnect")
   (-> (jq "#peer-status") (.css "visibility" "hidden"))
-  (.html (jq "#oth-chat-box > pre") nil)
+  (.html (jq "#peer-chat-box pre") nil)
+  (.html (jq "#peer-list") nil)
   (let [handle (-> (jq "#discon") (.attr "handle"))]
     (srv-cmd :disconnect handle)))
 
@@ -108,9 +109,24 @@
     ; configure transfer on server
     (srv-cmd :transfer handle)))
 
-(defn reclaim []
-  (this-as btn 
-           (let [handle (-> (jq btn) (.attr "handle"))]
-             (.append (jq "#widgets") (jq "#tr-box"))
-             (jslog "srv-cmd :reclaim")
-             (srv-cmd :reclaim handle))))
+(defn reclaim [e]
+  (let [btn (.-target e)] 
+    (let [handle (-> (jq btn) (.attr "handle"))]
+      (.append (jq "#widgets") (jq "#tr-box"))
+      (srv-cmd :reclaim handle))))
+
+(defn hash-connect [[hdl]]
+  (let [handles (select-set (jq "#others-list > option"))]
+    (if (contains? handles hdl)
+      (join hdl nil)
+      (js/alert (str hdl " is not available")))))
+
+(defn process-hash
+  "Process hash string of url"
+  [hsh]
+  (let [hshvec (string/split hsh "/")
+        action (first hshvec)
+        args (vec (rest hshvec))]
+    (cond
+     (= "paste" action) (srv-cmd :paste (conj args :you))
+     (= "connect" action) (hash-connect args))))

@@ -1,29 +1,20 @@
 (ns cwo.wscmd
-  (:require [cwo.utils :refer [jq jslog select-set get-hash re-html]]
+  (:require [cwo.utils :refer [jq jslog qry-list select-set get-hash re-html hfmt
+                               sel-opt]]
             [crate.core :as crate]
             [cljs.reader :as reader]
             [cwo.repl :as repl]))
-
-(defn- qry-list [list-id opt-val]
-  (-> (jq (str list-id " > option"))
-    (.filter (fn [idx] (this-as opt (= (.val (jq opt)) opt-val))))))
 
 ; multimethod for dispatching cmds recv'd via websocket
 (defmulti wscmd 
   (fn [cmd arg] cmd))
 
-(defmethod wscmd :inithandles
+(defmethod wscmd :initclient
   [_ handles]
-  (dorun
-    (map #(-> (jq "#others-list")
-            (.append
-              (crate/html [:option %]))) handles))
-  (when-let [hdl (get-hash)]
-    (if (contains? (set handles) hdl)
-      (do 
-        (-> (qry-list "#others-list" hdl) (.click))
-        (repl/join))
-      (js/alert (str hdl " is not available")))))
+  (doseq [h handles]
+    (-> (jq "#others-list") (.append (crate/html (sel-opt h)))))
+  (when-let [hsh (get-hash)]
+    (repl/process-hash hsh)))
 
 (defmethod wscmd :adduser
   [_ [list-id handle]]
@@ -32,7 +23,7 @@
           all-hdls (conj (select-set list-opts) handle)]
       (.remove list-opts)
       (doseq [h all-hdls]
-        (-> (jq list-id) (.append (crate/html [:option h])))))
+        (-> (jq list-id) (.append (crate/html (sel-opt h))))))
     :anonymous-case))
 
 (defmethod wscmd :rmuser
@@ -46,7 +37,7 @@
   (when (> anon 0)
     (.append (jq list-id) (crate/html [:option.anon (str anon " anonymous")]))) 
   (doseq [h handles]
-    (.append (jq list-id) (crate/html [:option h]))))
+    (.append (jq list-id) (crate/html (sel-opt h)))))
 
 (defmethod wscmd :addanon ;TODO consider abstracting next 2 fns
   [_ id]
@@ -82,6 +73,22 @@
   (.append (jq "#widgets") (jq "#tr-box"))
   (repl/set-repl-mode :you :active))
 
+(defmethod wscmd :activate-repl 
+  [_ _]
+  (repl/set-repl-mode :you :active))
+
+(defmethod wscmd :expr 
+  [_ expr]
+  (let [[repl-key expr] (reader/read-string expr)
+        repl (repl-key repl/repls)
+        hist (.GetHistory repl)]
+    (when-not (= (.GetState repl) "output")
+      (.SetPromptText repl (str expr))
+      (.AbortPrompt repl)
+      ;; ugly javascript mutation stuff
+      (.push hist (str expr))
+      (.SetHistory repl hist))))
+
 (defmethod wscmd :result 
   [_ rslt]
   (let [[repl rslt] (reader/read-string rslt)]
@@ -101,14 +108,14 @@
 (defmethod wscmd :chctrl 
   [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
   (when (and (= repl-key :you) (not= handle (.text (jq "#handle"))))
-    (.text (jq "#tr-hdl") handle)
+    (.text (jq "#tr-hdl") (hfmt handle))
     (.attr (jq "#reclaim") "handle" handle)
     (.append (jq "#home-peers") (jq "#tr-box")))
-  (.Write (repl-key repl/repls) (str "REPL transferred to " handle "\n") "jqconsole-info"))
+  (.Write (repl-key repl/repls) (str "REPL transferred to " (hfmt handle) "\n") "jqconsole-info"))
 
 (defmethod wscmd :drop-off 
   [_ handle & {:keys [repl-key] :or {repl-key :oth}}]
-  (.Write (repl-key repl/repls) (str "REPL owner " handle " has disconnected\n" ) "jqconsole-info")
+  (.Write (repl-key repl/repls) (str "REPL owner " (hfmt handle) " has disconnected\n" ) "jqconsole-info")
   (repl/disconnect))
 
 (defmethod wscmd :trepl 
@@ -126,18 +133,23 @@
 (defmethod wscmd :othchat 
   [_ [handle txt]]
   (let [chat (jq "#peer-chat-box pre")]
-    (.append chat (str handle ": " txt "\n"))
+    (.append chat (str (hfmt handle) ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 
 (defmethod wscmd :youchat 
   [_ [handle txt]]
   (let [chat (jq "#you-chat-box pre")]
-    (.append chat (str handle ": " txt "\n"))
+    (.append chat (str (hfmt handle) ": " txt "\n"))
     (.scrollTop chat (.prop chat "scrollHeight"))))
 
 (defmethod wscmd :error
   [_ errmsg]
   (js/alert errmsg))
+
+(defmethod wscmd :paste-error
+  [_ errmsg]
+  (.modal (jq "#paste-modal") "show")
+  (.html (jq "#paste-err") errmsg))
 
 (defmethod wscmd :default
   [cmd _] 

@@ -1,5 +1,5 @@
 (ns cwo.app
-  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash]]
+  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash srv-cmd]]
             [cwo.ajax :as ajax]
             [cwo.repl :as repl]
             [cwo.wscmd :as wscmd]))
@@ -12,7 +12,6 @@
       (.SetPromptText (:you repl/repls) tmsg))))
 
 (defn msg-hdlr [msg]
-  (jslog msg)
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
@@ -50,6 +49,16 @@
 (-> (jq "#transfer") (.on "click" repl/transfer))
 (-> (jq "#reclaim") (.on "click" repl/reclaim))
 
+;; paste handler
+(defn paste-hdlr []
+  (let [host (.val (jq "input[name=pastehost]:checked"))
+        id (.val (jq "#paste-id"))]
+    (srv-cmd :paste [host id :you]))
+  (.modal (jq "#paste-modal") "hide"))
+
+(-> (jq "#pastebtn") (.on "click" paste-hdlr))
+(-> (jq "#paste-modal") (.on "hidden" #(.html (jq "#paste-err") "")))
+
 ; login/out buttons 
 (-> (jq "#user-container")
   (.on "click" "#login" repl/login))
@@ -58,9 +67,9 @@
 
 (defn chat-hdlr [e]
   (when (= (.-which e) 13)
-    (this-as ta
-             (.send @sock (pr-str [:chat [(.-id ta) (.val (jq ta))]]))
-             (.val (jq ta) ""))))
+    (let [ta (.-target e)]
+      (.send @sock (pr-str [:chat [(.-id ta) (.val (jq ta))]]))
+      (.val (jq ta) ""))))
 
 ; chat input listeners
 (-> (jq ".chatwin > input") (.on "keydown" chat-hdlr))
@@ -90,10 +99,9 @@
     (when (and token ((comp not empty?) token) 
                (ajax/gh-profile token))))
 
-  (if (get-hash)
-    (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
-    (-> (jq "#repl-tabs a:first") (.tab "show")))
-  
+  (-> (jq "#repl-tabs a:first") (.tab "show"))
+
+  (set! (.-onhashchange js/window) (fn [x] (repl/process-hash (get-hash))))
   (open-websocket))
 
 (.ready (jq js/document) ready)
