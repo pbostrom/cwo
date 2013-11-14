@@ -82,11 +82,12 @@
   (let [[repl-key expr] (reader/read-string expr)
         repl (repl-key repl/repls)
         hist (.GetHistory repl)]
-    (.SetPromptText repl (str expr))
-    (.AbortPrompt repl)
-    ;; ugly javascript mutation stuff
-    (.push hist (str expr))
-    (.SetHistory repl hist)))
+    (when-not (= (.GetState repl) "output")
+      (.SetPromptText repl (str expr))
+      (.AbortPrompt repl)
+      ;; ugly javascript mutation stuff
+      (.push hist (str expr))
+      (.SetHistory repl hist))))
 
 (defmethod wscmd :result 
   [_ rslt]

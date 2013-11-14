@@ -40,7 +40,6 @@
     [sesh-id handle]))
 
 (defn root [{:as req}]
-  (println req)
   (let [[sesh-id handle] (session-data req)]
     (println "sesh-id:" sesh-id)
     (println "handle:" handle)

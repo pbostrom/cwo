@@ -29,12 +29,12 @@
   {:builds
    [{:source-paths ["src-cljs"],
      :compiler
-     {:pretty-print true,
+     {:pretty-print false,
       :output-to "resources/public/js/cljs-compiled.js",
       :externs
-      ["externs/jqconsole-2.7.js"
+      ["externs/jqconsole-2.7.7.min.js"
        "externs/twitter-bootstrap.js"
-       "externs/jquery-1.7.externs.js"],
+       "externs/jquery-1.8.js"],
       :optimizations :advanced}}]}
   :jvm-opts ["-Djava.security.policy=example.policy" "-Xmx128M"]
   :main cwo.server)
