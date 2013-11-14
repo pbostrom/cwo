@@ -1,10 +1,10 @@
 (defproject cwo "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-1913"]
+                 [org.clojure/clojurescript "0.0-2030"]
                  [org.clojure/core.logic "0.8.4"]
                  [org.clojure/tools.macro "0.1.2"]
-                 [org.clojure/tools.reader "0.7.8"]
+                 [org.clojure/tools.reader "0.7.10"]
                  [org.clojure/tools.trace "0.7.5"]
                  [org.clojure/core.cache "0.6.3"]
                  [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]
@@ -22,8 +22,8 @@
                  [overtone/at-at "1.2.0"]
                  [clj-time "0.6.0"]
                  [crate "0.2.4"]]
-  :plugins [[lein-cljsbuild "0.3.3"]]
-  :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]]}}
+  :plugins [[lein-cljsbuild "1.0.0-alpha2"]]
+;  :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]]}}
   :pedantic :warn
   :cljsbuild
   {:builds
@@ -35,6 +35,6 @@
       ["externs/jqconsole-2.7.js"
        "externs/twitter-bootstrap.js"
        "externs/jquery-1.7.externs.js"],
-      :optimizations :whitespace}}]}
+      :optimizations :advanced}}]}
   :jvm-opts ["-Djava.security.policy=example.policy" "-Xmx128M"]
   :main cwo.server)

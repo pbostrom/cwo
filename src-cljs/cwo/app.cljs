@@ -12,7 +12,6 @@
       (.SetPromptText (:you repl/repls) tmsg))))
 
 (defn msg-hdlr [msg]
-  (jslog msg)
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
           (map? msg-obj) (route msg-obj))))
@@ -68,9 +67,9 @@
 
 (defn chat-hdlr [e]
   (when (= (.-which e) 13)
-    (this-as ta
-             (.send @sock (pr-str [:chat [(.-id ta) (.val (jq ta))]]))
-             (.val (jq ta) ""))))
+    (let [ta (.-target e)]
+      (.send @sock (pr-str [:chat [(.-id ta) (.val (jq ta))]]))
+      (.val (jq ta) ""))))
 
 ; chat input listeners
 (-> (jq ".chatwin > input") (.on "keydown" chat-hdlr))

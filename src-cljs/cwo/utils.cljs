@@ -43,9 +43,10 @@
     (.html html)))
 
 (defn hfmt [handle]
-  (if (= 0 (.indexOf handle "_."))
-    (.substr handle 2)
-    (str "@" handle)))
+  (when handle
+    (if (= 0 (.indexOf handle "_."))
+      (.substr handle 2)
+      (str "@" handle))))
 
 (defn sel-opt [handle]
   [:option {:value handle} (hfmt handle)])
