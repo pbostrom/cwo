@@ -82,7 +82,7 @@
 (defn parse-mention [t]
   (let [{:keys [text id user entities]} t
         {:keys [screen_name]} user
-        offset (-> entities :user_mentions last :indices last)]
+        offset (-> entities :user_mentions first :indices last)]
     [(subs text offset) text id screen_name]))
 
 (defn save-cycle-log [cycle-id log]
@@ -101,7 +101,9 @@
       (swap! twt-log update-in [:mentions] conj id)
       (let [repl (chmgr/get-twitter-repl app-state screen_name)
             cl-ch (some-> (chmgr/cc-from-handle app-state screen_name) deref :cl-ch)]
-        (doseq [sexp (utils/read-forms sexps)]
+        (doseq [sexp (tc-wrap
+                      (utils/read-forms sexps)
+                      [(str "Read error:" sexps)])]
           (let [result (evl/eval-expr sexp (:sb repl))
                 hist-str (pr-str [sexp result])]
             (chmgr/client-cmd (:hist repl) [:hist hist-str])
