@@ -9,6 +9,7 @@
             [clj-time.core :as time]
             [clj-http.util :refer [url-encode]]
             [clojure.edn :as edn]
+            [carica.core :refer [config]]
             [overtone.at-at :as at-at])
   (:import [java.util.concurrent Executors TimeUnit]
            [java.io InputStreamReader BufferedReader]))
@@ -124,7 +125,7 @@
      ((oauth-v1/make-consumer
        :oauth-consumer-key consumer-key
        :oauth-consumer-secret consumer-secret
-       :oauth-callback "http://cwo.io/siwted"
+       :oauth-callback (config :oauth-callback)
        :form-params {:x_auth_access_type "read"})
       {:method :post :url "https://api.twitter.com/oauth/request_token"}))))
 

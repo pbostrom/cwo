@@ -1,0 +1,3 @@
+{:twitter-repl true
+ :embed-nrepl true
+ :oauth-callback "http://cwo.io/siwted"}

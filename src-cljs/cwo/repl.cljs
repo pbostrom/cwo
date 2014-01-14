@@ -5,15 +5,13 @@
 (def publish-console? (atom {:you true :oth false}))
 
 (def repls
-  {:oth (-> (jq "#others-repl") (.jqconsole "Peer REPL sessions are displayed in the console below.\n" "=> " " "))
-   :you (-> (jq "#your-repl") (.jqconsole "Enter your Clojure code at the prompt.\n" "=> " " "))})
+  {:oth (-> (jq "#others-repl") (identity))
+   :you (-> (jq "#your-repl") (identity))})
 
-(defn send-prompt [console-kw]
-  (let [repl (repls console-kw)
-        prompt-msg (console-kw {:you (fn [m] {:p m})
-                                :oth (fn [m] {:t {:p m}})})]
-    (when-let [prompt-text (and (= (.GetState repl) "prompt")(.GetPromptText repl))]
-      (.send @sock (pr-str (prompt-msg prompt-text))))))
+(defn send-editor-state [console-kw state]
+  (let [prompt-msg (console-kw {:you {:p state}
+                                :oth {:t {:p state}}})]
+    (.send @sock (pr-str prompt-msg))))
 
 (defn share-console-loop [console-kw]
   (when (@publish-console? console-kw)
@@ -39,10 +37,39 @@
     (+ (first (second indent-vec)) 2 offset)))
 
 (declare prompt)
-(defn eval-hdlr [expr repl]
+
+(defn do-eval [expr]
   (if-not (empty? (.trim expr)) 
-    (srv-cmd :read-eval-clj [expr repl])
-    (prompt repl)))
+    (srv-cmd :read-eval-clj [expr :you])))
+
+(defn expr-contains-curs? [{:keys [from to]} curs]
+  (apply <= (map :line [from curs to])))
+
+(defn find-tl-expr
+  "finds top level expression containing cursor"
+  [cm line]
+  (if (< line 0)
+    nil
+    (if-let [match (.findMatchingBracket cm (clj->js {:line line :ch 0}))]
+      (when (expr-contains-curs? match (.getCursor cm))
+        match)
+      (recur cm (dec line)))))
+
+(defn editor-eval [editor evt] ;;TODO: make js objects behave like maps
+  (.preventDefault evt)
+  (.stopPropagation evt)
+  (if-let [{:keys [from to]} (find-tl-expr editor (.-line (.getCursor editor)))]
+    (do
+      (aset to "ch" (inc (:ch to)))
+      (do-eval (.getRange editor from to)))
+    (js/alert "no tl expr")))
+
+(defn editor-load [editor evt]
+  (.preventDefault evt)
+  (.stopPropagation evt)
+  (.html (jq "#you-repl-output") "")
+  (let [exprs (.getValue editor)]
+    (srv-cmd :read-eval-clj [exprs :you])))
 
 (defn prompt [repl]
   (.Prompt (repl repls) true #(eval-hdlr % repl) 
@@ -54,8 +81,7 @@
 (defn console-write [repl output]
   (if (:error output)
     (.Write (repl repls) (str (:message output) "\n") "jqconsole-error")
-    (.Write (repl repls) (str output "\n") "jqconsole-output"))
-  (prompt repl))
+    (.append (jq "#you-repl-output") (str output "<br>"))))
 
 (defn init-active-mode [repl-kw]
   (let [repl (repl-kw repls)]
@@ -67,11 +93,7 @@
   (share-console-loop repl-kw))
 
 (defn init-sub-mode [repl-kw]
-  (swap! publish-console? assoc repl-kw false)
-  (let [repl (repl-kw repls)]
-    (.Reset repl)
-    (.Prompt repl true (fn [] nil))
-    (.Disable repl)))
+  (swap! publish-console? assoc repl-kw false))
 
 (defn set-repl-mode [repl mode]
   (let [modef (mode {:active init-active-mode :sub init-sub-mode})]
@@ -84,9 +106,9 @@
   (srv-cmd :logout nil))
 
 (defn join
-  ([_]
-     (join (-> (jq "#others-list option:selected") (.val)) nil))
-  ([handle _]
+  ([_ cm]
+     (join (-> (jq "#others-list option:selected") (.val)) cm nil))
+  ([handle cm _]
      (-> (jq "#repl-tabs a[href=\"#peer\"]") (.tab "show"))
      (-> (jq "#peer-status") (.css "visibility" "visible"))
      (set-repl-mode :oth :sub)

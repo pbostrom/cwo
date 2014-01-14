@@ -9,6 +9,8 @@
             [overtone.at-at :as at-at]
             [cwo.chmgr :as chmgr]
             [cwo.twitter :as twitter]
+            [carica.core :refer [config]]
+            [clojure.tools.nrepl.server :as nrepl]
             [cwo.routes :as rts]))
 
 (defn proto-handlers [app-state]
@@ -40,18 +42,41 @@
   (println "Twitter REPL started"))
 
 (defn start-aleph [handlers port]
-  (println "server started on port" port)
+  (println "HTTP server started on port" port)
   (aleph/start-http-server
    (aleph/wrap-ring-handler handlers) {:port port :websocket true}))
 
-(defn stop-system [sys]
+(defn stop [sys]
   ((:stop-aleph sys))
   (at-at/stop-and-reset-pool! (:thread-pool sys)))
 
+(defn start-nrepl []
+  (let [nrepl (nrepl/start-server)]
+    (println "nREPL server started on port" (:port nrepl))
+    nrepl))
+
+(defn init-brepl []
+  (reset! cemerick.austin.repls/browser-repl-env
+          (cemerick.austin/repl-env)))
+
+(defn start [sys]
+  (let [{:keys [twitter-repl thread-pool]} sys]
+    (when (config :twitter-repl)
+      (cycle-task twitter-repl thread-pool 65000)))
+  (cond-> sys
+          true (assoc :stop-aleph (start-aleph (:handlers sys) (config :port)))
+          (config :embed-nrepl) (assoc :nrepl (start-nrepl))
+          (config :browser-repl) (assoc :brepl (init-brepl))))
+
+(defmethod print-method cemerick.austin.BrowserEnv
+  [o w]
+  (print-simple
+   (str "#<BrowserEnv: " (:entry-url o) ">")
+   w))
+
+(defonce sys (atom nil))
+
 ; Add aleph handler and start server
 (defn -main []
-  (let [port 8080
-        {:keys [twitter-repl thread-pool] :as sys} (system)
-        stop-aleph (start-aleph (:handlers sys) port)]
-    (cycle-task twitter-repl thread-pool 65000)
-    (assoc sys :stop-aleph stop-aleph)))
+  (start (system)))
+

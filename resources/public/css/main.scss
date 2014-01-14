@@ -301,3 +301,19 @@ span.jqconsole-header > span {
 .jqconsole-info {
   color: $orange;
 } 
+
+.repl-container {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
+  left: 0px;
+  margin: 0px;
+  overflow: auto;
+}
+
+.output {
+  height: 200px;
+  margin-top: 20px;
+  background-color: #FFF;
+}

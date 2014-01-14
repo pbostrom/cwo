@@ -1,28 +1,33 @@
 (ns cwo.app
-  (:require [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash srv-cmd]]
-            [cwo.ajax :as ajax]
-            [cwo.repl :as repl]
-            [cwo.wscmd :as wscmd]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require
+   [cljs.core.async :refer [put! chan <!]]
+   [cwo.utils :as utils :refer [jq ws-url jslog sock get-hash srv-cmd]]
+   
+   [cwo.ajax :as ajax]
+   [cwo.repl :as repl]
+   [cwo.wscmd :as wscmd]))
 
-(defn route [msg-obj]
+(defn route [msg-obj editor]
+  (.log js/console (pr-str msg-obj))
   (let [{pmsg :p tmsg :t} msg-obj]
-    (when pmsg
-      (.SetPromptText (:oth repl/repls) pmsg))
+    (when-let [[content [line ch]] pmsg]
+      (.setValue editor content)
+      (.setCursor editor line ch))
     (when tmsg
       (.SetPromptText (:you repl/repls) tmsg))))
 
-(defn msg-hdlr [msg]
+(defn msg-hdlr [msg editor]
   (let [msg-obj (cljs.reader/read-string (.-data msg))]
     (cond (vector? msg-obj) (apply wscmd/wscmd msg-obj)
-          (map? msg-obj) (route msg-obj))))
+          (map? msg-obj) (route msg-obj editor))))
 
 ; open websocket and set handlers
-(defn open-websocket []
+(defn open-websocket [editor]
   (reset! sock (js/WebSocket. ws-url))
-  (set! (.-onmessage @sock) msg-hdlr)
+  (set! (.-onmessage @sock) #(msg-hdlr % editor))
   (set! (.-onopen @sock) (fn []
-                           (repl/set-repl-mode :you :active) 
-                           (repl/set-repl-mode :oth :sub))))
+                           (jslog "socket open"))))
 ; ui listeners
 
 ; button [en|dis]ablers
@@ -44,10 +49,11 @@
              (-> (jq "#transfer") (.attr "disabled" "disabled")))))))
 
 ; button listners
-(-> (jq "#join-btn") (.on "click" repl/join))
-(-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
-(-> (jq "#transfer") (.on "click" repl/transfer))
-(-> (jq "#reclaim") (.on "click" repl/reclaim))
+(defn init-buttons [you oth]
+  (-> (jq "#join-btn") (.on "click" #(repl/join % oth)))
+  (-> (jq "#peer-status") (.on "click" "#discon" repl/disconnect))
+  (-> (jq "#transfer") (.on "click" repl/transfer))
+  (-> (jq "#reclaim") (.on "click" repl/reclaim)))
 
 ;; paste handler
 (defn paste-hdlr []
@@ -93,15 +99,36 @@
        (.after (jq "#home-panel div.spacer") (jq "#others-box"))
        (.prepend (jq "#panel-box") (jq "#home-panel"))))
 
+(defn listen [qry-str event]
+  (let [out (chan)]
+    (.on (jq qry-str) event
+         (fn [e] (put! out e)))
+    out))
+
+(def cmr (atom nil))
+
 ; $(document).ready function
 (defn ready []
-  (let [token (.attr (jq "#token") "value")]
-    (when (and token ((comp not empty?) token) 
-               (ajax/gh-profile token))))
-
   (-> (jq "#repl-tabs a:first") (.tab "show"))
-
   (set! (.-onhashchange js/window) (fn [x] (repl/process-hash (get-hash))))
-  (open-websocket))
+
+  (let [cm-id "#you-editor"
+        cm-opts (clj->js {:matchBrackets true :autoCloseBrackets true})
+        editor (js/CodeMirror (aget (jq cm-id) 0) cm-opts)
+        oth-editor (js/CodeMirror (aget (jq "#oth-editor") 0) cm-opts)
+        c (listen cm-id "keydown")]
+    (open-websocket oth-editor)
+    (reset! cmr editor)
+;    (.on editor "change" (fn [cm co] (.log js/console co)))
+    (go
+     (while true
+       (let [e (<! c)
+             content (.getValue editor)
+             {:keys [line ch]} (.getCursor editor)]
+         (repl/send-editor-state :you [content [line ch]])
+         (when (and (.-ctrlKey e) (.-shiftKey e))
+           (cond
+            (= (.-keyCode e) 88) (repl/editor-eval editor e) 
+            (= (.-keyCode e) 90) (repl/editor-load editor e))))))))
 
 (.ready (jq js/document) ready)

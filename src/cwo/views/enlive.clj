@@ -1,5 +1,7 @@
 (ns cwo.views.enlive
-  (:require [net.cgrand.enlive-html :as html]))
+  (:require [net.cgrand.enlive-html :as html]
+            [cemerick.austin.repls :refer [browser-connected-repl-js]]
+            [carica.core :refer [config]]))
 
 (defn render-snippet [s]
   (apply str (html/emit* s)))
@@ -25,7 +27,12 @@
 (defn logout-html []
   (render-snippet (loginbox)))
 
+(defn brepl-script []
+  (when (config :browser-repl)
+    (render-snippet (browser-connected-repl-js))))
+
 (html/deftemplate layout (str pub "layout.html")
   [user]
   [:div#user-container] (html/content (if (:handle user) (logoutbox user) (loginbox)))
-  [:div#widgets] (html/content (transfer-text)))
+  [:div#widgets] (html/content (transfer-text))
+  [:script#brepl] (html/content (brepl-script)))

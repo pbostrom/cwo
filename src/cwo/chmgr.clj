@@ -350,6 +350,7 @@
         (eval-clj app-state sesh-id form repl))))
 
 (defn read-eval-clj [app-state sesh-id [expr sb-key]]
+  (println expr)
   (eval-forms app-state sesh-id (read-forms expr) sb-key))
 
 (defn paste [app-state sesh-id [host id repl]]
