@@ -79,15 +79,7 @@
 
 (defmethod wscmd :expr 
   [_ expr]
-  (let [[repl-key expr] (reader/read-string expr)
-        repl (repl-key repl/repls)
-        hist (.GetHistory repl)]
-    (when-not (= (.GetState repl) "output")
-      (.SetPromptText repl (str expr))
-      (.AbortPrompt repl)
-      ;; ugly javascript mutation stuff
-      (.push hist (str expr))
-      (.SetHistory repl hist))))
+  (jslog (str "expr cmd called: " expr)))
 
 (defmethod wscmd :result 
   [_ rslt]
@@ -96,14 +88,7 @@
 
 (defmethod wscmd :hist 
   [_ hist-pair & {:keys [repl-key] :or {repl-key :oth}}]
-  (let [[expr rslt] (reader/read-string hist-pair)
-        repl (repl-key repl/repls)]
-    (.SetPromptText repl (str expr))
-    (.AbortPrompt repl)
-    (if (:error rslt)
-      (.Write repl (str (:message rslt) "\n") "jqconsole-error")
-      (.Write repl (str rslt "\n") "jqconsole-output"))
-    (.Prompt repl true (fn [] nil))))
+  (jslog (str "hist called: " hist-pair repl-key)))
 
 (defmethod wscmd :chctrl 
   [_ handle & {:keys [repl-key] :or {repl-key :oth}}]

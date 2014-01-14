@@ -84,13 +84,8 @@
     (.append (jq "#you-repl-output") (str output "<br>"))))
 
 (defn init-active-mode [repl-kw]
-  (let [repl (repl-kw repls)]
-    (when (= (.GetState repl) "prompt") (.AbortPrompt repl))
-    (.Enable repl)
-    (.SetIndentWidth repl 1)
-    (prompt repl-kw))
-  (swap! publish-console? assoc repl-kw true)
-  (share-console-loop repl-kw))
+  (jslog (str "init active mode" repl-kw))
+  (swap! publish-console? assoc repl-kw true))
 
 (defn init-sub-mode [repl-kw]
   (swap! publish-console? assoc repl-kw false))
