@@ -111,6 +111,7 @@
 (defn ready []
   (-> (jq "#repl-tabs a:first") (.tab "show"))
   (set! (.-onhashchange js/window) (fn [x] (repl/process-hash (get-hash))))
+  (init-buttons)
 
   (let [cm-id "#you-editor"
         cm-opts (clj->js {:matchBrackets true :autoCloseBrackets true})
