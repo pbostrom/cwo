@@ -1,13 +1,14 @@
 (defproject cwo "1.0.0-SNAPSHOT"
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-2030"]
+                 [org.clojure/clojurescript "0.0-2156"]
                  [org.clojure/core.logic "0.8.4"]
                  [org.clojure/tools.macro "0.1.2"]
                  [org.clojure/tools.reader "0.7.10"]
                  [org.clojure/tools.trace "0.7.5"]
                  [org.clojure/core.cache "0.6.3"]
-                 [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]
+                 [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
+                 [om "0.3.6-SNAPSHOT"]
                  [aleph "0.3.0-beta11"]
                  [compojure "1.1.3"]
                  [com.taoensso/carmine "2.1.3"]
